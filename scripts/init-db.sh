@@ -1,0 +1,12 @@
+#!/bin/sh
+set -eu
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<'SQL'
+\getenv app_password MOS_APP_PASSWORD
+\getenv migration_password MOS_MIGRATION_PASSWORD
+CREATE ROLE mos_migrator LOGIN NOSUPERUSER NOBYPASSRLS PASSWORD :'migration_password';
+CREATE ROLE mos_app LOGIN NOSUPERUSER NOBYPASSRLS PASSWORD :'app_password';
+ALTER SCHEMA public OWNER TO mos_migrator;
+REVOKE CREATE ON SCHEMA public FROM PUBLIC;
+GRANT USAGE ON SCHEMA public TO mos_app;
+ALTER DEFAULT PRIVILEGES FOR ROLE mos_migrator IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO mos_app;
+SQL

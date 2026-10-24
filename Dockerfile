@@ -1,7 +1,17 @@
-FROM python:3.12-slim
+FROM python:3.12-slim AS runtime
 WORKDIR /srv
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 COPY app ./app
+COPY config ./config
+COPY migrations ./migrations
+COPY alembic.ini ./
 EXPOSE 8000
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+FROM runtime AS tests
+COPY requirements-dev.txt ./
+RUN pip install --no-cache-dir -r requirements-dev.txt
+COPY tests ./tests
+COPY pytest.ini ./
+CMD ["pytest", "-q", "-m", "not live"]

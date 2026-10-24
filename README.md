@@ -1,51 +1,110 @@
-# Marketing AI OS V3.3 — P0 runnable foundation
+# Marketing AI OS — P0 hardening
 
-**Status: DEVELOPMENT PROTOTYPE, NOT production-ready.** No AI model invocation, no platform API, no real publishing, no customer-facing web UI, and no payments.
+**Development prototype; not production-ready.** No real social publishing, payments, or revenue claims. P1 remains blocked. The 24 agents are capability profiles, not an autonomous workforce.
 
-## Implemented
-- Tenant bootstrap with admin secret and one-time tenant key (hashed at rest)
-- Tenant-scoped task lists, registered 24 capability profiles (idle; 0 tokens)
-- Atomic reserve budget check for PostgreSQL, demo settlement, cost event records
-- Approval state and *manual-only* publication queue, idempotency by tenant/key
-- Audit log and API OpenAPI interface (`/docs`)
-- SQLite isolated test suite; Docker Compose for local Postgres testing
+P0 provides passwordless owner sessions, role/scoped credentials, forced PostgreSQL row security, append-only audit/cost events, integer micro-USD reserve/settle/release, receipt deduplication, timeout recovery, token limits, a budget kill switch, and manual-only platform adapters. Model calls default to **false** and the actual HTTP provider also requires explicit integration-test opt-in.
 
-## Run locally
-```bash
+## Local SQLite (PowerShell, Python 3.12)
+
+```powershell
 python -m venv .venv
-source .venv/bin/activate # Windows: .venv\\Scripts\\activate
-pip install -r requirements-dev.txt
-export MOS_ADMIN_KEY='use-a-real-random-secret'
-export DATABASE_URL='sqlite:///./marketing_os.db'
-uvicorn app.main:app --reload
-# Visit http://127.0.0.1:8000/docs
-pytest -q
+.venv\Scripts\python -m pip install -r requirements-dev.txt
+$env:MOS_ADMIN_KEY = 'replace-with-at-least-30-random-characters'
+$env:DATABASE_URL = 'sqlite:///./marketing_os.db'
+$env:MOS_MODEL_CALLS_ENABLED = 'false'
+.venv\Scripts\alembic upgrade head
+.venv\Scripts\python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
-## Docker (local only)
-```bash
-cp .env.example .env
-# Edit .env: add POSTGRES_PASSWORD and set MOS_ADMIN_KEY; DATABASE_URL in .env is unused by compose api override.
-docker compose up --build
+In another terminal:
+
+```powershell
+.venv\Scripts\python -m pytest -q
+.venv\Scripts\python -m pip_audit -r requirements-dev.txt
 ```
 
-## First tenant
-```bash
-curl -X POST http://127.0.0.1:8000/admin/tenants \
- -H 'x-admin-key: YOUR_ADMIN_KEY' -H 'Content-Type: application/json' \
- -d '{"name":"Pilot Client","budget_usd":5}'
+POSIX equivalents: `.venv/bin/python`, `.venv/bin/alembic`, and `export NAME=value` for environment variables. Open http://127.0.0.1:8000/docs. Send `Authorization: Bearer <access_token>` through an API client. Money responses are exact decimal strings in USD; request amounts accept strings with at most six decimal places.
+
+SQLite is a local convenience: its ORM guards and composite foreign keys are tested, but raw SQL tenant isolation is a PostgreSQL guarantee. Startup does not create or alter schemas. Run migrations first.
+
+**Existing prototype databases:** baseline migration refuses unmanaged tables without deleting or changing their data. Back up the old database and select a new database/file for this P0 schema. No automatic float-ledger conversion or key promotion is provided. Never `alembic stamp` the old schema. Downgrades are deliberately rejected.
+
+## Docker PostgreSQL
+
+Start Docker Desktop. Use a new project name if an older Compose database already exists; init scripts only run on a fresh volume.
+
+```powershell
+Copy-Item .env.example .env
+# Edit all secrets in .env; use URL-safe random values, not the examples.
+docker compose -p mos-p0 up --build -d api
+docker compose -p mos-p0 logs api
 ```
-Save returned `api_key` immediately. Then in `/docs`, authorize with `Bearer <api_key>` using the Authorization header via API client.
 
-## Known blockers before real client data
-1. Implement proper OAuth/user RBAC, signed worker identity; **tenant API key presently allows approval and mock settlement**.
-2. P0 settlement is explicitly SIMULATED and callable by tenant; never use as billing data.
-3. Introduce Alembic migrations, row-level PostgreSQL security policies and cross-user tests.
-4. Use integer micro-USD or Decimal for money instead of floats; handle actual provider cost > reservation safely.
-5. Enforce proper production HTTPS, CSRF on browser sessions, API rate limits, structured logs/redaction, secrets manager, backups, disaster recovery.
-6. Move publishing to worker with OAuth, official platform permissions, callback verification and platform-specific retry reconciliation.
-7. Add actual model adapter and usage receipts; agents here are registry entries, not executable workers.
-8. Add lock / unique constraint handling under concurrent publication queue submits and test PostgreSQL transactions.
+Compose creates separate migration and runtime roles; the runtime role is neither superuser nor table owner. API startup rejects roles that own public tables or can bypass RLS. PostgreSQL forces tenant policies on all seven tables, including credential/login lookup by hashed token before tenant context exists. Context is transaction-local and restored after each commit. Runtime cannot disable policies or audit triggers. These controls do not defend against a compromised database administrator or a fully compromised API server.
 
-## Decision policy
-Check official documentation and licenses at implementation time; treat AI model pricing as a versioned configuration, **not hardcoded in this starter**.
+Run the **same suite** in an isolated PostgreSQL project (never use a customer database):
+
+```powershell
+docker compose -p mos-p0-tests --profile test run --build --rm tests
+docker compose -p mos-p0-tests stop
+```
+
+Tests apply Alembic with the migrator role, then call APIs and raw SQL with the restricted runtime role. Tests preserve their local test volume. Do not remove a data volume that contains anything you need.
+
+## Passwordless login and worker trust
+
+No email is sent. For this local pilot, an administrator verifies the owner out of band, issues a 10-minute single-use challenge, and securely delivers it. Only its hash is stored. Owner bearer sessions expire after 24 hours. This is admin-mediated passwordless login, not a public self-service email identity service.
+
+```powershell
+$base = 'http://127.0.0.1:8000'
+$admin = @{'x-admin-key'=$env:MOS_ADMIN_KEY}
+$t = Invoke-RestMethod "$base/admin/tenants" -Method Post -Headers $admin -ContentType 'application/json' -Body '{"name":"Pilot","budget_usd":"5","owner_subject":"verified-owner"}'
+$challenge = Invoke-RestMethod "$base/admin/login-challenges" -Method Post -Headers $admin -ContentType 'application/json' -Body (@{tenant_id=$t.id;subject='verified-owner'} | ConvertTo-Json)
+$login = Invoke-RestMethod "$base/auth/login" -Method Post -ContentType 'application/json' -Body (@{token=$challenge.token} | ConvertTo-Json)
+$owner = @{Authorization="Bearer $($login.access_token)"}
+Invoke-RestMethod "$base/budget" -Headers $owner
+```
+
+The `api_key` returned by tenant bootstrap is read-only and expires after 24 hours. It can no longer approve or settle. Owner can issue manager/reviewer credentials with a subset of their role permissions using `POST /credentials`; revoke with `DELETE /credentials/{id}`. Only the administrator can issue a tenant-bound worker credential through `POST /admin/worker-credentials` with `tenant_id` and `subject`. Keep that key on a trusted worker; it is a revocable, expiring worker identity, not hardware attestation.
+
+| Role | Allowed operations (also requires scope) |
+|---|---|
+| owner | read, create tasks, reserve/release, approve, queue manual publication, manage credentials, budget switch |
+| manager | read, create tasks, reserve/release, queue already-approved manual publication |
+| reviewer | read |
+| worker | read, claim/execute, settle, recover expired tasks |
+
+Owner approval is mandatory; reviewer cannot approve. Owners cannot mint worker credentials. All privileged operations append actor IDs to audit records. Tokens and challenges never appear in audit records.
+
+## Task and ledger flow
+
+1. Owner/manager creates `POST /tasks`, then reserves via `POST /tasks/{id}/reserve` with `estimate_usd` and `idempotency_key`. Omitted reserve keys retain the legacy single-reserve default. Reservations expire in 15 minutes.
+2. A trusted worker uses `POST /tasks/{id}/execute` in opted-in live tests. It counts input tokens, checks configured input/output caps and reservation before generation, sets provider `max_tokens`, stores provider message ID, model, usage and receipt cost, then enters `PENDING_APPROVAL`.
+3. A trusted external receipt importer may instead `POST /tasks/{id}/claim`, then `/settle`. Settlement requires `actual_usd`, `output`, `idempotency_key`, and `receipt` containing `provider`, `model`, `receipt_id`, `input_tokens`, `output_tokens`, optional `cache_read_input_tokens` and **5-minute-only** `cache_creation_input_tokens`. The importer must authenticate the receipt against the provider account, use this rate-card snapshot, and must not send any generation before claiming. Arbitrary owner-supplied prices are rejected. Unit tests use synthetic receipts and never claim actual paid usage.
+4. Owner calls `/approve`; owner/manager calls `/publication-request` with `platform` and `idempotency_key`. Result always `MANUAL_REQUIRED`; no platform request is made. Threads/Instagram/Facebook/TikTok interfaces all implement capabilities, authorize, publish, check_status and revoke; publishing refuses even caller-supplied approval/permission booleans until an actual permitted adapter is implemented.
+
+Every accounting/publication mutation serializes on the tenant row before reading state, with one transaction for balance, task, ledger and audit. Retries with identical keys/payloads reuse the result; changed payloads conflict. A unique provider receipt per tenant prevents use on two tasks. No floating-point arithmetic is used in the ledger. Actual receipts above reservation are still recorded and automatically pause the budget instead of hiding incurred costs.
+
+`POST /tasks/{id}/release` needs `idempotency_key` and can release only undispatched `RESERVED` tasks. A worker calls `POST /maintenance/recover` periodically: expired reservations are released; expired `RUNNING` tasks become `RECONCILIATION_REQUIRED` with funds held. A worker must settle an authenticated receipt to reconcile; no blind retry or automatic release of uncertain bills exists. The endpoint is provided, but no scheduler is installed. `PUT /budget/kill-switch` with `{"paused":true}` stops new reservations/claims and checks again before generation. Already submitted external requests cannot be canceled by this switch.
+
+## Model configuration and live tests
+
+`config/models.json` contains a pinned, officially documented model identifier, price-source URL, effective date, input/output/cached rates and token caps. The date is this local rate card's effective date, not an invented vendor price-change date. Pricing and lifecycle need review before each live run. [Official model and rate documentation](https://platform.claude.com/docs/en/models/haiku-4-5/overview).
+
+No provider SDK was added; the existing HTTPX dependency is used. The request has a timeout and no automatic retries. Model calls require **all** of a feature flag, live-test opt-in, and a live key. CI supplies none of these.
+
+```powershell
+$env:MOS_LIVE_TESTS = 'true'
+$env:ANTHROPIC_API_KEY = '<explicitly opt-in key from your secret store>'
+.venv\Scripts\python -m pytest -q -m live
+Remove-Item Env:MOS_LIVE_TESTS
+Remove-Item Env:ANTHROPIC_API_KEY
+```
+
+The live test enables the feature only within its test, reserves USD 0.02 and caps output at 1024 tokens. It costs real money if run. Offline provider tests verify request limits, usage storage and ambiguous timeout handling without network access. Rate-card settlement is not a tax invoice; discounts, regional rates, one-hour cache writes, historical rate reconciliation and invoice reconciliation require a separately reviewed receipt importer. The built-in provider sends no cache-control directive.
+
+## Evidence and remaining work
+
+See `docs/P0_EVIDENCE.md`, raw test outputs, `docs/dependency-audit.json`, and `docs/DEPENDENCIES.md`. CI is configured for SQLite, PostgreSQL and vulnerability scanning; hosted CI results require pushing the branch. The current report does not assert production readiness. HTTPS deployment, delivery-provider identity verification, abuse controls, encrypted backups/restore drills, external invoice reconciliation and live platform permissions remain P0 deployment blockers. Do not advance to P1 based only on mock or offline tests.
+
+Final P0 closeout: [acceptance](docs/P0_FINAL_ACCEPTANCE.md), [cost report](docs/P0_COST_REPORT.md), [known limitations](docs/P0_KNOWN_LIMITATIONS.md), [legacy database backup/migration/rollback plan](docs/P0_DATABASE_MIGRATION_PLAN.md), and [P1 preparation only](docs/P1_READINESS.md). No P1 implementation is included.

@@ -1,0 +1,13 @@
+{
+  "provider": "anthropic",
+  "model": "claude-haiku-4-5-20251001",
+  "pricing_source_url": "https://platform.claude.com/docs/en/models/haiku-4-5/overview",
+  "price_effective_date": "2026-10-25",
+  "effective_date_basis": "Local rate-card effective date; verified against official source on this date, not a claimed vendor change date",
+  "input_usd_per_million": "1.00",
+  "output_usd_per_million": "5.00",
+  "cached_input_usd_per_million": "0.10",
+  "cache_write_5m_usd_per_million": "1.25",
+  "max_input_tokens": 4096,
+  "max_output_tokens": 1024
+}

@@ -1,0 +1,2 @@
+{"BlockIO":"1.43MB / 700kB","CPUPerc":"0.12%","Container":"mos-p0-009-api","ID":"6ab07d44a433","MemPerc":"0.40%","MemUsage":"63.34MiB / 15.43GiB","Name":"mos-p0-009-api","NetIO":"3.65kB / 2.45kB","PIDs":"2"}
+{"BlockIO":"74.5MB / 61.1MB","CPUPerc":"2.53%","Container":"mos-p0-009-db-1","ID":"52db18aada8f","MemPerc":"0.32%","MemUsage":"50.67MiB / 15.43GiB","Name":"mos-p0-009-db-1","NetIO":"2.13MB / 1.73MB","PIDs":"7"}

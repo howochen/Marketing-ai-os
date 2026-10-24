@@ -1,0 +1,28 @@
+name: P0 checks
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  sqlite:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements-dev.txt
+      - run: pytest -q
+      - run: pip-audit -r requirements-dev.txt
+  postgres:
+    runs-on: ubuntu-latest
+    env:
+      MOS_ADMIN_KEY: ci-only-admin-secret-at-least-thirty-characters
+      POSTGRES_PASSWORD: ci-only-postgres
+      MOS_APP_PASSWORD: ci-only-app
+      MOS_MIGRATION_PASSWORD: ci-only-migrator
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test with a non-owner, non-superuser runtime role
+        run: docker compose -p mos-ci --profile test run --build --rm tests
+      - if: always()
+        run: docker compose -p mos-ci logs db

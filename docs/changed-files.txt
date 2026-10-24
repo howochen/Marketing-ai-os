@@ -1,0 +1,92 @@
+ M .env.example
+ M Dockerfile
+ M README.md
+ M app/main.py
+ M app/models.py
+ M compose.yaml
+ M docs/CODEX_NEXT.md
+ M pytest.ini
+ M requirements-dev.txt
+ M requirements.txt
+ M tests/test_api.py
+?? .dockerignore
+?? .gitattributes
+?? .github/workflows/ci.yml
+?? alembic.ini
+?? app/adapters.py
+?? app/database.py
+?? app/providers.py
+?? app/security.py
+?? config/models.json
+?? docs/DEPENDENCIES.md
+?? docs/P0_EVIDENCE.md
+?? docs/changed-files.txt
+?? docs/database-size-bytes.txt
+?? docs/dependency-audit.json
+?? docs/dependency-inventory.json
+?? docs/live-test-gate-output.txt
+?? docs/postgres-clean-output.txt
+?? docs/postgres-test-output.txt
+?? docs/resource-snapshot.jsonl
+?? docs/sqlite-test-output.txt
+?? migrations/env.py
+?? migrations/versions/0001_schema.py
+?? migrations/versions/0002_defense.py
+?? scripts/init-db.sh
+?? tests/conftest.py
+?? tests/test_live_provider.py
+
+MOS-P0-009 final changed/new deliverables before staging:
+ M .env.example
+ M Dockerfile
+ M README.md
+ M app/main.py
+ M app/models.py
+ M compose.yaml
+ M docs/CODEX_NEXT.md
+ M pytest.ini
+ M requirements-dev.txt
+ M requirements.txt
+ M tests/test_api.py
+?? .dockerignore
+?? .gitattributes
+?? .github/workflows/ci.yml
+?? alembic.ini
+?? app/adapters.py
+?? app/database.py
+?? app/providers.py
+?? app/security.py
+?? config/models.json
+?? docs/DEPENDENCIES.md
+?? docs/P0_COST_REPORT.md
+?? docs/P0_DATABASE_MIGRATION_PLAN.md
+?? docs/P0_EVIDENCE.md
+?? docs/P0_FINAL_ACCEPTANCE.md
+?? docs/P0_KNOWN_LIMITATIONS.md
+?? docs/P1_READINESS.md
+?? docs/changed-files.txt
+?? docs/database-size-bytes.txt
+?? docs/dependency-audit.json
+?? docs/dependency-inventory.json
+?? docs/live-test-gate-output.txt
+?? docs/p0-009/database-size.txt
+?? docs/p0-009/dependency-audit.json
+?? docs/p0-009/deployment.txt
+?? docs/p0-009/postgres-final.txt
+?? docs/p0-009/postgres.txt
+?? docs/p0-009/precommit-security.txt
+?? docs/p0-009/precommit-status.txt
+?? docs/p0-009/resources.jsonl
+?? docs/p0-009/sqlite.txt
+?? docs/p0-009/static.txt
+?? docs/postgres-clean-output.txt
+?? docs/postgres-test-output.txt
+?? docs/resource-snapshot.jsonl
+?? docs/sqlite-test-output.txt
+?? migrations/env.py
+?? migrations/versions/0001_schema.py
+?? migrations/versions/0002_defense.py
+?? scripts/init-db.sh
+?? tests/conftest.py
+?? tests/test_acceptance.py
+?? tests/test_live_provider.py

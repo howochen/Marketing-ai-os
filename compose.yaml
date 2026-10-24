@@ -3,24 +3,51 @@ services:
     image: postgres:16-alpine
     environment:
       POSTGRES_DB: mos
-      POSTGRES_USER: mos
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+      MOS_APP_PASSWORD: ${MOS_APP_PASSWORD:?Set MOS_APP_PASSWORD}
+      MOS_MIGRATION_PASSWORD: ${MOS_MIGRATION_PASSWORD:?Set MOS_MIGRATION_PASSWORD}
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./scripts/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U mos -d mos"]
-      interval: 5s
+      test: ["CMD-SHELL", "pg_isready -U postgres -d mos"]
+      interval: 2s
       timeout: 3s
-      retries: 10
-  api:
-    build: .
-    ports:
-      - "127.0.0.1:8000:8000"
+      retries: 30
+  migrate:
+    build:
+      context: .
+      target: runtime
+    command: ["alembic", "upgrade", "head"]
     environment:
-      MOS_ADMIN_KEY: ${MOS_ADMIN_KEY:?Set MOS_ADMIN_KEY in .env}
-      DATABASE_URL: postgresql+psycopg://mos:${POSTGRES_PASSWORD}@db:5432/mos
+      MIGRATION_DATABASE_URL: postgresql+psycopg://mos_migrator:${MOS_MIGRATION_PASSWORD}@db:5432/mos
     depends_on:
       db:
         condition: service_healthy
+  api:
+    build:
+      context: .
+      target: runtime
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      MOS_ADMIN_KEY: ${MOS_ADMIN_KEY:?Set MOS_ADMIN_KEY}
+      DATABASE_URL: postgresql+psycopg://mos_app:${MOS_APP_PASSWORD}@db:5432/mos
+      MOS_MODEL_CALLS_ENABLED: "false"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+  tests:
+    build:
+      context: .
+      target: tests
+    environment:
+      DATABASE_URL: postgresql+psycopg://mos_app:${MOS_APP_PASSWORD}@db:5432/mos
+      MIGRATION_DATABASE_URL: postgresql+psycopg://mos_migrator:${MOS_MIGRATION_PASSWORD}@db:5432/mos
+    depends_on:
+      db:
+        condition: service_healthy
+    profiles: [test]
 volumes:
   pgdata:

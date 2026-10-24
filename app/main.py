@@ -1,139 +1,465 @@
-import hashlib
-import hmac
-import os
 import secrets
-import uuid
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Depends, HTTPException, Header
+from datetime import timedelta
+from decimal import Decimal
+from typing import Literal
+from fastapi import FastAPI, Depends, HTTPException
 from pydantic import BaseModel, Field
-from sqlalchemy import create_engine, select
-from sqlalchemy.orm import Session, sessionmaker
-from .models import Base,Tenant,Task,CostEvent,Publication,Audit
+from sqlalchemy import select, update, text
+from sqlalchemy.exc import IntegrityError
+from .database import db, scope, SessionLocal, engine
+from .models import Tenant, Task, CostEvent, Publication, Credential, LoginChallenge, Audit, now
+from .security import admin, audit, digest, issue, require, uid, ROLES
 from .registry import AGENTS
-
-DATABASE_URL=os.getenv('DATABASE_URL','sqlite:///./marketing_os.db')
-engine=create_engine(DATABASE_URL,connect_args={'check_same_thread':False} if DATABASE_URL.startswith('sqlite') else {},pool_pre_ping=True)
-SessionLocal=sessionmaker(bind=engine,expire_on_commit=False)
+from .adapters import ADAPTERS
+from .providers import AnthropicProvider, MODEL, enabled, usage_cost
 
 @asynccontextmanager
-async def lifespan(app:FastAPI):
-    # P0 local bootstrap only. Production: use Alembic migrations and RBAC.
-    Base.metadata.create_all(bind=engine)
+async def lifespan(app):
+    if engine.dialect.name == 'postgresql':
+        with engine.connect() as connection:
+            unsafe = connection.scalar(text("SELECT rolsuper OR rolbypassrls FROM pg_roles WHERE rolname = current_user"))
+            owns_tables = connection.scalar(text("SELECT count(*) FROM pg_tables WHERE schemaname='public' AND tableowner=current_user"))
+            if unsafe or owns_tables:
+                raise RuntimeError('Runtime database role must not bypass RLS or own tables; use mos_app')
     yield
-app=FastAPI(title='Marketing AI OS P0',version='0.1.0',lifespan=lifespan)
 
-def db():
-    with SessionLocal() as s: yield s
 
-def digest(value:str)->str: return hashlib.sha256(value.encode()).hexdigest()
+app = FastAPI(title='Marketing AI OS P0', version='0.2.0', lifespan=lifespan)
+Money = Decimal
 
-def tenant_auth(authorization:str|None=Header(default=None),s:Session=Depends(db))->Tenant:
-    if not authorization or not authorization.startswith('Bearer '):raise HTTPException(401,'Bearer token required')
-    token=authorization[7:]
-    if len(token)<30:raise HTTPException(401,'Invalid token')
-    t=s.scalar(select(Tenant).where(Tenant.api_key_hash==digest(token)))
-    if not t or t.disabled:raise HTTPException(401,'Invalid token')
-    return t
 
-def audit(s,tid,action,rid):s.add(Audit(id=str(uuid.uuid4()),tenant_id=tid,action=action,resource_id=rid))
+def micro(value):
+    return int(value * 1_000_000)
 
-def get_task(s,tenant,task_id):
-    t=s.scalar(select(Task).where(Task.id==task_id,Task.tenant_id==tenant.id))
-    if not t:raise HTTPException(404,'Task not found')
-    return t
+
+def dollars(value):
+    return Decimal(value) / 1_000_000
+
+
+def lock_tenant(s, tid):
+    # All mutations lock tenant first, then read task: also serializes SQLite writers.
+    s.execute(update(Tenant).where(Tenant.id == tid).values(reserved_micro=Tenant.reserved_micro))
+    return s.scalar(select(Tenant).where(Tenant.id == tid).execution_options(populate_existing=True))
+
+
+def task_for(s, tid, task_id):
+    task = s.scalar(select(Task).where(Task.id == task_id, Task.tenant_id == tid)
+                    .execution_options(populate_existing=True))
+    if not task:
+        raise HTTPException(404, 'Task not found')
+    return task
+
+
+def event(s, tid, task, kind, amount, receipt=None):
+    s.add(CostEvent(id=uid(), tenant_id=tid, task_id=task.id, type=kind,
+                    amount_micro=amount, receipt_id=receipt['receipt_id'] if receipt else None,
+                    usage=receipt))
+
 
 class TenantCreate(BaseModel):
-    name:str=Field(min_length=2,max_length=160)
-    budget_usd:float=Field(default=5,gt=0,le=100000)
+    name: str = Field(min_length=2, max_length=160)
+    budget_usd: Money = Field(default=Decimal('5'), gt=0, le=100000, decimal_places=6)
+    owner_subject: str = Field(default='local-owner', min_length=1, max_length=200)
+
+
+class LoginCreate(BaseModel):
+    tenant_id: str
+    subject: str = Field(min_length=1, max_length=200)
+
+
+class LoginRedeem(BaseModel):
+    token: str = Field(min_length=30, max_length=200)
+
+
+class CredentialCreate(BaseModel):
+    role: Literal['manager', 'reviewer']
+    subject: str = Field(min_length=1, max_length=200)
+    scopes: list[str]
+    expires_hours: int = Field(default=24, ge=1, le=24 * 30)
+
+
+class WorkerCreate(BaseModel):
+    tenant_id: str
+    subject: str = Field(min_length=1, max_length=200)
+
+
 class TaskCreate(BaseModel):
-    title:str=Field(min_length=1,max_length=200)
-    brief:str=Field(min_length=1,max_length=12000)
-    agent_id:str='A09'
+    title: str = Field(min_length=1, max_length=200)
+    brief: str = Field(min_length=1, max_length=12000)
+    agent_id: str = 'A09'
+
+
 class ReserveRequest(BaseModel):
-    estimate_usd:float=Field(gt=0,le=1000)
-class SettleRequest(BaseModel):
-    actual_usd:float=Field(ge=0,le=1000)
-    output:str=Field(max_length=40000)
-class PublishRequest(BaseModel):
-    platform:str
-    idempotency_key:str=Field(min_length=8,max_length=128)
+    estimate_usd: Money = Field(gt=0, le=1000, decimal_places=6)
+    idempotency_key: str = Field(default='reserve-default', min_length=8, max_length=128)
+
+
+class KeyRequest(BaseModel):
+    idempotency_key: str = Field(min_length=8, max_length=128)
+
+
+class Receipt(BaseModel):
+    provider: Literal['anthropic']
+    model: str
+    receipt_id: str = Field(min_length=1, max_length=160)
+    input_tokens: int = Field(ge=0, le=200000, strict=True)
+    output_tokens: int = Field(ge=0, le=64000, strict=True)
+    cache_read_input_tokens: int = Field(default=0, ge=0, le=200000, strict=True)
+    cache_creation_input_tokens: int = Field(default=0, ge=0, le=200000, strict=True)
+
+
+class SettleRequest(KeyRequest):
+    actual_usd: Money = Field(ge=0, le=1000, decimal_places=6)
+    output: str = Field(max_length=40000)
+    receipt: Receipt
+
+
+class PublishRequest(KeyRequest):
+    platform: Literal['threads', 'instagram', 'facebook', 'tiktok']
+
+
+class BudgetSwitch(BaseModel):
+    paused: bool
+
 
 @app.get('/health')
-def health():return {'status':'ok','model_calls_enabled':False,'publishing_enabled':False}
+def health():
+    return {'status': 'ok', 'model_calls_enabled': enabled(), 'publishing_enabled': False}
 
-@app.post('/admin/tenants',status_code=201)
-def create_tenant(payload:TenantCreate,x_admin_key:str|None=Header(default=None),s:Session=Depends(db)):
-    admin=os.getenv('MOS_ADMIN_KEY')
-    if not admin or not x_admin_key or not hmac.compare_digest(x_admin_key,admin):raise HTTPException(403,'Admin access denied')
-    key='mos_'+secrets.token_urlsafe(36); tid=str(uuid.uuid4())
-    s.add(Tenant(id=tid,name=payload.name,budget_usd=payload.budget_usd,api_key_hash=digest(key)))
-    audit(s,tid,'tenant.created',tid);s.commit()
-    return {'id':tid,'name':payload.name,'budget_usd':payload.budget_usd,'api_key':key,'warning':'Store this secret now; it is returned only once.'}
+
+@app.post('/admin/tenants', status_code=201, dependencies=[Depends(admin)])
+def create_tenant(payload: TenantCreate, s=Depends(db)):
+    tid = uid()
+    scope(s, tid)
+    s.add(Tenant(id=tid, name=payload.name, budget_micro=micro(payload.budget_usd)))
+    s.flush()
+    # Bootstrap is a read-only credential; approval requires passwordless owner login.
+    key, credential = issue(s, tid, payload.owner_subject, 'reviewer', {'read'})
+    audit(s, tid, 'tenant.created', tid)
+    s.commit()
+    return {'id': tid, 'name': payload.name, 'budget_usd': payload.budget_usd, 'api_key': key,
+            'warning': 'Read-only bootstrap credential. Use admin-issued passwordless owner login.'}
+
+
+@app.post('/admin/login-challenges', dependencies=[Depends(admin)])
+def login_challenge(payload: LoginCreate, s=Depends(db)):
+    scope(s, payload.tenant_id)
+    if not s.get(Tenant, payload.tenant_id):
+        raise HTTPException(404, 'Tenant not found')
+    # Admin must verify recipient identity and deliver this secret out of band.
+    token = secrets.token_urlsafe(36)
+    challenge = LoginChallenge(id=uid(), tenant_id=payload.tenant_id, subject=payload.subject,
+                               token_hash=digest(token), expires_at=now() + timedelta(minutes=10))
+    s.add(challenge)
+    audit(s, payload.tenant_id, 'login.challenge_issued', challenge.id)
+    s.commit()
+    return {'token': token, 'expires_in_seconds': 600}
+
+
+@app.post('/auth/login')
+def login(payload: LoginRedeem, s=Depends(db)):
+    scope(s, token_hash=digest(payload.token))
+    challenge = s.scalar(select(LoginChallenge).where(LoginChallenge.token_hash == digest(payload.token)))
+    if not challenge:
+        raise HTTPException(401, 'Invalid login challenge')
+    scope(s, challenge.tenant_id)
+    tenant = lock_tenant(s, challenge.tenant_id)
+    result = s.execute(update(LoginChallenge).where(
+        LoginChallenge.id == challenge.id, LoginChallenge.used.is_(False),
+        LoginChallenge.expires_at > now()).values(used=True).execution_options(synchronize_session=False))
+    if result.rowcount != 1 or tenant.disabled:
+        raise HTTPException(401, 'Invalid or expired login challenge')
+    key, credential = issue(s, tenant.id, challenge.subject, 'owner', ROLES['owner'])
+    audit(s, tenant.id, 'login.owner', credential.id, credential.id)
+    s.commit()
+    return {'access_token': key, 'token_type': 'bearer', 'expires_in_seconds': 86400}
+
+
+@app.post('/credentials', status_code=201)
+def credentials(payload: CredentialCreate, c=Depends(require('credentials')), s=Depends(db)):
+    if not set(payload.scopes) <= ROLES[payload.role]:
+        raise HTTPException(422, 'Scope exceeds role')
+    token, credential = issue(s, c.tenant_id, payload.subject, payload.role, payload.scopes, payload.expires_hours)
+    audit(s, c.tenant_id, 'credential.created', credential.id, c.id)
+    s.commit()
+    return {'id': credential.id, 'api_key': token}
+
+
+@app.post('/admin/worker-credentials', dependencies=[Depends(admin)])
+def worker_credentials(payload: WorkerCreate, s=Depends(db)):
+    scope(s, payload.tenant_id)
+    if not s.get(Tenant, payload.tenant_id):
+        raise HTTPException(404, 'Tenant not found')
+    token, credential = issue(s, payload.tenant_id, payload.subject, 'worker', ROLES['worker'])
+    audit(s, payload.tenant_id, 'credential.worker_created', credential.id)
+    s.commit()
+    return {'id': credential.id, 'api_key': token}
+
+
+@app.delete('/credentials/{credential_id}')
+def revoke(credential_id: str, c=Depends(require('credentials')), s=Depends(db)):
+    credential = s.scalar(select(Credential).where(Credential.id == credential_id, Credential.tenant_id == c.tenant_id))
+    if not credential:
+        raise HTTPException(404, 'Credential not found')
+    credential.revoked = True
+    audit(s, c.tenant_id, 'credential.revoked', credential.id, c.id)
+    s.commit()
+    return {'revoked': True}
+
 
 @app.get('/agents')
-def agents(tenant:Tenant=Depends(tenant_auth)):return {'agents':list(AGENTS.values()),'count':len(AGENTS)}
+def agents(c=Depends(require('read'))):
+    return {'agents': list(AGENTS.values()), 'count': len(AGENTS)}
+
+
+@app.get('/platforms')
+def platforms(c=Depends(require('read'))):
+    return {name: adapter.capabilities() for name, adapter in ADAPTERS.items()}
+
+
+@app.get('/models')
+def models(c=Depends(require('read'))):
+    return MODEL
+
 
 @app.get('/budget')
-def budget(tenant:Tenant=Depends(tenant_auth)):
-    return {'budget_usd':tenant.budget_usd,'spent_usd':tenant.spent_usd,'reserved_usd':tenant.reserved_usd,'available_usd':round(tenant.budget_usd-tenant.spent_usd-tenant.reserved_usd,6)}
+def budget(c=Depends(require('read')), s=Depends(db)):
+    tenant = s.get(Tenant, c.tenant_id)
+    return {'budget_usd': dollars(tenant.budget_micro), 'spent_usd': dollars(tenant.spent_micro),
+            'reserved_usd': dollars(tenant.reserved_micro),
+            'available_usd': dollars(tenant.budget_micro - tenant.spent_micro - tenant.reserved_micro),
+            'paused': tenant.budget_paused}
 
-@app.post('/tasks',status_code=201)
-def create_task(payload:TaskCreate,tenant:Tenant=Depends(tenant_auth),s:Session=Depends(db)):
-    if payload.agent_id not in AGENTS:raise HTTPException(422,'Unknown agent')
-    tid=str(uuid.uuid4()); t=Task(id=tid,tenant_id=tenant.id,agent_id=payload.agent_id,title=payload.title,brief=payload.brief,status='DRAFT')
-    s.add(t);audit(s,tenant.id,'task.created',tid);s.commit()
-    return {'id':tid,'status':t.status,'agent_id':t.agent_id,'note':'No AI has been called.'}
+
+@app.put('/budget/kill-switch')
+def kill_switch(payload: BudgetSwitch, c=Depends(require('budget')), s=Depends(db)):
+    tenant = lock_tenant(s, c.tenant_id)
+    tenant.budget_paused = payload.paused
+    audit(s, c.tenant_id, 'budget.paused' if payload.paused else 'budget.resumed', tenant.id, c.id)
+    s.commit()
+    return {'paused': payload.paused}
+
+
+@app.post('/tasks', status_code=201)
+def create_task(payload: TaskCreate, c=Depends(require('tasks')), s=Depends(db)):
+    if payload.agent_id not in AGENTS:
+        raise HTTPException(422, 'Unknown agent')
+    task = Task(id=uid(), tenant_id=c.tenant_id, agent_id=payload.agent_id,
+                title=payload.title, brief=payload.brief, status='DRAFT')
+    s.add(task)
+    audit(s, c.tenant_id, 'task.created', task.id, c.id)
+    s.commit()
+    return {'id': task.id, 'status': task.status, 'agent_id': task.agent_id, 'note': 'No AI has been called.'}
+
 
 @app.get('/tasks')
-def tasks(tenant:Tenant=Depends(tenant_auth),s:Session=Depends(db)):
-    return [{'id':t.id,'title':t.title,'status':t.status,'agent_id':t.agent_id} for t in s.scalars(select(Task).where(Task.tenant_id==tenant.id)).all()]
+def tasks(c=Depends(require('read')), s=Depends(db)):
+    return [{'id': t.id, 'title': t.title, 'status': t.status, 'agent_id': t.agent_id}
+            for t in s.scalars(select(Task).where(Task.tenant_id == c.tenant_id))]
+
 
 @app.post('/tasks/{task_id}/reserve')
-def reserve(task_id:str,payload:ReserveRequest,tenant:Tenant=Depends(tenant_auth),s:Session=Depends(db)):
-    # UPDATE with budget condition is atomic under PostgreSQL; do not depend on stale ORM reads.
-    from sqlalchemy import update
-    t=get_task(s,tenant,task_id)
-    if t.status!='DRAFT':raise HTTPException(409,'Can only reserve DRAFT tasks')
-    stmt=update(Tenant).where(Tenant.id==tenant.id,Tenant.disabled.is_(False),Tenant.spent_usd+Tenant.reserved_usd+payload.estimate_usd<=Tenant.budget_usd).values(reserved_usd=Tenant.reserved_usd+payload.estimate_usd)
-    if s.execute(stmt).rowcount!=1:s.rollback();raise HTTPException(402,'Tenant budget exceeded')
-    t.status='RESERVED';t.requested_cost_usd=payload.estimate_usd
-    s.add(CostEvent(id=str(uuid.uuid4()),tenant_id=tenant.id,task_id=t.id,type='RESERVE',amount_usd=payload.estimate_usd))
-    audit(s,tenant.id,'task.reserved',t.id);s.commit()
-    return {'id':t.id,'status':t.status,'reserved_usd':payload.estimate_usd,'model_calls':0}
+def reserve(task_id: str, payload: ReserveRequest, c=Depends(require('reserve')), s=Depends(db)):
+    tenant = lock_tenant(s, c.tenant_id)
+    task = task_for(s, c.tenant_id, task_id)
+    amount = micro(payload.estimate_usd)
+    if task.reserve_key == payload.idempotency_key and task.reserved_micro == amount:
+        return {'id': task.id, 'status': task.status, 'reserved_usd': dollars(amount), 'deduplicated': True}
+    if task.status != 'DRAFT':
+        raise HTTPException(409, 'Can only reserve DRAFT tasks')
+    if tenant.budget_paused or tenant.spent_micro + tenant.reserved_micro + amount > tenant.budget_micro:
+        raise HTTPException(402, 'Budget paused or exceeded')
+    tenant.reserved_micro += amount
+    task.reserved_micro, task.reserve_key, task.status = amount, payload.idempotency_key, 'RESERVED'
+    task.expires_at = now() + timedelta(minutes=15)
+    event(s, c.tenant_id, task, 'RESERVE', amount)
+    audit(s, c.tenant_id, 'task.reserved', task.id, c.id)
+    s.commit()
+    return {'id': task.id, 'status': task.status, 'reserved_usd': dollars(amount), 'model_calls': 0}
+
+
+def claim(s, c, task_id):
+    tenant = lock_tenant(s, c.tenant_id)
+    task = task_for(s, c.tenant_id, task_id)
+    if tenant.budget_paused:
+        raise HTTPException(402, 'Budget paused')
+    if task.status != 'RESERVED' or task.expires_at.replace(tzinfo=now().tzinfo) <= now():
+        raise HTTPException(409, 'Reservation unavailable or expired')
+    task.status = 'RUNNING'
+    audit(s, c.tenant_id, 'task.claimed', task.id, c.id)
+    s.commit()
+    return task
+
+
+@app.post('/tasks/{task_id}/claim')
+def claim_task(task_id: str, c=Depends(require('execute')), s=Depends(db)):
+    task = claim(s, c, task_id)
+    return {'id': task.id, 'status': task.status}
+
+
+def settle_receipt(s, c, task_id, key, receipt):
+    tenant = lock_tenant(s, c.tenant_id)
+    task = task_for(s, c.tenant_id, task_id)
+    if task.settle_key == key:
+        if task.receipt != receipt:
+            raise HTTPException(409, 'Idempotency key reused with different receipt')
+        return task
+    if task.status not in {'RUNNING', 'RECONCILIATION_REQUIRED'}:
+        raise HTTPException(409, 'Task must be claimed by trusted worker')
+    tenant.reserved_micro -= task.reserved_micro
+    tenant.spent_micro += receipt['actual_micro']
+    # Record even an unexpectedly high actual bill and stop further spending.
+    if receipt['actual_micro'] > task.reserved_micro or tenant.spent_micro + tenant.reserved_micro > tenant.budget_micro:
+        tenant.budget_paused = True
+    task.actual_micro, task.output, task.receipt = receipt['actual_micro'], receipt['output'], receipt
+    task.settle_key, task.status = key, 'PENDING_APPROVAL'
+    event(s, c.tenant_id, task, 'SETTLE', receipt['actual_micro'], receipt)
+    audit(s, c.tenant_id, 'task.settled', task.id, c.id)
+    try:
+        s.commit()
+    except IntegrityError:
+        s.rollback()
+        raise HTTPException(409, 'Receipt already settled')
+    return task
+
 
 @app.post('/tasks/{task_id}/settle')
-def settle(task_id:str,payload:SettleRequest,tenant:Tenant=Depends(tenant_auth),s:Session=Depends(db)):
-    from sqlalchemy import update
-    t=get_task(s,tenant,task_id)
-    if t.status!='RESERVED':raise HTTPException(409,'Task must be RESERVED')
-    # In this P0 demo, settlement is an explicit test/harness operation, not a genuine provider receipt.
-    # Do not call this endpoint from an untrusted client in production: worker-only authorization needed.
-    if payload.actual_usd>t.requested_cost_usd:raise HTTPException(409,'Actual cost exceeds reservation; reconcile via privileged finance flow')
-    s.execute(update(Tenant).where(Tenant.id==tenant.id).values(reserved_usd=Tenant.reserved_usd-t.requested_cost_usd,spent_usd=Tenant.spent_usd+payload.actual_usd))
-    t.status='PENDING_APPROVAL';t.output=payload.output
-    s.add(CostEvent(id=str(uuid.uuid4()),tenant_id=tenant.id,task_id=t.id,type='SETTLE_SIMULATED',amount_usd=payload.actual_usd,note='P0 simulation only'))
-    audit(s,tenant.id,'task.settled_simulated',t.id);s.commit()
-    return {'id':t.id,'status':t.status,'actual_usd':payload.actual_usd,'warning':'Simulated usage only'}
+def settle(task_id: str, payload: SettleRequest, c=Depends(require('settle')), s=Depends(db)):
+    if payload.receipt.model != MODEL['model']:
+        raise HTTPException(422, 'Unsupported receipt model')
+    usage = payload.receipt.model_dump(exclude={'provider', 'model', 'receipt_id'})
+    amount = usage_cost(usage)
+    if micro(payload.actual_usd) != amount:
+        raise HTTPException(422, 'Amount does not match provider usage rate card')
+    receipt = {'provider': payload.receipt.provider, 'model': payload.receipt.model,
+               'receipt_id': payload.receipt.receipt_id, 'usage': usage,
+               'actual_micro': amount, 'output': payload.output}
+    task = settle_receipt(s, c, task_id, payload.idempotency_key, receipt)
+    return {'id': task.id, 'status': task.status, 'actual_usd': dollars(task.actual_micro)}
+
+
+@app.post('/tasks/{task_id}/execute')
+def execute(task_id: str, payload: KeyRequest, c=Depends(require('execute')), s=Depends(db)):
+    if not enabled():
+        raise HTTPException(503, 'Model calls disabled')
+    existing = task_for(s, c.tenant_id, task_id)
+    if existing.settle_key == payload.idempotency_key:
+        return {'id': existing.id, 'status': existing.status, 'deduplicated': True}
+    task = claim(s, c, task_id)
+    provider = AnthropicProvider()
+    try:
+        tokens = provider.count_tokens(task.brief)
+        worst = usage_cost({'input_tokens': tokens, 'output_tokens': MODEL['max_output_tokens']})
+        tenant = lock_tenant(s, c.tenant_id)
+        task = task_for(s, c.tenant_id, task_id)
+        if task.status != 'RUNNING':
+            raise HTTPException(409, 'Task changed during token estimation; generation refused')
+        if task.expires_at.replace(tzinfo=now().tzinfo) <= now():
+            task.status = 'RECONCILIATION_REQUIRED'
+            audit(s, c.tenant_id, 'task.reconciliation_required', task.id, c.id)
+            s.commit()
+            raise HTTPException(409, 'Claim expired; generation refused')
+        if tokens > MODEL['max_input_tokens'] or worst > task.reserved_micro:
+            # Counting incurs no generation; reservation can be recovered safely.
+            task.status = 'RESERVED'
+            s.commit()
+            raise HTTPException(402, 'Token limit or reservation insufficient; no generation made')
+        if tenant.budget_paused:
+            task.status = 'RESERVED'
+            s.commit()
+            raise HTTPException(402, 'Budget paused; no generation made')
+        s.commit()
+        receipt = provider.generate(task.brief, MODEL['max_output_tokens'])
+        task = settle_receipt(s, c, task_id, payload.idempotency_key, receipt)
+    except HTTPException:
+        raise
+    except Exception:
+        s.rollback()
+        lock_tenant(s, c.tenant_id)
+        task = task_for(s, c.tenant_id, task_id)
+        if task.status == 'RUNNING':
+            task.status = 'RECONCILIATION_REQUIRED'
+            audit(s, c.tenant_id, 'task.reconciliation_required', task.id, c.id)
+            s.commit()
+        raise HTTPException(502, 'Provider outcome uncertain; funds held, reconcile receipt before retry')
+    return {'id': task.id, 'status': task.status, 'actual_usd': dollars(task.actual_micro)}
+
+
+def release_reserved(s, tenant, task, key, actor):
+    tenant.reserved_micro -= task.reserved_micro
+    task.release_key, task.status = key, 'RELEASED'
+    event(s, tenant.id, task, 'RELEASE', task.reserved_micro)
+    audit(s, tenant.id, 'task.released', task.id, actor)
+
+
+@app.post('/tasks/{task_id}/release')
+def release(task_id: str, payload: KeyRequest, c=Depends(require('release')), s=Depends(db)):
+    tenant = lock_tenant(s, c.tenant_id)
+    task = task_for(s, c.tenant_id, task_id)
+    if task.release_key == payload.idempotency_key:
+        return {'id': task.id, 'status': task.status, 'deduplicated': True}
+    if task.status != 'RESERVED':
+        raise HTTPException(409, 'Only undispatched reservations can be released')
+    release_reserved(s, tenant, task, payload.idempotency_key, c.id)
+    s.commit()
+    return {'id': task.id, 'status': task.status}
+
+
+@app.post('/maintenance/recover')
+def recover(c=Depends(require('recover')), s=Depends(db)):
+    tenant = lock_tenant(s, c.tenant_id)
+    expired = s.scalars(select(Task).where(Task.tenant_id == c.tenant_id, Task.expires_at <= now(),
+                                           Task.status.in_(['RESERVED', 'RUNNING']))).all()
+    released, held = 0, 0
+    for task in expired:
+        if task.status == 'RESERVED':
+            release_reserved(s, tenant, task, 'timeout-recovery', c.id)
+            released += 1
+        else:
+            task.status = 'RECONCILIATION_REQUIRED'
+            audit(s, tenant.id, 'task.reconciliation_required', task.id, c.id)
+            held += 1
+    s.commit()
+    return {'released': released, 'held_for_reconciliation': held}
+
 
 @app.post('/tasks/{task_id}/approve')
-def approve(task_id:str,tenant:Tenant=Depends(tenant_auth),s:Session=Depends(db)):
-    t=get_task(s,tenant,task_id)
-    if t.status!='PENDING_APPROVAL':raise HTTPException(409,'Task not awaiting approval')
-    # P0 tenant-owner API key. P1 must implement real user RBAC and dual control.
-    t.status='APPROVED';audit(s,tenant.id,'task.approved',t.id);s.commit()
-    return {'id':t.id,'status':t.status}
+def approve(task_id: str, c=Depends(require('approve')), s=Depends(db)):
+    lock_tenant(s, c.tenant_id)
+    task = task_for(s, c.tenant_id, task_id)
+    if task.status == 'APPROVED':
+        return {'id': task.id, 'status': task.status}
+    if task.status != 'PENDING_APPROVAL':
+        raise HTTPException(409, 'Task not awaiting approval')
+    task.status, task.approved_by = 'APPROVED', c.id
+    audit(s, c.tenant_id, 'task.approved', task.id, c.id)
+    s.commit()
+    return {'id': task.id, 'status': task.status}
+
 
 @app.post('/tasks/{task_id}/publication-request')
-def publication(task_id:str,payload:PublishRequest,tenant:Tenant=Depends(tenant_auth),s:Session=Depends(db)):
-    t=get_task(s,tenant,task_id)
-    if t.status!='APPROVED':raise HTTPException(409,'Approval is required')
-    if payload.platform not in {'threads','instagram','facebook','tiktok'}:raise HTTPException(422,'Unknown platform')
-    prev=s.scalar(select(Publication).where(Publication.tenant_id==tenant.id,Publication.idempotency_key==payload.idempotency_key))
-    if prev:return {'id':prev.id,'status':prev.status,'deduplicated':True}
-    pub=Publication(id=str(uuid.uuid4()),tenant_id=tenant.id,task_id=t.id,platform=payload.platform,idempotency_key=payload.idempotency_key)
-    s.add(pub);audit(s,tenant.id,'publication.manual_queued',pub.id);s.commit()
-    return {'id':pub.id,'status':pub.status,'deduplicated':False,'note':'P0 never posts to social platforms'}
+def publication(task_id: str, payload: PublishRequest, c=Depends(require('publish')), s=Depends(db)):
+    lock_tenant(s, c.tenant_id)
+    task = task_for(s, c.tenant_id, task_id)
+    if task.status != 'APPROVED' or not task.approved_by:
+        raise HTTPException(409, 'Owner approval is required')
+    previous = s.scalar(select(Publication).where(Publication.tenant_id == c.tenant_id,
+                                                 Publication.idempotency_key == payload.idempotency_key))
+    if previous:
+        if previous.task_id != task_id or previous.platform != payload.platform:
+            raise HTTPException(409, 'Idempotency key reused with different publication')
+        return {'id': previous.id, 'status': previous.status, 'deduplicated': True}
+    publication = Publication(id=uid(), tenant_id=c.tenant_id, task_id=task.id,
+                              platform=payload.platform, idempotency_key=payload.idempotency_key)
+    s.add(publication)
+    audit(s, c.tenant_id, 'publication.manual_queued', publication.id, c.id)
+    s.commit()
+    return {'id': publication.id, 'status': publication.status, 'deduplicated': False,
+            'note': 'Manual only. No platform API request or posted-content claim.'}
+
 
 @app.get('/audit')
-def audits(tenant:Tenant=Depends(tenant_auth),s:Session=Depends(db)):
-    return [{'action':a.action,'resource_id':a.resource_id} for a in s.scalars(select(Audit).where(Audit.tenant_id==tenant.id)).all()]
+def audits(c=Depends(require('read')), s=Depends(db)):
+    return [{'action': a.action, 'resource_id': a.resource_id, 'actor_id': a.actor_id}
+            for a in s.scalars(select(Audit).where(Audit.tenant_id == c.tenant_id))]
