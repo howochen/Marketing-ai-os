@@ -1,0 +1,13 @@
+# Threads OAuth與加密憑證
+
+POST /threads/oauth/start只接受既有owner/credentials權限，使用256bit以上隨機state與獨立browser nonce，DB只存SHA256；綁tenant／actor／固定HTTPS redirect，10分鐘期限。callback需state和Secure/HttpOnly/SameSite=Lax cookie，同時驗證owner未撤銷、未過期及環境一致。PostgreSQL以state token hash的窄SELECT policy取得Tenant，之後套回Tenant RLS並鎖定。先把state標記used並commit，再交換code；失敗需重新開始，不重放交換。DB trigger禁止更改binding或將已用state恢復未用。
+
+後端交換短效／長效Token，再使用官方me與debug查詢核對app、user、scopes及expires_at。只有回應可驗證才存ACTIVE；來源明確區分MOCK/OFFICIAL_API，不能靠重授權將Mock連接升級為正式證據。OAuth callback不需要將MOS Bearer放到URL。連接清單、HTTP response、Audit、Prompt及一般API輸出不含Token或密文。
+
+Token以PyCA Fernet認證加密；密文內同時綁tenant_id和connection_id，跨Tenant搬動密文會驗真失敗。DB token_reference是UUID、token_ciphertext是密文；key只讀MOS_THREADS_TOKEN_KEY外部來源。撤銷時清除密文、停用帳號並記時間；同時請使用者到Threads移除App權限。本地撤銷不是Provider已撤銷證明。
+
+POST /threads/connections/{id}/refresh僅owner可用、Token必須未過期且本地至少24h，依官方refresh grant更新，再讀me/debug驗證同一帳號與有效權限。無限自動refresh／retry未加入。重新授權重走OAuth、保留連接與審計歷史並關閉帳號發布開關；舊Publication不能替換帳號或版本。
+
+Docker禁用access log；請手動uvicorn啟動也加 `--no-access-log`，反向代理不可記錄callback query或官方token交換URL。Log filter遮罩code/state/access_token/input_token/client_secret及環境Secret，HTTPX/httpcore敏感URL紀錄降至WARNING。這不涵蓋管理者另行安裝的APM、封包擷取或資料庫直接匯出，正式營運前需獨立審核；DB備份仍應視為敏感資料。
+
+目前未配置Meta App／帳號／key；未執行真實OAuth。正式HTTPS proxy、App版本、權限與帳戶可用性需平台設定後查證。參見THREADS_META_APP_SETUP.md與OFFICIAL_API_RESEARCH.md。

@@ -1,5 +1,8 @@
-name: P1.4 offline checks
+name: Threads offline contract checks
 on: [push, pull_request]
+env:
+  MOS_THREADS_HTTP_ENABLED: "false"
+  MOS_THREADS_PUBLISH_ENABLED: "false"
 permissions:
   contents: read
 jobs:

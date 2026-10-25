@@ -114,6 +114,53 @@ class Publication(Base):
     status: Mapped[str] = mapped_column(String(30), default='MANUAL_REQUIRED')
     revision_id: Mapped[str | None] = mapped_column(String(36))
     content_snapshot: Mapped[str | None] = mapped_column(Text)
+    platform_account_id: Mapped[str | None] = mapped_column(String(36))
+    immutable_content_hash: Mapped[str | None] = mapped_column(String(64))
+    container_id: Mapped[str | None] = mapped_column(String(100))
+    published_media_id: Mapped[str | None] = mapped_column(String(100))
+    provider_request_id: Mapped[str | None] = mapped_column(String(200))
+    publish_status: Mapped[str] = mapped_column(String(40),default='MANUAL_REQUIRED')
+    attempt_count: Mapped[int] = mapped_column(BigInteger,default=0)
+    last_error_category: Mapped[str | None] = mapped_column(String(60))
+    verification_status: Mapped[str] = mapped_column(String(30),default='NOT_VERIFIED')
+    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    permalink: Mapped[str | None] = mapped_column(Text)
+    dispatch_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    authorized_by: Mapped[str | None] = mapped_column(String(36))
+
+
+class ThreadsConnection(Base):
+    __tablename__='threads_connections'
+    __table_args__=(UniqueConstraint('tenant_id','id'),UniqueConstraint('tenant_id','threads_user_id'),)
+    id: Mapped[str]=mapped_column(String(36),primary_key=True)
+    tenant_id: Mapped[str]=mapped_column(ForeignKey('tenants.id'),index=True)
+    threads_user_id: Mapped[str]=mapped_column(String(100))
+    username: Mapped[str]=mapped_column(String(100))
+    granted_scopes: Mapped[list]=mapped_column(JSON)
+    token_reference: Mapped[str]=mapped_column(String(36))
+    token_ciphertext: Mapped[str | None]=mapped_column(Text)
+    token_expires_at: Mapped[datetime]=mapped_column(DateTime(timezone=True))
+    token_issued_at: Mapped[datetime]=mapped_column(DateTime(timezone=True))
+    connection_status: Mapped[str]=mapped_column(String(30))
+    evidence_source: Mapped[str]=mapped_column(String(20))
+    publishing_enabled: Mapped[bool]=mapped_column(Boolean,default=False)
+    last_verified_at: Mapped[datetime]=mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime]=mapped_column(DateTime(timezone=True),default=now)
+    revoked_at: Mapped[datetime | None]=mapped_column(DateTime(timezone=True))
+
+
+class ThreadsOAuthState(Base):
+    __tablename__='threads_oauth_states'
+    id: Mapped[str]=mapped_column(String(36),primary_key=True)
+    tenant_id: Mapped[str]=mapped_column(ForeignKey('tenants.id'),index=True)
+    actor_id: Mapped[str]=mapped_column(String(36))
+    token_hash: Mapped[str]=mapped_column(String(64),unique=True)
+    browser_hash: Mapped[str]=mapped_column(String(64))
+    redirect_uri: Mapped[str]=mapped_column(Text)
+    expires_at: Mapped[datetime]=mapped_column(DateTime(timezone=True))
+    used_at: Mapped[datetime | None]=mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime]=mapped_column(DateTime(timezone=True),default=now)
 
 
 class Audit(Base):

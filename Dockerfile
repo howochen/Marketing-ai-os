@@ -10,7 +10,7 @@ COPY skills/industries ./skills/industries
 COPY migrations ./migrations
 COPY alembic.ini ./
 EXPOSE 8000
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--no-proxy-headers", "--timeout-keep-alive", "5"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--no-proxy-headers", "--no-access-log", "--timeout-keep-alive", "5"]
 
 FROM runtime AS tests
 COPY requirements-dev.txt ./

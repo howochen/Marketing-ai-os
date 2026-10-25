@@ -146,7 +146,7 @@ def health():
 def ready(s=Depends(db)):
     try:
         version = s.scalar(text('SELECT version_num FROM alembic_version'))
-        if version != '0008' or not s.get(RateVersion, rate_id(MODEL)):
+        if version != '0009' or not s.get(RateVersion, rate_id(MODEL)):
             raise ValueError('Schema or rate card not ready')
     except Exception:
         raise HTTPException(503, 'Database or schema unavailable') from None
@@ -489,6 +489,8 @@ def release(task_id: str, payload: KeyRequest, c=Depends(require('release')), s=
 def recover(c=Depends(require('recover')), s=Depends(db)):
     from .durable_gate import recover_attempts
     durable=recover_attempts(s,c)
+    from .threads_publisher import recover_publications
+    threads_held=recover_publications(s,c)
     tenant = lock_tenant(s, c.tenant_id)
     expired = s.scalars(select(Task).where(Task.tenant_id == c.tenant_id, Task.expires_at <= now(),
                                            Task.status.in_(['RESERVED', 'RUNNING']),
@@ -504,7 +506,7 @@ def recover(c=Depends(require('recover')), s=Depends(db)):
             audit(s, tenant.id, 'task.reconciliation_required', task.id, c.id)
             held += 1
     s.commit()
-    return {'released': released+durable['cancelled'], 'held_for_reconciliation': held+durable['uncertain']}
+    return {'released': released+durable['cancelled'], 'held_for_reconciliation': held+durable['uncertain']+threads_held}
 
 
 @app.post('/tasks/{task_id}/approve')
@@ -573,3 +575,11 @@ app.include_router(durable_router)
 
 from .spend_authorization import router as spend_router
 app.include_router(spend_router)
+
+from .threads_routes import router as threads_router
+
+from . import threads_publisher
+app.include_router(threads_router)
+from .threads_api import ThreadsFailure
+from .threads_routes import failure_handler
+app.add_exception_handler(ThreadsFailure,failure_handler)

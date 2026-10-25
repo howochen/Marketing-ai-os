@@ -1,0 +1,31 @@
+{
+  "result": "PASS",
+  "project": "mos-pub-test",
+  "backup_seconds": 1.5269924000022002,
+  "restore_and_verify_seconds": 14.337691499997163,
+  "synthetic_snapshot_rows_lost": 0,
+  "rpo_scope": "Snapshot only; no writes during backup. No PITR or continuous RPO guarantee.",
+  "fingerprints_before_and_restored": {
+    "tenants": "148|bfa6d996c4a9c97682433232989539bb",
+    "tasks": "182|b13328f43132fde7b32fb4c51ef4abe5",
+    "credentials": "452|48143c598f8f6f3fc04ca19b267c500a",
+    "login_challenges": "150|a9c5f5b196f4422925bef8f083c465c0",
+    "cost_events": "204|bf8e312139633f82fce631d2c49b61c0",
+    "audit_logs": "1547|b51c967e0a89a973d7b79bad386c5b11",
+    "publications": "25|ed59a28be1d65d4d9832a8e07b3d180c",
+    "rate_versions": "3|f3a8552d85f2c6d7d44a506dff7ac53a",
+    "rate_limits": "2|3c2cc3fec08918940db0f1c05ca2a20a",
+    "draft_revisions": "79|385b9a854f84c9fb42b2d5e49febd43c",
+    "revision_approvals": "28|2eec79023cfb5d489a4f3879ff64a860",
+    "revision_scores": "2|4b7d53eaea1fad8e196a67ac66a936be",
+    "test_batches": "40|6099fb278942293b7e4c31c87abcbbad",
+    "batch_attempts": "30|7144a31fd4b05744a265738c721a6a24",
+    "reconciliation_evidence": "5|6ecb7fc152e83e338dc974faa75b4da6",
+    "spend_authorizations": "2|c9e7d58381b6c9074b29c3842ad0c23f",
+    "threads_connections": "20|fc77e43d3f9b146a0e0ceabefc868f39",
+    "threads_oauth_states": "22|1eb716b9c7484e0124d258ff99d711fc"
+  },
+  "permission_mode": "0600 file / 0700 directory",
+  "negative_checks": 4,
+  "scope": "isolated synthetic data only; credentials deleted in source and restored to independent target"
+}
