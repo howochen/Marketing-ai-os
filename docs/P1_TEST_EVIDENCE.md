@@ -14,7 +14,7 @@ mypy擴大到7個模組，見 p1/types.txt。pip-audit固定runtime/dev零已知
 
 ## 遠端 CI
 
-**PENDING_REMOTE_CI**：需推送本分支候選commit，確認exact headSha、兩套suite、mypy、掃描與既有backup drill實際成功後，才完成最終PASS。不以來源P0.5成功替代。
+**REMOTE_CI_PASS**：程式碼候選 SHA `81c646ef7595a5c6dc5254c7cf8a273d871cad2c` 的 [run 40154859877](https://github.com/howochen/Marketing-ai-os/actions/runs/40154859877) 已實際 completed/success；sqlite/postgres 兩個 jobs 成功，含7模組 mypy、兩套完整suite、pip-audit、commit whitespace及既有synthetic backup/restore drill。metadata在 p1/remote-ci.json，實際輸出摘要在 p1/remote-ci-summary.txt。後續收尾只改docs；最終SHA及其workflow另由交付訊息確認。
 
 ## 可重現合成案例
 

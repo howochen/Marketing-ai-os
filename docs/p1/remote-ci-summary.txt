@@ -1,0 +1,5 @@
+sqlite	Run mypy	2026-10-25T02:33:19.3038456Z Success: no issues found in 7 source files
+sqlite	Run pytest -q	2026-10-25T02:33:26.7017609Z 60 passed, 1 skipped, 1 deselected, 1 warning in 5.70s
+sqlite	Run pip-audit -r requirements-dev.txt	2026-10-25T02:33:35.9537381Z No known vulnerabilities found
+postgres	Test with a non-owner, non-superuser runtime role	2026-10-25T02:33:33.7398999Z 61 passed, 1 deselected, 1 warning in 7.84s
+postgres	Synthetic backup and independent restore drill	2026-10-25T02:33:36.4697570Z {"result": "PASS", "project": "mos-p05-test", "backup_seconds": 0.16611444800003028, "restore_and_verify_seconds": 0.7387022839999986, "synthetic_snapshot_rows_lost": 0, "rpo_scope": "Snapshot only; no writes during backup. No PITR or continuous RPO guarantee.", "permission_mode": "0600 file / 0700 directory", "negative_checks": 4, "scope": "isolated synthetic data only; credentials deleted in source and restored to independent target"}

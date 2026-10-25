@@ -34,3 +34,7 @@ $env:MOS_LIVE_TESTS = 'false'
 A01–A24 仍為靜態註冊 profiles，舊 status REGISTERED_NOT_EXECUTING 表示沒有常駐角色程序，不反映單一 task state。A09 額外 executor=THREADS_MOCK_ONLY；A01/A21/A23 額外 rule_role。只有 A09 有 executor，沒有24個常駐 processes。
 
 新增依賴：0。沒有 OpenAI adapter 實作、RAG、Agent framework、workflow engine 或額外模型呼叫。遠端 CI 最終結果見 P1_TEST_EVIDENCE；未取得本分支成功前不宣稱 PASS。
+
+## 驗收收尾
+
+程式碼候選81c646ef7595a5c6dc5254c7cf8a273d871cad2c已推送，遠端CI run40154859877實際成功；P1 PASS僅限離線Mock範圍。完整head/job與測試證據見P1_TEST_EVIDENCE及p1/remote-ci.json。最後文件提交不改執行程式，交付時再確認其exact SHA的CI。
