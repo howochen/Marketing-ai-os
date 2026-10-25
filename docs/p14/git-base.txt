@@ -1,0 +1,3 @@
+codex/marketing-ai-os-p1-3-durable-gate 2b822a19e2cc6ed8428c3321ae84b752357a5bca
+codex/marketing-ai-os-p1-4-live-readiness 2b822a19e2cc6ed8428c3321ae84b752357a5bca
+develop 53ef77487e18d512d9349fc005c03f3b2c5d9dbf

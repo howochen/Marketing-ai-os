@@ -1,0 +1,9 @@
+# MOS-P1.4-001 final acceptance
+
+Status: PARTIAL pending exact-SHA remote CI verification. Local SQLite238/PG239 pass, new26 tests pass on both, mypy19, audit no known vulnerabilities, Docker/16-table restore pass. Scope is offline development of locked real HTTP wiring and internal approval records; zero real model requests, USD0 actual model API costs. P1.5 execution and Production remain NO-GO.
+
+Source2b822a19e2cc6ed8428c3321ae84b752357a5bca is preserved; branch codex/marketing-ai-os-p1-4-live-readiness. No dependency or paid service added. Reuse existing HTTPX0.28.1 (BSD-3-Clause), Pydantic2.14.1/SQLAlchemy2.1.6/Alembic1.20.1 (MIT), PostgreSQL16 (PostgreSQL License), pytest9.1.1 (MIT). Official SDK would add a second interface/dependency without replacing durable authorization, so not introduced. Current pins/audit process is retained; a future SDK migration needs separate version/license/security review. No Agent framework/vector DB/new daemon.
+
+Acceptance evidence: P14_PROVIDER_VERIFICATION (today's official sources, account not verified); P14_TRANSPORT_SECURITY (unconditional lock/no public bypass); P14_AUTHORIZATION_DESIGN (append-only/RLS dual-auth non-executable records); P14_SMOKE_TEST_PLAN (two independent rounds/invoice distinction); P14_TEST_EVIDENCE and p14 raw outputs (local/remote tests). P15_EXECUTION_CHECKLIST separates all six readiness decisions.
+
+Codex usage tokens are not exposed by available per-task tools. Mock provider usage and simulated costs are never actual billing. Existing normal Mock fixture1000input+200output costs200microUSD for Luna; full reference reservation1536microUSD. No new host/service: temporary isolated PostgreSQL/API/build/test Docker resources on existing machine plus existing CI, actual Actions subscription/quota charges not checked. No real model call occurred, no real key was acquired or stored, no account models probe was attempted.

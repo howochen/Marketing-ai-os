@@ -1,0 +1,1 @@
+{"health": {"status": "ok", "model_calls_enabled": false, "publishing_enabled": false}, "readiness": {"status": "ready", "schema": "0008"}, "provider_key_present": false, "live_release_rejection": "LIVE_EXECUTION_NOT_AUTHORIZED"}

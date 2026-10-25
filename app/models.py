@@ -268,6 +268,22 @@ class BatchAttempt(Base):
     elapsed_ms: Mapped[int | None]=mapped_column(BigInteger)
 
 
+class SpendAuthorization(Base):
+    __tablename__='spend_authorizations'
+    __table_args__=(UniqueConstraint('tenant_id','idempotency_key'),
+        ForeignKeyConstraint(['tenant_id','batch_id'],['test_batches.tenant_id','test_batches.id']),
+        CheckConstraint("status='INTERNAL_APPROVAL_ONLY'"),)
+    id: Mapped[str]=mapped_column(String(36),primary_key=True)
+    tenant_id: Mapped[str]=mapped_column(ForeignKey('tenants.id'),index=True)
+    batch_id: Mapped[str]=mapped_column(String(36))
+    approver_id: Mapped[str]=mapped_column(String(36))
+    status: Mapped[str]=mapped_column(String(40),default='INTERNAL_APPROVAL_ONLY')
+    idempotency_key: Mapped[str]=mapped_column(String(128))
+    request_hash: Mapped[str]=mapped_column(String(64))
+    terms: Mapped[dict]=mapped_column(JSON)
+    created_at: Mapped[datetime]=mapped_column(DateTime(timezone=True),default=now)
+
+
 class ReconciliationEvidence(Base):
     __tablename__='reconciliation_evidence'
     __table_args__=(UniqueConstraint('tenant_id','attempt_id','idempotency_key'),

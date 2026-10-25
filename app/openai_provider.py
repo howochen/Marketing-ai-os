@@ -1,4 +1,4 @@
-"""Responses API contract rehearsal. A real HTTP transport is deliberately unavailable."""
+"""Responses API contract parser. The default provider permits MockTransport only."""
 import copy
 import json
 import os
@@ -72,7 +72,7 @@ def upper_bound(card: dict, max_output_tokens: int) -> int:
 
 
 class OpenAIProvider:
-    def __init__(self, model: str, transport: httpx.MockTransport | None=None, *, snapshot: dict | None=None, synthetic_only: bool=False) -> None:
+    def __init__(self, model: str, transport: httpx.BaseTransport | None=None, *, snapshot: dict | None=None, synthetic_only: bool=False) -> None:
         if model not in CARDS: raise ValueError('Model not allowlisted')
         self.card=copy.deepcopy(snapshot if snapshot is not None else CARDS[model])
         if self.card['model']!=model or rate_id(self.card)!=rate_id(CARDS[model]):
@@ -136,7 +136,7 @@ class OpenAIProvider:
 
     @staticmethod
     def safe_id(value: object) -> str | None:
-        return value if isinstance(value,str) and 0<len(value)<=200 and value.isascii() and redact(value)==value else None
+        return value if isinstance(value,str) and 0<len(value)<=200 and value.isascii() and value.isprintable() and redact(value)==value else None
 
     def count_tokens(self, prompt: str) -> int:
         full=self.payload(prompt,1)

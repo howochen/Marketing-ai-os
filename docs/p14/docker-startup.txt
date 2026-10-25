@@ -1,0 +1,103 @@
+ Image mos-p14-test-migrate Building
+ Image mos-p14-test-api Building
+#1 [internal] load local bake definitions
+#1 reading from stdin 977B 0.1s done
+#1 DONE 0.1s
+
+#2 [migrate internal] load build definition from Dockerfile
+#2 transferring dockerfile: 778B 0.0s done
+#2 DONE 0.1s
+
+#3 [migrate internal] load metadata for docker.io/library/python:3.12-slim@sha256:a0f57064cbdcd6285fa45f51237ab0b35ea8ebaed06a1f5973e89e19dfb86704
+#3 DONE 0.1s
+
+#4 [migrate internal] load .dockerignore
+#4 transferring context: 93B 0.1s done
+#4 DONE 0.2s
+
+#5 [api internal] load build context
+#5 transferring context: 11.13kB 0.1s done
+#5 DONE 0.1s
+
+#6 [api runtime  1/11] FROM docker.io/library/python:3.12-slim@sha256:a0f57064cbdcd6285fa45f51237ab0b35ea8ebaed06a1f5973e89e19dfb86704
+#6 resolve docker.io/library/python:3.12-slim@sha256:a0f57064cbdcd6285fa45f51237ab0b35ea8ebaed06a1f5973e89e19dfb86704 0.2s done
+#6 DONE 0.2s
+
+#7 [migrate runtime  3/11] COPY requirements.txt constraints.txt ./
+#7 CACHED
+
+#8 [migrate runtime  2/11] WORKDIR /srv
+#8 CACHED
+
+#9 [migrate runtime  4/11] RUN pip install --no-cache-dir -r requirements.txt
+#9 CACHED
+
+#10 [migrate runtime  5/11] COPY app ./app
+#10 DONE 0.2s
+
+#11 [migrate runtime  6/11] COPY config ./config
+#11 DONE 0.3s
+
+#12 [migrate runtime  7/11] COPY agents ./agents
+#12 DONE 0.4s
+
+#13 [api runtime  8/11] COPY skills/threads-copywriting ./skills/threads-copywriting
+#13 DONE 0.2s
+
+#14 [migrate runtime  9/11] COPY skills/industries ./skills/industries
+#14 DONE 0.2s
+
+#15 [migrate runtime 10/11] COPY migrations ./migrations
+#15 DONE 0.3s
+
+#16 [api runtime 11/11] COPY alembic.ini ./
+#16 DONE 0.2s
+
+#17 [migrate] exporting to image
+#17 exporting layers
+#17 exporting layers 1.4s done
+#17 exporting manifest sha256:e7f76ea0411a6f874593459064c2ab529af3669dd0e9682a268e33a000d35c35 0.1s done
+#17 exporting config sha256:6ec845d5d454185fcc1142bad4366c4095b5634c07ac1cee64c9f1bddbacf045 0.1s done
+#17 exporting attestation manifest sha256:d294ffaed8a430a784a28fdebeda4d9fc42dc4ee023934542d9f1d625dcf798b
+#17 exporting attestation manifest sha256:d294ffaed8a430a784a28fdebeda4d9fc42dc4ee023934542d9f1d625dcf798b 0.2s done
+#17 exporting manifest list sha256:5d469d67c834eec3afc9279283d4d199642f11f2843882dc287cc0c16d2924a7
+#17 exporting manifest list sha256:5d469d67c834eec3afc9279283d4d199642f11f2843882dc287cc0c16d2924a7 0.1s done
+#17 naming to docker.io/library/mos-p14-test-migrate:latest
+#17 naming to docker.io/library/mos-p14-test-migrate:latest 0.0s done
+#17 unpacking to docker.io/library/mos-p14-test-migrate:latest
+#17 unpacking to docker.io/library/mos-p14-test-migrate:latest 0.7s done
+#17 ...
+
+#18 [api] exporting to image
+#18 exporting layers 1.4s done
+#18 exporting manifest sha256:f9497257a4336b549fec8d54fd6eb4bde78cfb7c50bc37a3f95a3cabc16e9e44 0.1s done
+#18 exporting config sha256:bfda9a1dda18b580056afa0485386d707dfcdfd9a7efe4fce451d707cb0bf65e 0.1s done
+#18 exporting attestation manifest sha256:980af6761b1b715c06b8e8ac968fe9acc8d8087d78a4ef4101ed171d87c96166 0.2s done
+#18 exporting manifest list sha256:5bce9b6823c6a779dba3e9d184bf53919ad2a083073ec55fb7b195847398bffa 0.1s done
+#18 naming to docker.io/library/mos-p14-test-api:latest 0.0s done
+#18 unpacking to docker.io/library/mos-p14-test-api:latest 0.7s done
+#18 DONE 2.9s
+
+#17 [migrate] exporting to image
+#17 DONE 3.0s
+
+#19 [api] resolving provenance for metadata file
+#19 DONE 0.1s
+
+#20 [migrate] resolving provenance for metadata file
+#20 DONE 0.0s
+ Image mos-p14-test-api Built
+ Image mos-p14-test-migrate Built
+ Container mos-p14-test-db-1 Running
+ Container mos-p14-test-migrate-1 Creating
+ Container mos-p14-test-migrate-1 Created
+ Container mos-p14-test-api-1 Creating
+ Container mos-p14-test-api-1 Created
+ Container mos-p14-test-db-1 Waiting
+ Container mos-p14-test-db-1 Healthy
+ Container mos-p14-test-migrate-1 Starting
+ Container mos-p14-test-migrate-1 Started
+ Container mos-p14-test-migrate-1 Waiting
+ Container mos-p14-test-migrate-1 Exited
+ Container mos-p14-test-api-1 Starting
+ Container mos-p14-test-api-1 Started

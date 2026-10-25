@@ -146,7 +146,7 @@ def health():
 def ready(s=Depends(db)):
     try:
         version = s.scalar(text('SELECT version_num FROM alembic_version'))
-        if version != '0007' or not s.get(RateVersion, rate_id(MODEL)):
+        if version != '0008' or not s.get(RateVersion, rate_id(MODEL)):
             raise ValueError('Schema or rate card not ready')
     except Exception:
         raise HTTPException(503, 'Database or schema unavailable') from None
@@ -570,3 +570,6 @@ def reject_batch_task(s,tid,task_id):
 
 from .durable_gate import router as durable_router
 app.include_router(durable_router)
+
+from .spend_authorization import router as spend_router
+app.include_router(spend_router)
