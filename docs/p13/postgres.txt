@@ -1,0 +1,231 @@
+ Container mos-p13-test-db-1 Running
+ Image mos-p13-test-tests Building
+#1 [internal] load local bake definitions
+#1 reading from stdin 530B 0.2s done
+#1 DONE 0.2s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile: 778B 0.0s done
+#2 DONE 0.1s
+
+#3 [internal] load metadata for docker.io/library/python:3.12-slim@sha256:a0f57064cbdcd6285fa45f51237ab0b35ea8ebaed06a1f5973e89e19dfb86704
+#3 DONE 0.1s
+
+#4 [internal] load .dockerignore
+#4 transferring context: 93B 0.0s done
+#4 DONE 0.0s
+
+#5 [internal] load build context
+#5 transferring context: 245.80kB 0.2s done
+#5 DONE 0.2s
+
+#6 [runtime  1/11] FROM docker.io/library/python:3.12-slim@sha256:a0f57064cbdcd6285fa45f51237ab0b35ea8ebaed06a1f5973e89e19dfb86704
+#6 resolve docker.io/library/python:3.12-slim@sha256:a0f57064cbdcd6285fa45f51237ab0b35ea8ebaed06a1f5973e89e19dfb86704 0.2s done
+#6 DONE 0.2s
+
+#7 [runtime  2/11] WORKDIR /srv
+#7 CACHED
+
+#8 [runtime  3/11] COPY requirements.txt constraints.txt ./
+#8 CACHED
+
+#9 [runtime  4/11] RUN pip install --no-cache-dir -r requirements.txt
+#9 CACHED
+
+#10 [runtime  5/11] COPY app ./app
+#10 DONE 0.3s
+
+#11 [runtime  6/11] COPY config ./config
+#11 DONE 0.3s
+
+#12 [runtime  7/11] COPY agents ./agents
+#12 DONE 0.2s
+
+#13 [runtime  8/11] COPY skills/threads-copywriting ./skills/threads-copywriting
+#13 DONE 0.2s
+
+#14 [runtime  9/11] COPY skills/industries ./skills/industries
+#14 DONE 0.2s
+
+#15 [runtime 10/11] COPY migrations ./migrations
+#15 DONE 0.4s
+
+#16 [runtime 11/11] COPY alembic.ini ./
+#16 DONE 0.2s
+
+#17 [tests 1/4] COPY requirements-dev.txt ./
+#17 DONE 0.2s
+
+#18 [tests 2/4] RUN pip install --no-cache-dir -r requirements-dev.txt
+#18 1.676 Requirement already satisfied: fastapi==0.162.0 in /usr/local/lib/python3.12/site-packages (from -r /srv/requirements.txt (line 2)) (0.162.0)
+#18 1.677 Requirement already satisfied: uvicorn==0.54.0 in /usr/local/lib/python3.12/site-packages (from -r /srv/requirements.txt (line 3)) (0.54.0)
+#18 1.678 Requirement already satisfied: SQLAlchemy==2.1.6 in /usr/local/lib/python3.12/site-packages (from -r /srv/requirements.txt (line 4)) (2.1.6)
+#18 1.679 Requirement already satisfied: pydantic==2.14.1 in /usr/local/lib/python3.12/site-packages (from -r /srv/requirements.txt (line 5)) (2.14.1)
+#18 1.680 Requirement already satisfied: psycopg==3.3.6 in /usr/local/lib/python3.12/site-packages (from psycopg[binary]==3.3.6->-r /srv/requirements.txt (line 6)) (3.3.6)
+#18 1.681 Requirement already satisfied: alembic==1.20.1 in /usr/local/lib/python3.12/site-packages (from -r /srv/requirements.txt (line 7)) (1.20.1)
+#18 1.681 Requirement already satisfied: httpx==0.28.1 in /usr/local/lib/python3.12/site-packages (from -r /srv/requirements.txt (line 8)) (0.28.1)
+#18 1.964 Collecting pytest==9.1.1 (from -r requirements-dev.txt (line 2))
+#18 2.242   Downloading pytest-9.1.1-py3-none-any.whl.metadata (7.6 kB)
+#18 2.350 Collecting pip-audit==2.10.1 (from -r requirements-dev.txt (line 3))
+#18 2.439   Downloading pip_audit-2.10.1-py3-none-any.whl.metadata (28 kB)
+#18 2.950 Collecting mypy==2.4.0 (from -r requirements-dev.txt (line 4))
+#18 3.013   Downloading mypy-2.4.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.4 kB)
+#18 3.024 Requirement already satisfied: starlette>=0.46.0 in /usr/local/lib/python3.12/site-packages (from fastapi==0.162.0->-r /srv/requirements.txt (line 2)) (1.10.0)
+#18 3.025 Requirement already satisfied: typing-extensions>=4.8.0 in /usr/local/lib/python3.12/site-packages (from fastapi==0.162.0->-r /srv/requirements.txt (line 2)) (4.16.0)
+#18 3.026 Requirement already satisfied: typing-inspection>=0.4.2 in /usr/local/lib/python3.12/site-packages (from fastapi==0.162.0->-r /srv/requirements.txt (line 2)) (0.4.4)
+#18 3.027 Requirement already satisfied: annotated-doc>=0.0.2 in /usr/local/lib/python3.12/site-packages (from fastapi==0.162.0->-r /srv/requirements.txt (line 2)) (0.0.5)
+#18 3.027 Requirement already satisfied: opentelemetry-api>=1.44.0 in /usr/local/lib/python3.12/site-packages (from fastapi==0.162.0->-r /srv/requirements.txt (line 2)) (1.45.1)
+#18 3.030 Requirement already satisfied: click>=7.0 in /usr/local/lib/python3.12/site-packages (from uvicorn==0.54.0->-r /srv/requirements.txt (line 3)) (8.5.0)
+#18 3.031 Requirement already satisfied: h11>=0.8 in /usr/local/lib/python3.12/site-packages (from uvicorn==0.54.0->-r /srv/requirements.txt (line 3)) (0.16.0)
+#18 3.038 Requirement already satisfied: annotated-types>=0.6.0 in /usr/local/lib/python3.12/site-packages (from pydantic==2.14.1->-r /srv/requirements.txt (line 5)) (0.8.0)
+#18 3.039 Requirement already satisfied: pydantic-core==2.50.1 in /usr/local/lib/python3.12/site-packages (from pydantic==2.14.1->-r /srv/requirements.txt (line 5)) (2.50.1)
+#18 3.045 Requirement already satisfied: Mako in /usr/local/lib/python3.12/site-packages (from alembic==1.20.1->-r /srv/requirements.txt (line 7)) (1.4.3)
+#18 3.047 Requirement already satisfied: anyio in /usr/local/lib/python3.12/site-packages (from httpx==0.28.1->-r /srv/requirements.txt (line 8)) (4.15.1)
+#18 3.048 Requirement already satisfied: certifi in /usr/local/lib/python3.12/site-packages (from httpx==0.28.1->-r /srv/requirements.txt (line 8)) (2026.10.23)
+#18 3.049 Requirement already satisfied: httpcore==1.* in /usr/local/lib/python3.12/site-packages (from httpx==0.28.1->-r /srv/requirements.txt (line 8)) (1.0.9)
+#18 3.049 Requirement already satisfied: idna in /usr/local/lib/python3.12/site-packages (from httpx==0.28.1->-r /srv/requirements.txt (line 8)) (3.20)
+#18 3.098 Collecting iniconfig>=1.0.1 (from pytest==9.1.1->-r requirements-dev.txt (line 2))
+#18 3.162   Downloading iniconfig-2.3.1-py3-none-any.whl.metadata (2.8 kB)
+#18 3.249 Collecting packaging>=22 (from pytest==9.1.1->-r requirements-dev.txt (line 2))
+#18 3.328   Downloading packaging-26.3-py3-none-any.whl.metadata (3.5 kB)
+#18 3.433 Collecting pluggy<2,>=1.5 (from pytest==9.1.1->-r requirements-dev.txt (line 2))
+#18 3.504   Downloading pluggy-1.7.0-py3-none-any.whl.metadata (5.0 kB)
+#18 3.629 Collecting pygments>=2.7.2 (from pytest==9.1.1->-r requirements-dev.txt (line 2))
+#18 3.719   Downloading pygments-2.21.0-py3-none-any.whl.metadata (2.5 kB)
+#18 3.829 Collecting CacheControl>=0.13.0 (from CacheControl[filecache]>=0.13.0->pip-audit==2.10.1->-r requirements-dev.txt (line 3))
+#18 3.902   Downloading cachecontrol-0.14.4-py3-none-any.whl.metadata (3.1 kB)
+#18 4.028 Collecting cyclonedx-python-lib<12,>=5 (from pip-audit==2.10.1->-r requirements-dev.txt (line 3))
+#18 4.092   Downloading cyclonedx_python_lib-11.12.0-py3-none-any.whl.metadata (6.9 kB)
+#18 4.247 Collecting pip-api>=0.0.28 (from pip-audit==2.10.1->-r requirements-dev.txt (line 3))
+#18 4.325   Downloading pip_api-0.0.35-py3-none-any.whl.metadata (17 kB)
+#18 4.454 Collecting pip-requirements-parser>=32.0.0 (from pip-audit==2.10.1->-r requirements-dev.txt (line 3))
+#18 4.538   Downloading pip_requirements_parser-32.0.1-py3-none-any.whl.metadata (9.3 kB)
+#18 4.712 Collecting requests>=2.31.0 (from pip-audit==2.10.1->-r requirements-dev.txt (line 3))
+#18 4.793   Downloading requests-2.34.2-py3-none-any.whl.metadata (4.8 kB)
+#18 5.043 Collecting rich>=12.4 (from pip-audit==2.10.1->-r requirements-dev.txt (line 3))
+#18 5.110   Downloading rich-15.0.0-py3-none-any.whl.metadata (18 kB)
+#18 5.244 Collecting tomli>=2.2.1 (from pip-audit==2.10.1->-r requirements-dev.txt (line 3))
+#18 5.304   Downloading tomli-2.5.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (10 kB)
+#18 5.387 Collecting tomli-w>=1.2.0 (from pip-audit==2.10.1->-r requirements-dev.txt (line 3))
+#18 5.466   Downloading tomli_w-1.2.0-py3-none-any.whl.metadata (5.7 kB)
+#18 5.602 Collecting platformdirs>=4.2.0 (from pip-audit==2.10.1->-r requirements-dev.txt (line 3))
+#18 5.691   Downloading platformdirs-4.13.5-py3-none-any.whl.metadata (5.5 kB)
+#18 5.794 Collecting mypy_extensions>=1.0.0 (from mypy==2.4.0->-r requirements-dev.txt (line 4))
+#18 5.907   Downloading mypy_extensions-1.1.0-py3-none-any.whl.metadata (1.1 kB)
+#18 5.998 Collecting pathspec>=1.0.0 (from mypy==2.4.0->-r requirements-dev.txt (line 4))
+#18 6.108   Downloading pathspec-1.1.1-py3-none-any.whl.metadata (14 kB)
+#18 6.724 Collecting librt>=0.16.0 (from mypy==2.4.0->-r requirements-dev.txt (line 4))
+#18 6.790   Downloading librt-0.16.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (1.3 kB)
+#18 6.941 Collecting ast-serialize<1.0.0,>=0.11.2 (from mypy==2.4.0->-r requirements-dev.txt (line 4))
+#18 7.004   Downloading ast_serialize-0.13.1-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (1.4 kB)
+#18 7.010 Requirement already satisfied: psycopg-binary==3.3.6 in /usr/local/lib/python3.12/site-packages (from psycopg[binary]==3.3.6->-r /srv/requirements.txt (line 6)) (3.3.6)
+#18 7.314 Collecting msgpack<2.0.0,>=0.5.2 (from CacheControl>=0.13.0->CacheControl[filecache]>=0.13.0->pip-audit==2.10.1->-r requirements-dev.txt (line 3))
+#18 7.424   Downloading msgpack-1.2.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (8.3 kB)
+#18 7.632 Collecting filelock>=3.8.0 (from CacheControl[filecache]>=0.13.0->pip-audit==2.10.1->-r requirements-dev.txt (line 3))
+#18 7.700   Downloading filelock-4.2.4-py3-none-any.whl.metadata (2.0 kB)
+#18 7.847 Collecting license-expression<31,>=30 (from cyclonedx-python-lib<12,>=5->pip-audit==2.10.1->-r requirements-dev.txt (line 3))
+#18 7.944   Downloading license_expression-30.4.4-py3-none-any.whl.metadata (11 kB)
+#18 8.032 Collecting packageurl-python<2,>=0.11 (from cyclonedx-python-lib<12,>=5->pip-audit==2.10.1->-r requirements-dev.txt (line 3))
+#18 8.095   Downloading packageurl_python-0.17.6-py3-none-any.whl.metadata (5.1 kB)
+#18 8.218 Collecting py-serializable<3.0.0,>=2.1.0 (from cyclonedx-python-lib<12,>=5->pip-audit==2.10.1->-r requirements-dev.txt (line 3))
+#18 8.298   Downloading py_serializable-2.1.0-py3-none-any.whl.metadata (4.3 kB)
+#18 8.436 Collecting sortedcontainers<3.0.0,>=2.4.0 (from cyclonedx-python-lib<12,>=5->pip-audit==2.10.1->-r requirements-dev.txt (line 3))
+#18 8.517   Downloading sortedcontainers-2.4.0-py2.py3-none-any.whl.metadata (10 kB)
+#18 8.560 Requirement already satisfied: pip in /usr/local/lib/python3.12/site-packages (from pip-api>=0.0.28->pip-audit==2.10.1->-r requirements-dev.txt (line 3)) (25.0.1)
+#18 8.673 Collecting pyparsing (from pip-requirements-parser>=32.0.0->pip-audit==2.10.1->-r requirements-dev.txt (line 3))
+#18 8.747   Downloading pyparsing-3.3.3-py3-none-any.whl.metadata (5.9 kB)
+#18 9.312 Collecting charset_normalizer<4,>=2 (from requests>=2.31.0->pip-audit==2.10.1->-r requirements-dev.txt (line 3))
+#18 9.390   Downloading charset_normalizer-3.5.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (46 kB)
+#18 9.698 Collecting urllib3<3,>=1.26 (from requests>=2.31.0->pip-audit==2.10.1->-r requirements-dev.txt (line 3))
+#18 9.794   Downloading urllib3-2.8.0-py3-none-any.whl.metadata (7.4 kB)
+#18 9.942 Collecting markdown-it-py>=2.2.0 (from rich>=12.4->pip-audit==2.10.1->-r requirements-dev.txt (line 3))
+#18 10.01   Downloading markdown_it_py-4.2.0-py3-none-any.whl.metadata (7.4 kB)
+#18 10.07 Requirement already satisfied: MarkupSafe>=2.0 in /usr/local/lib/python3.12/site-packages (from Mako->alembic==1.20.1->-r /srv/requirements.txt (line 7)) (3.0.4)
+#18 10.16 Collecting boolean.py>=4.0 (from license-expression<31,>=30->cyclonedx-python-lib<12,>=5->pip-audit==2.10.1->-r requirements-dev.txt (line 3))
+#18 10.30   Downloading boolean_py-5.0-py3-none-any.whl.metadata (2.3 kB)
+#18 10.37 Collecting mdurl~=0.1 (from markdown-it-py>=2.2.0->rich>=12.4->pip-audit==2.10.1->-r requirements-dev.txt (line 3))
+#18 10.46   Downloading mdurl-0.1.2-py3-none-any.whl.metadata (1.6 kB)
+#18 10.69 Collecting defusedxml<0.8.0,>=0.7.1 (from py-serializable<3.0.0,>=2.1.0->cyclonedx-python-lib<12,>=5->pip-audit==2.10.1->-r requirements-dev.txt (line 3))
+#18 10.77   Downloading defusedxml-0.7.1-py2.py3-none-any.whl.metadata (32 kB)
+#18 10.87 Downloading pytest-9.1.1-py3-none-any.whl (386 kB)
+#18 11.09 Downloading pip_audit-2.10.1-py3-none-any.whl (62 kB)
+#18 11.18 Downloading mypy-2.4.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (15.6 MB)
+#18 13.38    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 15.6/15.6 MB 7.1 MB/s eta 0:00:00
+#18 13.46 Downloading ast_serialize-0.13.1-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (1.3 MB)
+#18 13.71    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.3/1.3 MB 6.4 MB/s eta 0:00:00
+#18 13.79 Downloading cachecontrol-0.14.4-py3-none-any.whl (22 kB)
+#18 13.86 Downloading cyclonedx_python_lib-11.12.0-py3-none-any.whl (529 kB)
+#18 13.92    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 529.5/529.5 kB 11.6 MB/s eta 0:00:00
+#18 13.99 Downloading iniconfig-2.3.1-py3-none-any.whl (7.6 kB)
+#18 14.05 Downloading librt-0.16.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (531 kB)
+#18 14.11    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 532.0/532.0 kB 7.7 MB/s eta 0:00:00
+#18 14.19 Downloading mypy_extensions-1.1.0-py3-none-any.whl (5.0 kB)
+#18 14.26 Downloading packaging-26.3-py3-none-any.whl (129 kB)
+#18 14.37 Downloading pathspec-1.1.1-py3-none-any.whl (57 kB)
+#18 14.47 Downloading pip_api-0.0.35-py3-none-any.whl (123 kB)
+#18 14.61 Downloading pip_requirements_parser-32.0.1-py3-none-any.whl (35 kB)
+#18 14.70 Downloading platformdirs-4.13.5-py3-none-any.whl (32 kB)
+#18 14.79 Downloading pluggy-1.7.0-py3-none-any.whl (27 kB)
+#18 14.90 Downloading pygments-2.21.0-py3-none-any.whl (1.3 MB)
+#18 15.17    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.3/1.3 MB 5.9 MB/s eta 0:00:00
+#18 15.26 Downloading requests-2.34.2-py3-none-any.whl (73 kB)
+#18 15.35 Downloading rich-15.0.0-py3-none-any.whl (310 kB)
+#18 15.55 Downloading tomli-2.5.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (286 kB)
+#18 15.70 Downloading tomli_w-1.2.0-py3-none-any.whl (6.7 kB)
+#18 15.78 Downloading charset_normalizer-3.5.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (257 kB)
+#18 15.94 Downloading filelock-4.2.4-py3-none-any.whl (162 kB)
+#18 16.05 Downloading license_expression-30.4.4-py3-none-any.whl (120 kB)
+#18 16.15 Downloading markdown_it_py-4.2.0-py3-none-any.whl (91 kB)
+#18 16.24 Downloading msgpack-1.2.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (472 kB)
+#18 16.41 Downloading packageurl_python-0.17.6-py3-none-any.whl (36 kB)
+#18 16.55 Downloading py_serializable-2.1.0-py3-none-any.whl (23 kB)
+#18 16.62 Downloading sortedcontainers-2.4.0-py2.py3-none-any.whl (29 kB)
+#18 16.70 Downloading urllib3-2.8.0-py3-none-any.whl (135 kB)
+#18 16.78 Downloading pyparsing-3.3.3-py3-none-any.whl (126 kB)
+#18 16.86 Downloading boolean_py-5.0-py3-none-any.whl (26 kB)
+#18 16.93 Downloading defusedxml-0.7.1-py2.py3-none-any.whl (25 kB)
+#18 16.99 Downloading mdurl-0.1.2-py3-none-any.whl (10.0 kB)
+#18 17.18 Installing collected packages: sortedcontainers, boolean.py, urllib3, tomli-w, tomli, pyparsing, pygments, pluggy, platformdirs, pip-api, pathspec, packaging, packageurl-python, mypy_extensions, msgpack, mdurl, license-expression, librt, iniconfig, filelock, defusedxml, charset_normalizer, ast-serialize, requests, pytest, py-serializable, pip-requirements-parser, mypy, markdown-it-py, rich, cyclonedx-python-lib, CacheControl, pip-audit
+#18 28.15 Successfully installed CacheControl-0.14.4 ast-serialize-0.13.1 boolean.py-5.0 charset_normalizer-3.5.2 cyclonedx-python-lib-11.12.0 defusedxml-0.7.1 filelock-4.2.4 iniconfig-2.3.1 librt-0.16.0 license-expression-30.4.4 markdown-it-py-4.2.0 mdurl-0.1.2 msgpack-1.2.3 mypy-2.4.0 mypy_extensions-1.1.0 packageurl-python-0.17.6 packaging-26.3 pathspec-1.1.1 pip-api-0.0.35 pip-audit-2.10.1 pip-requirements-parser-32.0.1 platformdirs-4.13.5 pluggy-1.7.0 py-serializable-2.1.0 pygments-2.21.0 pyparsing-3.3.3 pytest-9.1.1 requests-2.34.2 rich-15.0.0 sortedcontainers-2.4.0 tomli-2.5.0 tomli-w-1.2.0 urllib3-2.8.0
+#18 28.15 WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+#18 28.58
+#18 28.58 [notice] A new release of pip is available: 25.0.1 -> 26.2.2
+#18 28.58 [notice] To update, run: pip install --upgrade pip
+#18 DONE 29.0s
+
+#19 [tests 3/4] COPY tests ./tests
+#19 DONE 0.2s
+
+#20 [tests 4/4] COPY pytest.ini ./
+#20 DONE 0.2s
+
+#21 exporting to image
+#21 exporting layers
+#21 exporting layers 10.9s done
+#21 exporting manifest sha256:31b145a157ddb0be59cd7d6d5e862ec575356a721b399b9d9a1e34cd565b3afe 0.1s done
+#21 exporting config sha256:775b930decb9b50f93c503f8a3815d7ab391c5d8a681bc62549e8852b84f2d97 0.1s done
+#21 exporting attestation manifest sha256:4d7dc58314ff456295b7d73e6291ae87439727ae333cfa11cfdb9f5638cb8856 0.1s done
+#21 exporting manifest list sha256:649f34420deb0e0c8c28c14f0f222f8ee2f855e6f72ed9080ce413ae643084be
+#21 exporting manifest list sha256:649f34420deb0e0c8c28c14f0f222f8ee2f855e6f72ed9080ce413ae643084be 0.1s done
+#21 naming to docker.io/library/mos-p13-test-tests:latest done
+#21 unpacking to docker.io/library/mos-p13-test-tests:latest
+#21 unpacking to docker.io/library/mos-p13-test-tests:latest 3.5s done
+#21 DONE 15.2s
+
+#22 resolving provenance for metadata file
+#22 DONE 0.2s
+ Image mos-p13-test-tests Built
+ Container mos-p13-test-db-1 Waiting
+ Container mos-p13-test-db-1 Healthy
+ Container mos-p13-test-tests-run-e2bd7396e9a8 Creating
+ Container mos-p13-test-tests-run-e2bd7396e9a8 Created
+........................................................................ [ 33%]
+........................................................................ [ 67%]
+.....................................................................    [100%]
+=============================== warnings summary ===============================
+../usr/local/lib/python3.12/site-packages/fastapi/testclient.py:1
+  /usr/local/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+213 passed, 1 deselected, 1 warning in 87.88s (0:01:27)

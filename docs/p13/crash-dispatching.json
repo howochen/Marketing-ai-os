@@ -1,0 +1,14 @@
+{
+  "phase": "dispatching",
+  "generation_entries_before_crash": 1,
+  "automatic_resends": 0,
+  "accounting_after_recovery": {
+    "request_count": 1,
+    "reserved": 1536,
+    "spent": 0,
+    "uncertain": 1,
+    "paused": false,
+    "tenant_spent": 0,
+    "tenant_reserved": 1536
+  }
+}

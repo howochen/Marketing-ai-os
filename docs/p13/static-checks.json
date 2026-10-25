@@ -1,0 +1,9 @@
+{
+  "compileall": "PASS",
+  "mypy_modules": 17,
+  "dependency_scan": "0 known vulnerabilities",
+  "git_diff_check": "PASS",
+  "new_dependencies": 0,
+  "real_model_calls": 0,
+  "real_api_cost_usd": "0"
+}

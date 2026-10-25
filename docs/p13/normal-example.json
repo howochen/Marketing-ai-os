@@ -1,0 +1,21 @@
+{
+  "scope": "SYNTHETIC ONLY",
+  "authorization_status": "SYNTHETIC_TEST_AUTHORIZATION",
+  "model": "gpt-6-luna",
+  "reserved_upper_bound_micro_usd": 1536,
+  "simulated_provider_schema_input_tokens": 1000,
+  "simulated_output_tokens": 200,
+  "simulated_cost_micro_usd": 200,
+  "accounting": {
+    "request_count": 1,
+    "reserved": 0,
+    "spent": 200,
+    "uncertain": 0,
+    "paused": false,
+    "tenant_spent": 200,
+    "tenant_reserved": 0
+  },
+  "publication": "MANUAL_REQUIRED",
+  "real_model_calls": 0,
+  "real_api_cost_usd": "0"
+}

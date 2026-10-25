@@ -200,3 +200,90 @@ class RevisionScore(Base):
     idempotency_key: Mapped[str] = mapped_column(String(128))
     request_hash: Mapped[str] = mapped_column(String(64))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+class TestBatch(Base):
+    __tablename__='test_batches'
+    __table_args__=(UniqueConstraint('tenant_id','id'),
+        CheckConstraint("environment='test' AND authorization_status='SYNTHETIC_TEST_AUTHORIZATION'"),
+        CheckConstraint('reserved_micro_usd>=0 AND estimated_spent_micro_usd>=0 AND request_count>=0 AND request_count<=maximum_requests AND uncertain_request_count>=0'),)
+    id: Mapped[str]=mapped_column(String(36),primary_key=True)
+    tenant_id: Mapped[str]=mapped_column(ForeignKey('tenants.id'),index=True)
+    environment: Mapped[str]=mapped_column(String(20))
+    authorization_reference: Mapped[str]=mapped_column(String(100),unique=True)
+    authorization_status: Mapped[str]=mapped_column(String(40))
+    authorized_by: Mapped[str]=mapped_column(String(36))
+    worker_ids: Mapped[list]=mapped_column(JSON)
+    allowed_model_ids: Mapped[list]=mapped_column(JSON)
+    immutable_rate_snapshot: Mapped[dict]=mapped_column(JSON)
+    maximum_total_micro_usd: Mapped[int]=mapped_column(BigInteger)
+    maximum_request_micro_usd: Mapped[int]=mapped_column(BigInteger)
+    maximum_requests: Mapped[int]=mapped_column(BigInteger)
+    reserved_micro_usd: Mapped[int]=mapped_column(BigInteger,default=0)
+    estimated_spent_micro_usd: Mapped[int]=mapped_column(BigInteger,default=0)
+    request_count: Mapped[int]=mapped_column(BigInteger,default=0)
+    uncertain_request_count: Mapped[int]=mapped_column(BigInteger,default=0)
+    deadline: Mapped[datetime]=mapped_column(DateTime(timezone=True))
+    paused: Mapped[bool]=mapped_column(Boolean,default=False)
+    created_at: Mapped[datetime]=mapped_column(DateTime(timezone=True),default=now)
+    closed_at: Mapped[datetime | None]=mapped_column(DateTime(timezone=True))
+
+
+class BatchAttempt(Base):
+    __tablename__='batch_attempts'
+    __table_args__=(UniqueConstraint('tenant_id','batch_id','id'),UniqueConstraint('tenant_id','batch_id','idempotency_key'),
+        UniqueConstraint('tenant_id','task_id'),
+        ForeignKeyConstraint(['tenant_id','batch_id'],['test_batches.tenant_id','test_batches.id']),
+        ForeignKeyConstraint(['tenant_id','task_id'],['tasks.tenant_id','tasks.id']),
+        CheckConstraint("state IN ('RESERVED','DISPATCHING','PROVIDER_RESULT_RECORDED','SETTLED','RECONCILIATION_REQUIRED','CANCELLED_BEFORE_DISPATCH')"),
+        CheckConstraint("receipt_status IN ('MOCK','RECONCILIATION_REQUIRED')"),)
+    id: Mapped[str]=mapped_column(String(36),primary_key=True)
+    tenant_id: Mapped[str]=mapped_column(ForeignKey('tenants.id'),index=True)
+    batch_id: Mapped[str]=mapped_column(String(36))
+    task_id: Mapped[str]=mapped_column(String(36))
+    reserved_by: Mapped[str]=mapped_column(String(36))
+    model: Mapped[str]=mapped_column(String(100))
+    rate_version: Mapped[str]=mapped_column(ForeignKey('rate_versions.id'))
+    rate_snapshot: Mapped[dict]=mapped_column(JSON)
+    idempotency_key: Mapped[str]=mapped_column(String(128))
+    request_hash: Mapped[str]=mapped_column(String(64))
+    request_payload: Mapped[dict]=mapped_column(JSON)
+    scenario: Mapped[str]=mapped_column(String(30))
+    reserved_micro_usd: Mapped[int]=mapped_column(BigInteger)
+    estimated_cost_micro_usd: Mapped[int | None]=mapped_column(BigInteger)
+    state: Mapped[str]=mapped_column(String(40))
+    receipt_status: Mapped[str]=mapped_column(String(40),default='MOCK')
+    provider_result: Mapped[dict | None]=mapped_column(JSON)
+    reconciliation_result: Mapped[dict | None]=mapped_column(JSON)
+    client_request_id: Mapped[str | None]=mapped_column(String(200))
+    request_id: Mapped[str | None]=mapped_column(String(200))
+    response_id: Mapped[str | None]=mapped_column(String(200))
+    usage_missing_reason: Mapped[str | None]=mapped_column(String(80))
+    error_category: Mapped[str | None]=mapped_column(String(80))
+    lease_expires_at: Mapped[datetime]=mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime]=mapped_column(DateTime(timezone=True),default=now)
+    dispatched_at: Mapped[datetime | None]=mapped_column(DateTime(timezone=True))
+    result_recorded_at: Mapped[datetime | None]=mapped_column(DateTime(timezone=True))
+    settled_at: Mapped[datetime | None]=mapped_column(DateTime(timezone=True))
+    elapsed_ms: Mapped[int | None]=mapped_column(BigInteger)
+
+
+class ReconciliationEvidence(Base):
+    __tablename__='reconciliation_evidence'
+    __table_args__=(UniqueConstraint('tenant_id','attempt_id','idempotency_key'),
+        ForeignKeyConstraint(['tenant_id','batch_id','attempt_id'],['batch_attempts.tenant_id','batch_attempts.batch_id','batch_attempts.id']),
+        CheckConstraint("source='MOCK' AND status IN ('MOCK','RECONCILIATION_REQUIRED')"),)
+    id: Mapped[str]=mapped_column(String(36),primary_key=True)
+    tenant_id: Mapped[str]=mapped_column(ForeignKey('tenants.id'),index=True)
+    batch_id: Mapped[str]=mapped_column(String(36))
+    attempt_id: Mapped[str]=mapped_column(String(36))
+    actor_id: Mapped[str]=mapped_column(String(36))
+    source: Mapped[str]=mapped_column(String(40),default='MOCK')
+    status: Mapped[str]=mapped_column(String(40))
+    idempotency_key: Mapped[str]=mapped_column(String(128))
+    request_hash: Mapped[str]=mapped_column(String(64))
+    receipt: Mapped[dict]=mapped_column(JSON)
+    previous_estimate_micro_usd: Mapped[int | None]=mapped_column(BigInteger)
+    reported_micro_usd: Mapped[int]=mapped_column(BigInteger)
+    difference_micro_usd: Mapped[int | None]=mapped_column(BigInteger)
+    created_at: Mapped[datetime]=mapped_column(DateTime(timezone=True),default=now)

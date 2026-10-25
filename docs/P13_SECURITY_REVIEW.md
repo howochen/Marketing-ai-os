@@ -1,0 +1,17 @@
+# P1.3 安全審查
+
+授權anchor是既有驗證後的tenant owner Credential與budget scope，worker需execute scope及batch assignment。授權綁environment=test、原操作人、worker/model清單、固定費率、金額、次數與期限；新dispatch再查操作人撤銷／到期。client自稱authorization_reference或AUTHORIZED不會生效。資料庫CHECK只接受SYNTHETIC_TEST_AUTHORIZATION，沒有提升為實際可扣費授權的路徑。
+
+三張表加入ORM tenant filter與before_flush寫入租戶檢查；PostgreSQL ENABLE/FORCE RLS、USING/WITH CHECK，以既有non-owner／NOSUPERUSER／NOBYPASSRLS runtime role測試。raw跨租戶select無結果、insert明確SQLSTATE42501；無context預設deny。SQLite不冒稱具有原生RLS，該原生案例在PG執行。
+
+DB trigger保護Batch授權／費率／caps／deadline、Attempt請求／預留／費率與首次result；禁止非法狀態轉換與request_count下降。Evidence不可UPDATE／DELETE／TRUNCATE，新歷史表不可刪。RLS不保護TRUNCATE，因此另用權限／trigger防護；[PostgreSQL官方說明](https://www.postgresql.org/docs/16/ddl-rowsecurity.html)。DBA仍能管理DB，這不是防DBA篡改的密碼學帳本。
+
+舊Task reserve/claim/release/settle/execute、A09 runtime與P12 rehearsal拒絕操作已綁Batch的Task，避免繞過batch投影。共用Tenant鎖與原Ledger實作；批准／Revision歷史及publication content binding保持不變。收據修正只更新成本與Evidence，不改原稿、已核准版本或原receipt內容。任何Task待對帳或硬性QA失敗都不會自動發布，所有社群adapter仍MANUAL_REQUIRED。
+
+Batch creation／execution拒絕OPENAI_API_KEY或ANTHROPIC_API_KEY環境值（包括測試dummy key），沒有key參數、任意URL或transport輸入。server只使用固定MockTransport與內建synthetic-p13-no-account占位字串，實際不是任何供應商key。Live Test Gate與普通Provider的real transport禁令仍在，不能靠feature flag轉成Live。測試亦封鎖HTTPTransport；程序Recovery不呼叫Provider。
+
+狀態分類：MOCK表示合成證據；RECONCILIATION_REQUIRED表示未知或矛盾。PROVIDER_REPORTED_UNVERIFIED代表未來真實usage但非帳單；INVOICE_VERIFIED需真實可信invoice流程。本階段後兩種真實來源不開放匯入，API拒絕、DB新表也不允許INVOICE_VERIFIED。原Task沿用UNVERIFIED分類，不等於已驗真；沒有Invoice就不宣稱費用已核實。
+
+Log僅記allowlist operational事件與Audit識別，不記原始文案、品牌context或exception body；SQL參數遮罩沿用。原有key／log與多租戶／權限／預算／Revision負面測試全部保留。提交前掃描記錄見 `p13/secret-scan.json`；模式掃描與人工diff並非全面DLP或正式滲透測試。
+
+剩餘風險：真實API送達不確定、Invoice延遲、alias／價格／額外費用變化、服務故障與DBA權限。負向收據差異不自動退費／解凍，需要另外受信任處理流程。尚未做正式環境滲透、供應商帳戶驗證、真實發票簽章或客戶資料操作；不能宣稱商用安全。

@@ -12,8 +12,9 @@ from .security import audit
 
 
 def rehearse(s: Session,c: Credential,payload: CopyRequest,provider: OpenAIProvider,request_cap_micro: int) -> dict:
-    from .main import lock_tenant,task_for,reserve,ReserveRequest,claim,settle_receipt,dollars
+    from .main import lock_tenant,task_for,reserve,ReserveRequest,claim,settle_receipt,dollars,reject_batch_task
     if c.role!='worker' or 'execute' not in c.scopes: raise HTTPException(403,'Worker execute scope required')
+    reject_batch_task(s,c.tenant_id,payload.task_id)
     provider.check_offline()
     tenant=lock_tenant(s,c.tenant_id);task=task_for(s,c.tenant_id,payload.task_id)
     if task.agent_id!='A09' or payload.agent_id!='A09' or payload.platform!='threads' or payload.tools:

@@ -97,7 +97,8 @@ def read_run(task_id: str, c: Credential = Depends(require('read')), s: Session 
 def run_agent(task_id: str, payload: CopyRequest, c: Credential = Depends(require('execute')),
               s: Session = Depends(db)) -> CopyOutput:
     # Reuse the initialized app's accounting functions; there is no second ledger.
-    from .main import lock_tenant, task_for, reserve, ReserveRequest, claim, settle_receipt, dollars
+    from .main import lock_tenant, task_for, reserve, ReserveRequest, claim, settle_receipt, dollars, reject_batch_task
+    reject_batch_task(s,c.tenant_id,task_id)
     if not enabled():
         raise HTTPException(503, 'Model calls disabled (including offline mock)')
     if os.getenv('MOS_ENV', 'development') not in {'test', 'development'}:

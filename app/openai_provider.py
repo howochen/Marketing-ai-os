@@ -72,22 +72,27 @@ def upper_bound(card: dict, max_output_tokens: int) -> int:
 
 
 class OpenAIProvider:
-    def __init__(self, model: str, transport: httpx.MockTransport | None=None, *, snapshot: dict | None=None) -> None:
+    def __init__(self, model: str, transport: httpx.MockTransport | None=None, *, snapshot: dict | None=None, synthetic_only: bool=False) -> None:
         if model not in CARDS: raise ValueError('Model not allowlisted')
         self.card=copy.deepcopy(snapshot if snapshot is not None else CARDS[model])
         if self.card['model']!=model or rate_id(self.card)!=rate_id(CARDS[model]):
             raise ValueError('Unreviewed rate snapshot')
         self.model=model
         self.transport=transport
+        self.synthetic_only=synthetic_only
         self.last_client_request_id: str | None=None
         self.last_request_id: str | None=None
         self.last_response_id: str | None=None
+        self.generation_request_id: str | None=None
 
     def check_offline(self) -> None:
         if not enabled(): raise RuntimeError('Model calls disabled')
         if os.getenv('MOS_ENV')!='test' or os.getenv('MOS_LIVE_TESTS','false').lower()!='false':
             raise RuntimeError('Only offline controlled tests are permitted')
-        if not os.getenv('OPENAI_API_KEY'): raise RuntimeError('Provider key missing')
+        if self.synthetic_only:
+            if os.getenv('OPENAI_API_KEY') or os.getenv('ANTHROPIC_API_KEY'):
+                raise RuntimeError('Batch executor rejects all environment provider keys')
+        elif not os.getenv('OPENAI_API_KEY'): raise RuntimeError('Provider key missing')
         if type(self.transport) is not httpx.MockTransport:
             raise RuntimeError('Live transport is disabled in P1.2')
 
@@ -106,13 +111,13 @@ class OpenAIProvider:
         if path not in {'responses','responses/input_tokens'}: raise ValueError('Endpoint not allowed')
         if payload.get('model')!=self.model or payload.get('tools')!=[]:
             raise ValueError('Model/tools not allowlisted')
-        self.last_client_request_id=str(uuid.uuid4())
+        self.last_client_request_id=self.generation_request_id if path=='responses' and self.generation_request_id else str(uuid.uuid4())
         self.last_request_id=None;self.last_response_id=None
         try:
             with httpx.Client(transport=self.transport,timeout=httpx.Timeout(20,connect=5),
                               follow_redirects=False,trust_env=False) as client:
                 response=client.post('https://api.openai.com/v1/'+path,json=payload,
-                    headers={'Authorization':'Bearer '+os.environ['OPENAI_API_KEY'],'X-Client-Request-Id':self.last_client_request_id})
+                    headers={'Authorization':'Bearer '+('synthetic-p13-no-account' if self.synthetic_only else os.environ['OPENAI_API_KEY']),'X-Client-Request-Id':self.last_client_request_id})
         except httpx.TimeoutException:
             raise ProviderFailure('TIMEOUT') from None
         except httpx.HTTPError:

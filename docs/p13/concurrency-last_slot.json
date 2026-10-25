@@ -1,0 +1,15 @@
+{
+  "competitors": 8,
+  "admitted": 1,
+  "limit": "last_slot",
+  "accounting": {
+    "request_count": 1,
+    "reserved": 1536,
+    "spent": 0,
+    "uncertain": 0,
+    "paused": false,
+    "tenant_spent": 0,
+    "tenant_reserved": 1536
+  },
+  "real_model_calls": 0
+}

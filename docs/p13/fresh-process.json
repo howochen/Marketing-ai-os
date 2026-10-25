@@ -1,0 +1,13 @@
+{
+  "scope": "new Python process, same persisted test database",
+  "restored": {
+    "request_count": 1,
+    "reserved": 1536,
+    "recovery": {
+      "settled": 0,
+      "cancelled": 0,
+      "uncertain": 0
+    }
+  },
+  "automatic_resends": 0
+}

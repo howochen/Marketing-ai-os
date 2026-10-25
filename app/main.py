@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select, update, text
 from sqlalchemy.exc import IntegrityError
 from .database import db, scope, SessionLocal, engine
-from .models import Tenant, Task, CostEvent, Publication, Credential, LoginChallenge, Audit, RateVersion, now
+from .models import Tenant, Task, CostEvent, Publication, Credential, LoginChallenge, Audit, RateVersion, BatchAttempt, now
 from .security import admin, audit, digest, issue, require, uid, ROLES
 from .registry import AGENTS
 from .adapters import ADAPTERS
@@ -146,7 +146,7 @@ def health():
 def ready(s=Depends(db)):
     try:
         version = s.scalar(text('SELECT version_num FROM alembic_version'))
-        if version != '0006' or not s.get(RateVersion, rate_id(MODEL)):
+        if version != '0007' or not s.get(RateVersion, rate_id(MODEL)):
             raise ValueError('Schema or rate card not ready')
     except Exception:
         raise HTTPException(503, 'Database or schema unavailable') from None
@@ -290,6 +290,13 @@ def tasks(c=Depends(require('read')), s=Depends(db)):
 
 @app.post('/tasks/{task_id}/reserve')
 def reserve(task_id: str, payload: ReserveRequest, c=Depends(require('reserve')), s=Depends(db)):
+    reject_batch_task(s,c.tenant_id,task_id)
+    result=reserve_funds(s,c,task_id,payload)
+    s.commit()
+    return result
+
+
+def reserve_funds(s,c,task_id,payload):
     tenant = lock_tenant(s, c.tenant_id)
     task = task_for(s, c.tenant_id, task_id)
     amount = micro(payload.estimate_usd)
@@ -316,11 +323,10 @@ def reserve(task_id: str, payload: ReserveRequest, c=Depends(require('reserve'))
     task.expires_at = now() + timedelta(minutes=15)
     event(s, c.tenant_id, task, 'RESERVE', amount)
     audit(s, c.tenant_id, 'task.reserved', task.id, c.id)
-    s.commit()
     return {'id': task.id, 'status': task.status, 'reserved_usd': dollars(amount), 'model_calls': 0}
 
 
-def claim(s, c, task_id):
+def claim(s, c, task_id, *, commit=True):
     tenant = lock_tenant(s, c.tenant_id)
     task = task_for(s, c.tenant_id, task_id)
     if tenant.budget_paused:
@@ -329,17 +335,18 @@ def claim(s, c, task_id):
         raise HTTPException(409, 'Reservation unavailable or expired')
     task.status = 'RUNNING'
     audit(s, c.tenant_id, 'task.claimed', task.id, c.id)
-    s.commit()
+    if commit: s.commit()
     return task
 
 
 @app.post('/tasks/{task_id}/claim')
 def claim_task(task_id: str, c=Depends(require('execute')), s=Depends(db)):
+    reject_batch_task(s,c.tenant_id,task_id)
     task = claim(s, c, task_id)
     return {'id': task.id, 'status': task.status}
 
 
-def settle_receipt(s, c, task_id, key, receipt, source='TRUSTED_WORKER_ASSERTION'):
+def settle_receipt(s, c, task_id, key, receipt, source='TRUSTED_WORKER_ASSERTION', *, commit=True):
     tenant = lock_tenant(s, c.tenant_id)
     task = task_for(s, c.tenant_id, task_id)
     if task.settle_key == key:
@@ -369,7 +376,7 @@ def settle_receipt(s, c, task_id, key, receipt, source='TRUSTED_WORKER_ASSERTION
     event(s, c.tenant_id, task, 'SETTLE', receipt['actual_micro'], receipt)
     audit(s, c.tenant_id, 'task.settled', task.id, c.id)
     try:
-        s.commit()
+        s.commit() if commit else s.flush()
     except IntegrityError:
         s.rollback()
         raise HTTPException(409, 'Receipt already settled')
@@ -387,6 +394,7 @@ def read_receipt(task_id: str,c=Depends(require('read')),s=Depends(db)):
 
 @app.post('/tasks/{task_id}/settle')
 def settle(task_id: str, payload: SettleRequest, c=Depends(require('settle')), s=Depends(db)):
+    reject_batch_task(s,c.tenant_id,task_id)
     task = task_for(s, c.tenant_id, task_id)
     card = task.rate_snapshot or MODEL
     if payload.receipt.model != card['model'] or payload.receipt.provider != card['provider']:
@@ -404,6 +412,7 @@ def settle(task_id: str, payload: SettleRequest, c=Depends(require('settle')), s
 
 @app.post('/tasks/{task_id}/execute')
 def execute(task_id: str, payload: KeyRequest, c=Depends(require('execute')), s=Depends(db)):
+    reject_batch_task(s,c.tenant_id,task_id)
     if not enabled():
         raise HTTPException(503, 'Model calls disabled')
     existing = task_for(s, c.tenant_id, task_id)
@@ -464,6 +473,7 @@ def release_reserved(s, tenant, task, key, actor):
 
 @app.post('/tasks/{task_id}/release')
 def release(task_id: str, payload: KeyRequest, c=Depends(require('release')), s=Depends(db)):
+    reject_batch_task(s,c.tenant_id,task_id)
     tenant = lock_tenant(s, c.tenant_id)
     task = task_for(s, c.tenant_id, task_id)
     if task.release_key == payload.idempotency_key:
@@ -477,9 +487,12 @@ def release(task_id: str, payload: KeyRequest, c=Depends(require('release')), s=
 
 @app.post('/maintenance/recover')
 def recover(c=Depends(require('recover')), s=Depends(db)):
+    from .durable_gate import recover_attempts
+    durable=recover_attempts(s,c)
     tenant = lock_tenant(s, c.tenant_id)
     expired = s.scalars(select(Task).where(Task.tenant_id == c.tenant_id, Task.expires_at <= now(),
-                                           Task.status.in_(['RESERVED', 'RUNNING']))).all()
+                                           Task.status.in_(['RESERVED', 'RUNNING']),
+                                           ~Task.id.in_(select(BatchAttempt.task_id).where(BatchAttempt.tenant_id==c.tenant_id)))).all()
     released, held = 0, 0
     for task in expired:
         if task.status == 'RESERVED':
@@ -491,7 +504,7 @@ def recover(c=Depends(require('recover')), s=Depends(db)):
             audit(s, tenant.id, 'task.reconciliation_required', task.id, c.id)
             held += 1
     s.commit()
-    return {'released': released, 'held_for_reconciliation': held}
+    return {'released': released+durable['cancelled'], 'held_for_reconciliation': held+durable['uncertain']}
 
 
 @app.post('/tasks/{task_id}/approve')
@@ -548,3 +561,12 @@ from .agent_runtime import router as agent_router
 app.include_router(agent_router)
 from .revisions import router as revision_router
 app.include_router(revision_router)
+
+
+def reject_batch_task(s,tid,task_id):
+    if s.scalar(select(BatchAttempt.id).where(BatchAttempt.tenant_id==tid,BatchAttempt.task_id==task_id)):
+        raise HTTPException(409,'Batch task requires durable attempt coordinator')
+
+
+from .durable_gate import router as durable_router
+app.include_router(durable_router)
