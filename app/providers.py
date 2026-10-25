@@ -1,5 +1,6 @@
 import json
 import os
+import hashlib
 from decimal import Decimal, ROUND_CEILING
 from pathlib import Path
 from typing import Protocol
@@ -8,11 +9,15 @@ import httpx
 MODEL = json.loads((Path(__file__).resolve().parent.parent / 'config/models.json').read_text())
 
 
-def enabled():
+def rate_id(card: dict) -> str:
+    return hashlib.sha256(json.dumps(card, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+
+
+def enabled() -> bool:
     return os.getenv('MOS_MODEL_CALLS_ENABLED', 'false').lower() == 'true'
 
 
-def usage_cost(usage):
+def usage_cost(usage: dict[str, int], card: dict = MODEL) -> int:
     # shortcut: rate card supports standard/5m-cache receipts only; extend before importing other billing tiers.
     rates = {'input_tokens': 'input_usd_per_million', 'output_tokens': 'output_usd_per_million',
              'cache_read_input_tokens': 'cached_input_usd_per_million',
@@ -22,7 +27,7 @@ def usage_cost(usage):
         count = usage.get(field, 0)
         if type(count) is not int or count < 0:
             raise ValueError('Invalid provider token count')
-        cost += count * Decimal(MODEL[rate])
+        cost += count * Decimal(card[rate])
     return int(cost.to_integral_value(rounding=ROUND_CEILING))
 
 
@@ -32,7 +37,7 @@ class LLMProvider(Protocol):
 
 
 class AnthropicProvider:
-    def request(self, path, payload):
+    def request(self, path: str, payload: dict) -> dict:
         if not enabled():
             raise RuntimeError('Model calls disabled')
         if os.getenv('MOS_LIVE_TESTS') != 'true':
@@ -44,9 +49,12 @@ class AnthropicProvider:
         response = httpx.post('https://api.anthropic.com/v1/' + path, timeout=60,
                               headers={'x-api-key': key, 'anthropic-version': '2023-06-01'}, json=payload)
         response.raise_for_status()
-        return response.json()
+        data = response.json()
+        if not isinstance(data, dict):
+            raise ValueError('Invalid provider response')
+        return data
 
-    def count_tokens(self, prompt):
+    def count_tokens(self, prompt: str) -> int:
         data = self.request('messages/count_tokens', {
             'model': MODEL['model'], 'messages': [{'role': 'user', 'content': prompt}]})
         count = data['input_tokens']
@@ -54,7 +62,7 @@ class AnthropicProvider:
             raise ValueError('Invalid token count')
         return count
 
-    def generate(self, prompt, max_output_tokens):
+    def generate(self, prompt: str, max_output_tokens: int) -> dict:
         data = self.request('messages', {'model': MODEL['model'], 'max_tokens': max_output_tokens,
                                          'messages': [{'role': 'user', 'content': prompt}]})
         if data['model'] != MODEL['model'] or not data.get('id'):

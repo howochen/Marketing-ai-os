@@ -8,6 +8,7 @@ from alembic.config import Config
 os.environ.setdefault('DATABASE_URL', 'sqlite:///' + str(Path(tempfile.mkdtemp()) / 'test.db'))
 os.environ['MOS_ADMIN_KEY'] = 'test-admin-key-at-least-thirty-characters'
 os.environ['MOS_MODEL_CALLS_ENABLED'] = 'false'
+os.environ['MOS_ENV'] = 'test'
 command.upgrade(Config('alembic.ini'), 'head')
 
 from fastapi.testclient import TestClient
@@ -16,6 +17,12 @@ from app.main import app
 
 @pytest.fixture
 def client():
+    from app.database import SessionLocal
+    from app.models import RateLimit
+    from sqlalchemy import delete
+    with SessionLocal() as session:
+        session.execute(delete(RateLimit))
+        session.commit()
     with TestClient(app) as client:
         yield client
 

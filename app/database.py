@@ -1,12 +1,12 @@
 import os
-from sqlalchemy import create_engine, event, text
+from sqlalchemy import create_engine, event, text, inspect
 from sqlalchemy.orm import Session, sessionmaker, with_loader_criteria
-from .models import Tenant, Task, CostEvent, Publication, Audit, Credential, LoginChallenge
+from .models import Tenant, Task, CostEvent, Publication, Audit, Credential, LoginChallenge, RateVersion
 
 DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///./marketing_os.db')
 engine = create_engine(DATABASE_URL, pool_pre_ping=True, connect_args={
     'check_same_thread': False, 'timeout': 30,
-} if DATABASE_URL.startswith('sqlite') else {})
+} if DATABASE_URL.startswith('sqlite') else {'connect_timeout': 5, 'options': '-c statement_timeout=10000 -c lock_timeout=5000'})
 
 
 @event.listens_for(engine, 'connect')
@@ -54,8 +54,12 @@ def isolate_writes(session, context, instances):
             raise ValueError('Cross-tenant write denied')
         if isinstance(obj, Tenant) and obj.id != tid:
             raise ValueError('Cross-tenant write denied')
-        if isinstance(obj, (Audit, CostEvent)) and obj not in session.new:
+        if isinstance(obj, (Audit, CostEvent, RateVersion)) and obj not in session.new:
             raise ValueError('Append-only record')
+        if isinstance(obj, Task) and obj not in session.new:
+            history = inspect(obj).attrs.rate_snapshot.history
+            if history.has_changes() and history.deleted and history.deleted[0] is not None:
+                raise ValueError('Rate snapshot is immutable')
 
 
 def db():

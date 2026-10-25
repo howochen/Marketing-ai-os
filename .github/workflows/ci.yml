@@ -1,4 +1,4 @@
-name: P0 checks
+name: P0.5 checks
 on: [push, pull_request]
 permissions:
   contents: read
@@ -11,6 +11,10 @@ jobs:
         with:
           python-version: '3.12'
       - run: pip install -r requirements-dev.txt
+      - run: python -m compileall -q app tests migrations scripts
+      - run: mypy
+      - run: git diff --check
+      - run: git show --format= --check HEAD
       - run: pytest -q
       - run: pip-audit -r requirements-dev.txt
   postgres:
@@ -23,6 +27,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Test with a non-owner, non-superuser runtime role
-        run: docker compose -p mos-ci --profile test run --build --rm tests
+        run: docker compose -p mos-p05-test --profile test run --build --rm tests
+      - name: Synthetic backup and independent restore drill
+        run: python scripts/backup_drill.py
       - if: always()
-        run: docker compose -p mos-ci logs db
+        run: docker compose -p mos-p05-test logs db
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: p05-backup-evidence
+          path: docs/p05/backup-restore.json

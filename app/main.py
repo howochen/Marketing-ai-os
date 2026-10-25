@@ -8,14 +8,17 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select, update, text
 from sqlalchemy.exc import IntegrityError
 from .database import db, scope, SessionLocal, engine
-from .models import Tenant, Task, CostEvent, Publication, Credential, LoginChallenge, Audit, now
+from .models import Tenant, Task, CostEvent, Publication, Credential, LoginChallenge, Audit, RateVersion, now
 from .security import admin, audit, digest, issue, require, uid, ROLES
 from .registry import AGENTS
 from .adapters import ADAPTERS
-from .providers import AnthropicProvider, MODEL, enabled, usage_cost
+from .providers import AnthropicProvider, MODEL, enabled, usage_cost, rate_id
+from .operations import Boundary, emit, validate_deployment, install_log_filter
 
 @asynccontextmanager
 async def lifespan(app):
+    install_log_filter()
+    validate_deployment()
     if engine.dialect.name == 'postgresql':
         with engine.connect() as connection:
             unsafe = connection.scalar(text("SELECT rolsuper OR rolbypassrls FROM pg_roles WHERE rolname = current_user"))
@@ -26,6 +29,7 @@ async def lifespan(app):
 
 
 app = FastAPI(title='Marketing AI OS P0', version='0.2.0', lifespan=lifespan)
+app.add_middleware(Boundary)
 Money = Decimal
 
 
@@ -54,7 +58,8 @@ def task_for(s, tid, task_id):
 def event(s, tid, task, kind, amount, receipt=None):
     s.add(CostEvent(id=uid(), tenant_id=tid, task_id=task.id, type=kind,
                     amount_micro=amount, receipt_id=receipt['receipt_id'] if receipt else None,
-                    usage=receipt))
+                    usage=receipt, rate_version=rate_id(task.rate_snapshot) if task.rate_snapshot else None,
+                    receipt_status=task.receipt_status or 'UNVERIFIED'))
 
 
 class TenantCreate(BaseModel):
@@ -126,6 +131,17 @@ class BudgetSwitch(BaseModel):
 @app.get('/health')
 def health():
     return {'status': 'ok', 'model_calls_enabled': enabled(), 'publishing_enabled': False}
+
+
+@app.get('/ready')
+def ready(s=Depends(db)):
+    try:
+        version = s.scalar(text('SELECT version_num FROM alembic_version'))
+        if version != '0003' or not s.get(RateVersion, rate_id(MODEL)):
+            raise ValueError('Schema or rate card not ready')
+    except Exception:
+        raise HTTPException(503, 'Database or schema unavailable') from None
+    return {'status': 'ready', 'schema': version}
 
 
 @app.post('/admin/tenants', status_code=201, dependencies=[Depends(admin)])
@@ -255,7 +271,8 @@ def create_task(payload: TaskCreate, c=Depends(require('tasks')), s=Depends(db))
 
 @app.get('/tasks')
 def tasks(c=Depends(require('read')), s=Depends(db)):
-    return [{'id': t.id, 'title': t.title, 'status': t.status, 'agent_id': t.agent_id}
+    return [{'id': t.id, 'title': t.title, 'status': t.status, 'agent_id': t.agent_id,
+             'receipt_status': t.receipt_status, 'receipt_source': t.receipt_source}
             for t in s.scalars(select(Task).where(Task.tenant_id == c.tenant_id))]
 
 
@@ -271,6 +288,10 @@ def reserve(task_id: str, payload: ReserveRequest, c=Depends(require('reserve'))
     if tenant.budget_paused or tenant.spent_micro + tenant.reserved_micro + amount > tenant.budget_micro:
         raise HTTPException(402, 'Budget paused or exceeded')
     tenant.reserved_micro += amount
+    rate = s.get(RateVersion, rate_id(MODEL))
+    if not rate:
+        raise HTTPException(503, 'Rate version not installed')
+    task.rate_snapshot = dict(rate.snapshot)
     task.reserved_micro, task.reserve_key, task.status = amount, payload.idempotency_key, 'RESERVED'
     task.expires_at = now() + timedelta(minutes=15)
     event(s, c.tenant_id, task, 'RESERVE', amount)
@@ -298,7 +319,7 @@ def claim_task(task_id: str, c=Depends(require('execute')), s=Depends(db)):
     return {'id': task.id, 'status': task.status}
 
 
-def settle_receipt(s, c, task_id, key, receipt):
+def settle_receipt(s, c, task_id, key, receipt, source='TRUSTED_WORKER_ASSERTION'):
     tenant = lock_tenant(s, c.tenant_id)
     task = task_for(s, c.tenant_id, task_id)
     if task.settle_key == key:
@@ -310,10 +331,13 @@ def settle_receipt(s, c, task_id, key, receipt):
     tenant.reserved_micro -= task.reserved_micro
     tenant.spent_micro += receipt['actual_micro']
     # Record even an unexpectedly high actual bill and stop further spending.
-    if receipt['actual_micro'] > task.reserved_micro or tenant.spent_micro + tenant.reserved_micro > tenant.budget_micro:
+    overrun = receipt['actual_micro'] > task.reserved_micro or tenant.spent_micro + tenant.reserved_micro > tenant.budget_micro
+    if overrun:
         tenant.budget_paused = True
     task.actual_micro, task.output, task.receipt = receipt['actual_micro'], receipt['output'], receipt
     task.settle_key, task.status = key, 'PENDING_APPROVAL'
+    task.receipt_status = 'UNVERIFIED'
+    task.receipt_source = source
     event(s, c.tenant_id, task, 'SETTLE', receipt['actual_micro'], receipt)
     audit(s, c.tenant_id, 'task.settled', task.id, c.id)
     try:
@@ -321,15 +345,19 @@ def settle_receipt(s, c, task_id, key, receipt):
     except IntegrityError:
         s.rollback()
         raise HTTPException(409, 'Receipt already settled')
+    if overrun:
+        emit('cost.overrun')
     return task
 
 
 @app.post('/tasks/{task_id}/settle')
 def settle(task_id: str, payload: SettleRequest, c=Depends(require('settle')), s=Depends(db)):
-    if payload.receipt.model != MODEL['model']:
+    task = task_for(s, c.tenant_id, task_id)
+    card = task.rate_snapshot or MODEL
+    if payload.receipt.model != card['model']:
         raise HTTPException(422, 'Unsupported receipt model')
     usage = payload.receipt.model_dump(exclude={'provider', 'model', 'receipt_id'})
-    amount = usage_cost(usage)
+    amount = usage_cost(usage, card)
     if micro(payload.actual_usd) != amount:
         raise HTTPException(422, 'Amount does not match provider usage rate card')
     receipt = {'provider': payload.receipt.provider, 'model': payload.receipt.model,
@@ -350,13 +378,17 @@ def execute(task_id: str, payload: KeyRequest, c=Depends(require('execute')), s=
     provider = AnthropicProvider()
     try:
         tokens = provider.count_tokens(task.brief)
-        worst = usage_cost({'input_tokens': tokens, 'output_tokens': MODEL['max_output_tokens']})
+        card = task.rate_snapshot
+        if not card or rate_id(card) != rate_id(MODEL):
+            raise HTTPException(409, 'Adapter rate version changed; reconcile before executing')
+        worst = usage_cost({'input_tokens': tokens, 'output_tokens': card['max_output_tokens']}, card)
         tenant = lock_tenant(s, c.tenant_id)
         task = task_for(s, c.tenant_id, task_id)
         if task.status != 'RUNNING':
             raise HTTPException(409, 'Task changed during token estimation; generation refused')
         if task.expires_at.replace(tzinfo=now().tzinfo) <= now():
             task.status = 'RECONCILIATION_REQUIRED'
+            task.receipt_status = 'RECONCILIATION_REQUIRED'
             audit(s, c.tenant_id, 'task.reconciliation_required', task.id, c.id)
             s.commit()
             raise HTTPException(409, 'Claim expired; generation refused')
@@ -371,7 +403,7 @@ def execute(task_id: str, payload: KeyRequest, c=Depends(require('execute')), s=
             raise HTTPException(402, 'Budget paused; no generation made')
         s.commit()
         receipt = provider.generate(task.brief, MODEL['max_output_tokens'])
-        task = settle_receipt(s, c, task_id, payload.idempotency_key, receipt)
+        task = settle_receipt(s, c, task_id, payload.idempotency_key, receipt, 'PROVIDER_RESPONSE_UNVERIFIED')
     except HTTPException:
         raise
     except Exception:
@@ -380,8 +412,10 @@ def execute(task_id: str, payload: KeyRequest, c=Depends(require('execute')), s=
         task = task_for(s, c.tenant_id, task_id)
         if task.status == 'RUNNING':
             task.status = 'RECONCILIATION_REQUIRED'
+            task.receipt_status = 'RECONCILIATION_REQUIRED'
             audit(s, c.tenant_id, 'task.reconciliation_required', task.id, c.id)
             s.commit()
+        emit('task.failed', status=502)
         raise HTTPException(502, 'Provider outcome uncertain; funds held, reconcile receipt before retry')
     return {'id': task.id, 'status': task.status, 'actual_usd': dollars(task.actual_micro)}
 
@@ -418,6 +452,7 @@ def recover(c=Depends(require('recover')), s=Depends(db)):
             released += 1
         else:
             task.status = 'RECONCILIATION_REQUIRED'
+            task.receipt_status = 'RECONCILIATION_REQUIRED'
             audit(s, tenant.id, 'task.reconciliation_required', task.id, c.id)
             held += 1
     s.commit()

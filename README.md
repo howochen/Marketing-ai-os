@@ -108,3 +108,9 @@ The live test enables the feature only within its test, reserves USD 0.02 and ca
 See `docs/P0_EVIDENCE.md`, raw test outputs, `docs/dependency-audit.json`, and `docs/DEPENDENCIES.md`. CI is configured for SQLite, PostgreSQL and vulnerability scanning; hosted CI results require pushing the branch. The current report does not assert production readiness. HTTPS deployment, delivery-provider identity verification, abuse controls, encrypted backups/restore drills, external invoice reconciliation and live platform permissions remain P0 deployment blockers. Do not advance to P1 based only on mock or offline tests.
 
 Final P0 closeout: [acceptance](docs/P0_FINAL_ACCEPTANCE.md), [cost report](docs/P0_COST_REPORT.md), [known limitations](docs/P0_KNOWN_LIMITATIONS.md), [legacy database backup/migration/rollback plan](docs/P0_DATABASE_MIGRATION_PLAN.md), and [P1 preparation only](docs/P1_READINESS.md). No P1 implementation is included.
+
+## P0.5 readiness (MOS-P0.5-001)
+
+Current implementation and evidence: [implementation log](docs/P05_IMPLEMENTATION_LOG.md), [tests](docs/P05_TEST_EVIDENCE.md), [backup/restore](docs/P05_BACKUP_RESTORE.md), [security](docs/P05_SECURITY_REVIEW.md), [model costs](docs/P05_MODEL_COST_DESIGN.md), [open-source review](docs/P05_OPEN_SOURCE_REVIEW.md), [offline P1 gate](docs/P1_GO_NO_GO.md).
+
+Install exact pins with `pip install -r requirements-dev.txt`; run `mypy`, `python -m compileall -q app tests migrations scripts`, and `pytest -q`. Schema head is now 0003. Read the log before upgrading: old credentials become legacy and need reissue; old tasks have no fabricated historical price snapshot. `/health` is liveness; `/ready` checks DB/schema/rate-card readiness. Production mode refuses unsafe configuration and requires actual HTTPS or an explicitly trusted TLS-terminating proxy. Public production validation remains a separate gate.

@@ -1,0 +1,22 @@
+{
+  "result": "PASS",
+  "project": "mos-p05-test",
+  "backup_seconds": 0.32375540000066394,
+  "restore_and_verify_seconds": 2.528075299996999,
+  "synthetic_snapshot_rows_lost": 0,
+  "rpo_scope": "Snapshot only; no writes during backup. No PITR or continuous RPO guarantee.",
+  "fingerprints_before_and_restored": {
+    "tenants": "26|dc253612620d148e4b759b56fe925055",
+    "tasks": "34|58f2e4d7d6e17db855b3bb03d809f9b6",
+    "credentials": "81|25b95eeece1e0c2bec4a15d829c1dbc4",
+    "login_challenges": "28|dba7a2d0bb8dccb76000cb4bcfcf5e4b",
+    "cost_events": "38|3a70a3163db4df0ad5e67954b21fb543",
+    "audit_logs": "218|a7008b1dffc21d9e86d336ae9b374de1",
+    "publications": "4|0a719be5b5c462699c7130cd9476c2c0",
+    "rate_versions": "1|3d3d4fb08f14e46deafb440dd830bffd",
+    "rate_limits": "1|bd636ee1a85d5ef004ed4443422d517b"
+  },
+  "permission_mode": "0600 file / 0700 directory",
+  "negative_checks": 4,
+  "scope": "isolated synthetic data only; credentials deleted in source and restored to independent target"
+}

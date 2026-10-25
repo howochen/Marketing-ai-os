@@ -1,0 +1,4 @@
+PASS: secret-pattern scan of changed/new text; no private/provider/GitHub key patterns
+PASS: no database/archive artifacts; archive ignored
+PASS: dependency scan zero known vulnerabilities
+NOTE: only Docker capture trailing spaces normalized; not comprehensive secret detection or penetration testing

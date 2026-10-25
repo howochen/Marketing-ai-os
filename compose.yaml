@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:16-alpine
+    image: postgres:16-alpine@sha256:f4610795587492cd4fb887c2dc3de301b813278bb6f616992061141b5f15ac36
     environment:
       POSTGRES_DB: mos
       POSTGRES_USER: postgres
@@ -35,9 +35,26 @@ services:
       MOS_ADMIN_KEY: ${MOS_ADMIN_KEY:?Set MOS_ADMIN_KEY}
       DATABASE_URL: postgresql+psycopg://mos_app:${MOS_APP_PASSWORD}@db:5432/mos
       MOS_MODEL_CALLS_ENABLED: "false"
+      MOS_ENV: ${MOS_ENV:-development}
+      MOS_PUBLIC_URL: ${MOS_PUBLIC_URL:-}
+      MOS_TRUSTED_PROXIES: ${MOS_TRUSTED_PROXIES:-}
     depends_on:
       migrate:
         condition: service_completed_successfully
+  recovery:
+    build:
+      context: .
+      target: runtime
+    command: ["python", "-m", "app.scheduler"]
+    restart: unless-stopped
+    environment:
+      MOS_API_URL: ${MOS_RECOVERY_API_URL:-http://api:8000}
+      MOS_WORKER_TOKEN: ${MOS_WORKER_TOKEN:-}
+      MOS_RECOVERY_SECONDS: "60"
+    depends_on:
+      api:
+        condition: service_started
+    profiles: [recovery]
   tests:
     build:
       context: .

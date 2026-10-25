@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
+from enum import StrEnum
 from sqlalchemy import (String, BigInteger, Boolean, ForeignKey, ForeignKeyConstraint,
-                        Text, DateTime, UniqueConstraint, CheckConstraint, JSON)
+                        Text, DateTime, UniqueConstraint, CheckConstraint, JSON, Enum as SqlEnum)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -10,6 +11,12 @@ def now():
 
 class Base(DeclarativeBase):
     pass
+
+
+class ReceiptStatus(StrEnum):
+    UNVERIFIED = 'UNVERIFIED'
+    VERIFIED = 'VERIFIED'
+    RECONCILIATION_REQUIRED = 'RECONCILIATION_REQUIRED'
 
 
 class Tenant(Base):
@@ -31,6 +38,7 @@ class Credential(Base):
     token_hash: Mapped[str] = mapped_column(String(64), unique=True)
     subject: Mapped[str] = mapped_column(String(200))
     role: Mapped[str] = mapped_column(String(20))
+    environment: Mapped[str] = mapped_column(String(20), default='development')
     scopes: Mapped[list] = mapped_column(JSON)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     revoked: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -63,6 +71,9 @@ class Task(Base):
     expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     output: Mapped[str | None] = mapped_column(Text)
     receipt: Mapped[dict | None] = mapped_column(JSON)
+    rate_snapshot: Mapped[dict | None] = mapped_column(JSON)
+    receipt_status: Mapped[ReceiptStatus] = mapped_column(SqlEnum(ReceiptStatus, native_enum=False, validate_strings=True), default=ReceiptStatus.UNVERIFIED)
+    receipt_source: Mapped[str | None] = mapped_column(String(50))
     approved_by: Mapped[str | None] = mapped_column(String(36))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
 
@@ -80,6 +91,8 @@ class CostEvent(Base):
     amount_micro: Mapped[int] = mapped_column(BigInteger)
     receipt_id: Mapped[str | None] = mapped_column(String(200))
     usage: Mapped[dict | None] = mapped_column(JSON)
+    rate_version: Mapped[str | None] = mapped_column(String(64))
+    receipt_status: Mapped[ReceiptStatus] = mapped_column(SqlEnum(ReceiptStatus, native_enum=False, validate_strings=True), default=ReceiptStatus.UNVERIFIED)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
 
 
@@ -105,3 +118,20 @@ class Audit(Base):
     action: Mapped[str] = mapped_column(String(90))
     resource_id: Mapped[str] = mapped_column(String(36))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+class RateVersion(Base):
+    __tablename__ = 'rate_versions'
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    provider: Mapped[str] = mapped_column(String(50))
+    model: Mapped[str] = mapped_column(String(100))
+    effective_date: Mapped[str] = mapped_column(String(10))
+    source_url: Mapped[str] = mapped_column(Text)
+    snapshot: Mapped[dict] = mapped_column(JSON)
+
+
+class RateLimit(Base):
+    __tablename__ = 'rate_limits'
+    key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    count: Mapped[int] = mapped_column(BigInteger)
+    window_end: Mapped[int] = mapped_column(BigInteger)

@@ -4,3 +4,5 @@ __pycache__/
 .pytest_cache/
 .venv/
 *.pyc
+*.dump
+.mypy_cache/

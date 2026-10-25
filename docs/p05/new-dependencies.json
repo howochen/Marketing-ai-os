@@ -1,0 +1,53 @@
+[
+  {
+    "name": "mypy",
+    "version": "2.4.0",
+    "license": "MIT",
+    "sources": [
+      "Homepage, https://www.mypy-lang.org/",
+      "Documentation, https://mypy.readthedocs.io/en/stable/index.html",
+      "Repository, https://github.com/python/mypy",
+      "Changelog, https://github.com/python/mypy/blob/master/CHANGELOG.md",
+      "Issues, https://github.com/python/mypy/issues"
+    ]
+  },
+  {
+    "name": "mypy_extensions",
+    "version": "1.1.0",
+    "license": "MIT",
+    "sources": [
+      "Homepage, https://github.com/python/mypy_extensions"
+    ]
+  },
+  {
+    "name": "pathspec",
+    "version": "1.1.1",
+    "license": [
+      "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)"
+    ],
+    "sources": [
+      "Change Log, https://python-path-specification.readthedocs.io/en/latest/changes.html",
+      "Documentation, https://python-path-specification.readthedocs.io/en/latest/index.html",
+      "Issue Tracker, https://github.com/cpburnz/python-pathspec/issues",
+      "Source Code, https://github.com/cpburnz/python-pathspec"
+    ]
+  },
+  {
+    "name": "librt",
+    "version": "0.16.0",
+    "license": "MIT",
+    "sources": [
+      "Homepage, https://github.com/mypyc/librt",
+      "Issues, https://github.com/mypyc/mypyc/issues"
+    ]
+  },
+  {
+    "name": "ast_serialize",
+    "version": "0.13.1",
+    "license": "MIT",
+    "sources": [
+      "Homepage, https://github.com/mypyc/ast_serialize",
+      "Issues, https://github.com/mypyc/ast_serialize/issues"
+    ]
+  }
+]

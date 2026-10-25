@@ -1,0 +1,2 @@
+{"status":"ok","model_calls_enabled":false,"publishing_enabled":false}
+{"status":"ready","schema":"0003"}
