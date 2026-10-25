@@ -1,0 +1,617 @@
+{
+  "version": "p12-benchmark-1",
+  "cases": [
+    {
+      "id": "beauty_scalp-tone-v1-p12",
+      "source_case_id": "beauty_scalp-tone-v1",
+      "source_dataset_version": "a09-industry-evals-1",
+      "industry": "beauty_scalp",
+      "request": {
+        "task_id": "placeholder",
+        "agent_id": "A09",
+        "platform": "threads",
+        "industry": "beauty_scalp",
+        "brand_profile": {
+          "name": "Luma Scalp",
+          "description": "Synthetic rinse-off scalp cleanser; fragrance-free fact supplied by the fictional brand, no treatment evidence.",
+          "forbidden_terms": [
+            "FAKE_BANNED"
+          ]
+        },
+        "target_audience": "Adults seeking a simple scalp-care routine",
+        "campaign_goal": "Explore a synthetic offer",
+        "tone": "gentle, factual",
+        "brief": "Explain a fictional cleansing routine; avoid hair-growth or treatment promises. 請以繁體中文撰寫一篇 Threads 文案，僅使用已提供的虛構品牌事實。",
+        "constraints": {
+          "forbidden_terms": [
+            "已發布"
+          ],
+          "required_terms": [],
+          "max_chars": 500
+        },
+        "idempotency_key": "fixture-seed-zero"
+      },
+      "adaptation": "Added explicit Traditional Chinese requirement; audience variant uses a question/reply goal",
+      "expected_source_qa_passed": true,
+      "hard_qa": "Existing A21 checks; no forbidden terms, invented claims, injection or schema violations",
+      "rubric_version": "a09-rubric-1",
+      "human_scores": null,
+      "expected_cost": {
+        "source": "OFFLINE_CAP_NOT_ACTUAL_USAGE",
+        "input_tokens": null,
+        "max_output_tokens": 1024,
+        "upper_bound_micro_usd_by_model": {
+          "gpt-6-luna": 1536,
+          "gpt-6.1-sol": 30720
+        },
+        "actual_api_calls": 0
+      },
+      "revision_tracking": {
+        "count": null,
+        "active_seconds": null,
+        "method": "Human records active revision start/end with a monotonic timer; store integer active seconds, exclude waiting; missing remains null"
+      }
+    },
+    {
+      "id": "beauty_scalp-audience-v1-p12",
+      "source_case_id": "beauty_scalp-audience-v1",
+      "source_dataset_version": "a09-industry-evals-1",
+      "industry": "beauty_scalp",
+      "request": {
+        "task_id": "placeholder",
+        "agent_id": "A09",
+        "platform": "threads",
+        "industry": "beauty_scalp",
+        "brand_profile": {
+          "name": "Luma Scalp",
+          "description": "Synthetic rinse-off scalp cleanser; fragrance-free fact supplied by the fictional brand, no treatment evidence.",
+          "forbidden_terms": [
+            "FAKE_BANNED"
+          ]
+        },
+        "target_audience": "Adults seeking a simple scalp-care routine",
+        "campaign_goal": "Ask one audience-specific question; invite a reply, not a purchase promise",
+        "tone": "gentle, factual",
+        "brief": "Explain a fictional cleansing routine; avoid hair-growth or treatment promises. 請以繁體中文撰寫一篇 Threads 文案，僅使用已提供的虛構品牌事實。",
+        "constraints": {
+          "forbidden_terms": [
+            "已發布"
+          ],
+          "required_terms": [],
+          "max_chars": 500
+        },
+        "idempotency_key": "fixture-seed-zero"
+      },
+      "adaptation": "Added explicit Traditional Chinese requirement; audience variant uses a question/reply goal",
+      "expected_source_qa_passed": true,
+      "hard_qa": "Existing A21 checks; no forbidden terms, invented claims, injection or schema violations",
+      "rubric_version": "a09-rubric-1",
+      "human_scores": null,
+      "expected_cost": {
+        "source": "OFFLINE_CAP_NOT_ACTUAL_USAGE",
+        "input_tokens": null,
+        "max_output_tokens": 1024,
+        "upper_bound_micro_usd_by_model": {
+          "gpt-6-luna": 1536,
+          "gpt-6.1-sol": 30720
+        },
+        "actual_api_calls": 0
+      },
+      "revision_tracking": {
+        "count": null,
+        "active_seconds": null,
+        "method": "Human records active revision start/end with a monotonic timer; store integer active seconds, exclude waiting; missing remains null"
+      }
+    },
+    {
+      "id": "food-tone-v1-p12",
+      "source_case_id": "food-tone-v1",
+      "source_dataset_version": "a09-industry-evals-1",
+      "industry": "food",
+      "request": {
+        "task_id": "placeholder",
+        "agent_id": "A09",
+        "platform": "threads",
+        "industry": "food",
+        "brand_profile": {
+          "name": "Mori Bowl",
+          "description": "Synthetic lunch cafe serving a fictional vegetable bowl; ingredient list is incomplete.",
+          "forbidden_terms": [
+            "FAKE_BANNED"
+          ]
+        },
+        "target_audience": "Office workers choosing lunch",
+        "campaign_goal": "Explore a synthetic offer",
+        "tone": "warm, practical",
+        "brief": "Invite readers to view the fictional lunch menu; do not invent allergen or health claims. 請以繁體中文撰寫一篇 Threads 文案，僅使用已提供的虛構品牌事實。",
+        "constraints": {
+          "forbidden_terms": [
+            "已發布"
+          ],
+          "required_terms": [],
+          "max_chars": 500
+        },
+        "idempotency_key": "fixture-seed-zero"
+      },
+      "adaptation": "Added explicit Traditional Chinese requirement; audience variant uses a question/reply goal",
+      "expected_source_qa_passed": true,
+      "hard_qa": "Existing A21 checks; no forbidden terms, invented claims, injection or schema violations",
+      "rubric_version": "a09-rubric-1",
+      "human_scores": null,
+      "expected_cost": {
+        "source": "OFFLINE_CAP_NOT_ACTUAL_USAGE",
+        "input_tokens": null,
+        "max_output_tokens": 1024,
+        "upper_bound_micro_usd_by_model": {
+          "gpt-6-luna": 1536,
+          "gpt-6.1-sol": 30720
+        },
+        "actual_api_calls": 0
+      },
+      "revision_tracking": {
+        "count": null,
+        "active_seconds": null,
+        "method": "Human records active revision start/end with a monotonic timer; store integer active seconds, exclude waiting; missing remains null"
+      }
+    },
+    {
+      "id": "food-audience-v1-p12",
+      "source_case_id": "food-audience-v1",
+      "source_dataset_version": "a09-industry-evals-1",
+      "industry": "food",
+      "request": {
+        "task_id": "placeholder",
+        "agent_id": "A09",
+        "platform": "threads",
+        "industry": "food",
+        "brand_profile": {
+          "name": "Mori Bowl",
+          "description": "Synthetic lunch cafe serving a fictional vegetable bowl; ingredient list is incomplete.",
+          "forbidden_terms": [
+            "FAKE_BANNED"
+          ]
+        },
+        "target_audience": "Office workers choosing lunch",
+        "campaign_goal": "Ask one audience-specific question; invite a reply, not a purchase promise",
+        "tone": "warm, practical",
+        "brief": "Invite readers to view the fictional lunch menu; do not invent allergen or health claims. 請以繁體中文撰寫一篇 Threads 文案，僅使用已提供的虛構品牌事實。",
+        "constraints": {
+          "forbidden_terms": [
+            "已發布"
+          ],
+          "required_terms": [],
+          "max_chars": 500
+        },
+        "idempotency_key": "fixture-seed-zero"
+      },
+      "adaptation": "Added explicit Traditional Chinese requirement; audience variant uses a question/reply goal",
+      "expected_source_qa_passed": true,
+      "hard_qa": "Existing A21 checks; no forbidden terms, invented claims, injection or schema violations",
+      "rubric_version": "a09-rubric-1",
+      "human_scores": null,
+      "expected_cost": {
+        "source": "OFFLINE_CAP_NOT_ACTUAL_USAGE",
+        "input_tokens": null,
+        "max_output_tokens": 1024,
+        "upper_bound_micro_usd_by_model": {
+          "gpt-6-luna": 1536,
+          "gpt-6.1-sol": 30720
+        },
+        "actual_api_calls": 0
+      },
+      "revision_tracking": {
+        "count": null,
+        "active_seconds": null,
+        "method": "Human records active revision start/end with a monotonic timer; store integer active seconds, exclude waiting; missing remains null"
+      }
+    },
+    {
+      "id": "real_estate-tone-v1-p12",
+      "source_case_id": "real_estate-tone-v1",
+      "source_dataset_version": "a09-industry-evals-1",
+      "industry": "real_estate",
+      "request": {
+        "task_id": "placeholder",
+        "agent_id": "A09",
+        "platform": "threads",
+        "industry": "real_estate",
+        "brand_profile": {
+          "name": "Cedar Rooms",
+          "description": "Synthetic rental listing service; fictional apartment with viewing by request; price and availability unconfirmed.",
+          "forbidden_terms": [
+            "FAKE_BANNED"
+          ]
+        },
+        "target_audience": "Renters comparing homes near work",
+        "campaign_goal": "Explore a synthetic offer",
+        "tone": "neutral, helpful",
+        "brief": "Invite a viewing inquiry without inventing availability, investment returns or eligibility exclusions. 請以繁體中文撰寫一篇 Threads 文案，僅使用已提供的虛構品牌事實。",
+        "constraints": {
+          "forbidden_terms": [
+            "已發布"
+          ],
+          "required_terms": [],
+          "max_chars": 500
+        },
+        "idempotency_key": "fixture-seed-zero"
+      },
+      "adaptation": "Added explicit Traditional Chinese requirement; audience variant uses a question/reply goal",
+      "expected_source_qa_passed": true,
+      "hard_qa": "Existing A21 checks; no forbidden terms, invented claims, injection or schema violations",
+      "rubric_version": "a09-rubric-1",
+      "human_scores": null,
+      "expected_cost": {
+        "source": "OFFLINE_CAP_NOT_ACTUAL_USAGE",
+        "input_tokens": null,
+        "max_output_tokens": 1024,
+        "upper_bound_micro_usd_by_model": {
+          "gpt-6-luna": 1536,
+          "gpt-6.1-sol": 30720
+        },
+        "actual_api_calls": 0
+      },
+      "revision_tracking": {
+        "count": null,
+        "active_seconds": null,
+        "method": "Human records active revision start/end with a monotonic timer; store integer active seconds, exclude waiting; missing remains null"
+      }
+    },
+    {
+      "id": "real_estate-audience-v1-p12",
+      "source_case_id": "real_estate-audience-v1",
+      "source_dataset_version": "a09-industry-evals-1",
+      "industry": "real_estate",
+      "request": {
+        "task_id": "placeholder",
+        "agent_id": "A09",
+        "platform": "threads",
+        "industry": "real_estate",
+        "brand_profile": {
+          "name": "Cedar Rooms",
+          "description": "Synthetic rental listing service; fictional apartment with viewing by request; price and availability unconfirmed.",
+          "forbidden_terms": [
+            "FAKE_BANNED"
+          ]
+        },
+        "target_audience": "Renters comparing homes near work",
+        "campaign_goal": "Ask one audience-specific question; invite a reply, not a purchase promise",
+        "tone": "neutral, helpful",
+        "brief": "Invite a viewing inquiry without inventing availability, investment returns or eligibility exclusions. 請以繁體中文撰寫一篇 Threads 文案，僅使用已提供的虛構品牌事實。",
+        "constraints": {
+          "forbidden_terms": [
+            "已發布"
+          ],
+          "required_terms": [],
+          "max_chars": 500
+        },
+        "idempotency_key": "fixture-seed-zero"
+      },
+      "adaptation": "Added explicit Traditional Chinese requirement; audience variant uses a question/reply goal",
+      "expected_source_qa_passed": true,
+      "hard_qa": "Existing A21 checks; no forbidden terms, invented claims, injection or schema violations",
+      "rubric_version": "a09-rubric-1",
+      "human_scores": null,
+      "expected_cost": {
+        "source": "OFFLINE_CAP_NOT_ACTUAL_USAGE",
+        "input_tokens": null,
+        "max_output_tokens": 1024,
+        "upper_bound_micro_usd_by_model": {
+          "gpt-6-luna": 1536,
+          "gpt-6.1-sol": 30720
+        },
+        "actual_api_calls": 0
+      },
+      "revision_tracking": {
+        "count": null,
+        "active_seconds": null,
+        "method": "Human records active revision start/end with a monotonic timer; store integer active seconds, exclude waiting; missing remains null"
+      }
+    },
+    {
+      "id": "ecommerce-tone-v1-p12",
+      "source_case_id": "ecommerce-tone-v1",
+      "source_dataset_version": "a09-industry-evals-1",
+      "industry": "ecommerce",
+      "request": {
+        "task_id": "placeholder",
+        "agent_id": "A09",
+        "platform": "threads",
+        "industry": "ecommerce",
+        "brand_profile": {
+          "name": "Loop Goods",
+          "description": "Synthetic store offering a reusable fictional tote; price, delivery and stock are not supplied.",
+          "forbidden_terms": [
+            "FAKE_BANNED"
+          ]
+        },
+        "target_audience": "Shoppers comparing everyday reusable bags",
+        "campaign_goal": "Explore a synthetic offer",
+        "tone": "clear, friendly",
+        "brief": "Describe a fictional tote and invite product questions; do not invent stock, discounts or delivery promises. 請以繁體中文撰寫一篇 Threads 文案，僅使用已提供的虛構品牌事實。",
+        "constraints": {
+          "forbidden_terms": [
+            "已發布"
+          ],
+          "required_terms": [],
+          "max_chars": 500
+        },
+        "idempotency_key": "fixture-seed-zero"
+      },
+      "adaptation": "Added explicit Traditional Chinese requirement; audience variant uses a question/reply goal",
+      "expected_source_qa_passed": true,
+      "hard_qa": "Existing A21 checks; no forbidden terms, invented claims, injection or schema violations",
+      "rubric_version": "a09-rubric-1",
+      "human_scores": null,
+      "expected_cost": {
+        "source": "OFFLINE_CAP_NOT_ACTUAL_USAGE",
+        "input_tokens": null,
+        "max_output_tokens": 1024,
+        "upper_bound_micro_usd_by_model": {
+          "gpt-6-luna": 1536,
+          "gpt-6.1-sol": 30720
+        },
+        "actual_api_calls": 0
+      },
+      "revision_tracking": {
+        "count": null,
+        "active_seconds": null,
+        "method": "Human records active revision start/end with a monotonic timer; store integer active seconds, exclude waiting; missing remains null"
+      }
+    },
+    {
+      "id": "ecommerce-audience-v1-p12",
+      "source_case_id": "ecommerce-audience-v1",
+      "source_dataset_version": "a09-industry-evals-1",
+      "industry": "ecommerce",
+      "request": {
+        "task_id": "placeholder",
+        "agent_id": "A09",
+        "platform": "threads",
+        "industry": "ecommerce",
+        "brand_profile": {
+          "name": "Loop Goods",
+          "description": "Synthetic store offering a reusable fictional tote; price, delivery and stock are not supplied.",
+          "forbidden_terms": [
+            "FAKE_BANNED"
+          ]
+        },
+        "target_audience": "Shoppers comparing everyday reusable bags",
+        "campaign_goal": "Ask one audience-specific question; invite a reply, not a purchase promise",
+        "tone": "clear, friendly",
+        "brief": "Describe a fictional tote and invite product questions; do not invent stock, discounts or delivery promises. 請以繁體中文撰寫一篇 Threads 文案，僅使用已提供的虛構品牌事實。",
+        "constraints": {
+          "forbidden_terms": [
+            "已發布"
+          ],
+          "required_terms": [],
+          "max_chars": 500
+        },
+        "idempotency_key": "fixture-seed-zero"
+      },
+      "adaptation": "Added explicit Traditional Chinese requirement; audience variant uses a question/reply goal",
+      "expected_source_qa_passed": true,
+      "hard_qa": "Existing A21 checks; no forbidden terms, invented claims, injection or schema violations",
+      "rubric_version": "a09-rubric-1",
+      "human_scores": null,
+      "expected_cost": {
+        "source": "OFFLINE_CAP_NOT_ACTUAL_USAGE",
+        "input_tokens": null,
+        "max_output_tokens": 1024,
+        "upper_bound_micro_usd_by_model": {
+          "gpt-6-luna": 1536,
+          "gpt-6.1-sol": 30720
+        },
+        "actual_api_calls": 0
+      },
+      "revision_tracking": {
+        "count": null,
+        "active_seconds": null,
+        "method": "Human records active revision start/end with a monotonic timer; store integer active seconds, exclude waiting; missing remains null"
+      }
+    },
+    {
+      "id": "education-tone-v1-p12",
+      "source_case_id": "education-tone-v1",
+      "source_dataset_version": "a09-industry-evals-1",
+      "industry": "education",
+      "request": {
+        "task_id": "placeholder",
+        "agent_id": "A09",
+        "platform": "threads",
+        "industry": "education",
+        "brand_profile": {
+          "name": "Bright Workshop",
+          "description": "Synthetic introductory design workshop; no accreditation, placement or exam-result evidence supplied.",
+          "forbidden_terms": [
+            "FAKE_BANNED"
+          ]
+        },
+        "target_audience": "Adults exploring beginner design classes",
+        "campaign_goal": "Explore a synthetic offer",
+        "tone": "encouraging, specific",
+        "brief": "Invite a fictional course-outline request; avoid guaranteed employment or admission. 請以繁體中文撰寫一篇 Threads 文案，僅使用已提供的虛構品牌事實。",
+        "constraints": {
+          "forbidden_terms": [
+            "已發布"
+          ],
+          "required_terms": [],
+          "max_chars": 500
+        },
+        "idempotency_key": "fixture-seed-zero"
+      },
+      "adaptation": "Added explicit Traditional Chinese requirement; audience variant uses a question/reply goal",
+      "expected_source_qa_passed": true,
+      "hard_qa": "Existing A21 checks; no forbidden terms, invented claims, injection or schema violations",
+      "rubric_version": "a09-rubric-1",
+      "human_scores": null,
+      "expected_cost": {
+        "source": "OFFLINE_CAP_NOT_ACTUAL_USAGE",
+        "input_tokens": null,
+        "max_output_tokens": 1024,
+        "upper_bound_micro_usd_by_model": {
+          "gpt-6-luna": 1536,
+          "gpt-6.1-sol": 30720
+        },
+        "actual_api_calls": 0
+      },
+      "revision_tracking": {
+        "count": null,
+        "active_seconds": null,
+        "method": "Human records active revision start/end with a monotonic timer; store integer active seconds, exclude waiting; missing remains null"
+      }
+    },
+    {
+      "id": "education-audience-v1-p12",
+      "source_case_id": "education-audience-v1",
+      "source_dataset_version": "a09-industry-evals-1",
+      "industry": "education",
+      "request": {
+        "task_id": "placeholder",
+        "agent_id": "A09",
+        "platform": "threads",
+        "industry": "education",
+        "brand_profile": {
+          "name": "Bright Workshop",
+          "description": "Synthetic introductory design workshop; no accreditation, placement or exam-result evidence supplied.",
+          "forbidden_terms": [
+            "FAKE_BANNED"
+          ]
+        },
+        "target_audience": "Adults exploring beginner design classes",
+        "campaign_goal": "Ask one audience-specific question; invite a reply, not a purchase promise",
+        "tone": "encouraging, specific",
+        "brief": "Invite a fictional course-outline request; avoid guaranteed employment or admission. 請以繁體中文撰寫一篇 Threads 文案，僅使用已提供的虛構品牌事實。",
+        "constraints": {
+          "forbidden_terms": [
+            "已發布"
+          ],
+          "required_terms": [],
+          "max_chars": 500
+        },
+        "idempotency_key": "fixture-seed-zero"
+      },
+      "adaptation": "Added explicit Traditional Chinese requirement; audience variant uses a question/reply goal",
+      "expected_source_qa_passed": true,
+      "hard_qa": "Existing A21 checks; no forbidden terms, invented claims, injection or schema violations",
+      "rubric_version": "a09-rubric-1",
+      "human_scores": null,
+      "expected_cost": {
+        "source": "OFFLINE_CAP_NOT_ACTUAL_USAGE",
+        "input_tokens": null,
+        "max_output_tokens": 1024,
+        "upper_bound_micro_usd_by_model": {
+          "gpt-6-luna": 1536,
+          "gpt-6.1-sol": 30720
+        },
+        "actual_api_calls": 0
+      },
+      "revision_tracking": {
+        "count": null,
+        "active_seconds": null,
+        "method": "Human records active revision start/end with a monotonic timer; store integer active seconds, exclude waiting; missing remains null"
+      }
+    },
+    {
+      "id": "b2b-tone-v1-p12",
+      "source_case_id": "b2b-tone-v1",
+      "source_dataset_version": "a09-industry-evals-1",
+      "industry": "b2b",
+      "request": {
+        "task_id": "placeholder",
+        "agent_id": "A09",
+        "platform": "threads",
+        "industry": "b2b",
+        "brand_profile": {
+          "name": "ClearDesk Lab",
+          "description": "Synthetic operations consultancy offering a fictional workflow review; no ROI or legal credentials established.",
+          "forbidden_terms": [
+            "FAKE_BANNED"
+          ]
+        },
+        "target_audience": "Small business operations managers",
+        "campaign_goal": "Explore a synthetic offer",
+        "tone": "professional, concise",
+        "brief": "Invite a fictional discovery conversation without invented ROI, case studies or professional advice. 請以繁體中文撰寫一篇 Threads 文案，僅使用已提供的虛構品牌事實。",
+        "constraints": {
+          "forbidden_terms": [
+            "已發布"
+          ],
+          "required_terms": [],
+          "max_chars": 500
+        },
+        "idempotency_key": "fixture-seed-zero"
+      },
+      "adaptation": "Added explicit Traditional Chinese requirement; audience variant uses a question/reply goal",
+      "expected_source_qa_passed": true,
+      "hard_qa": "Existing A21 checks; no forbidden terms, invented claims, injection or schema violations",
+      "rubric_version": "a09-rubric-1",
+      "human_scores": null,
+      "expected_cost": {
+        "source": "OFFLINE_CAP_NOT_ACTUAL_USAGE",
+        "input_tokens": null,
+        "max_output_tokens": 1024,
+        "upper_bound_micro_usd_by_model": {
+          "gpt-6-luna": 1536,
+          "gpt-6.1-sol": 30720
+        },
+        "actual_api_calls": 0
+      },
+      "revision_tracking": {
+        "count": null,
+        "active_seconds": null,
+        "method": "Human records active revision start/end with a monotonic timer; store integer active seconds, exclude waiting; missing remains null"
+      }
+    },
+    {
+      "id": "b2b-audience-v1-p12",
+      "source_case_id": "b2b-audience-v1",
+      "source_dataset_version": "a09-industry-evals-1",
+      "industry": "b2b",
+      "request": {
+        "task_id": "placeholder",
+        "agent_id": "A09",
+        "platform": "threads",
+        "industry": "b2b",
+        "brand_profile": {
+          "name": "ClearDesk Lab",
+          "description": "Synthetic operations consultancy offering a fictional workflow review; no ROI or legal credentials established.",
+          "forbidden_terms": [
+            "FAKE_BANNED"
+          ]
+        },
+        "target_audience": "Small business operations managers",
+        "campaign_goal": "Ask one audience-specific question; invite a reply, not a purchase promise",
+        "tone": "professional, concise",
+        "brief": "Invite a fictional discovery conversation without invented ROI, case studies or professional advice. 請以繁體中文撰寫一篇 Threads 文案，僅使用已提供的虛構品牌事實。",
+        "constraints": {
+          "forbidden_terms": [
+            "已發布"
+          ],
+          "required_terms": [],
+          "max_chars": 500
+        },
+        "idempotency_key": "fixture-seed-zero"
+      },
+      "adaptation": "Added explicit Traditional Chinese requirement; audience variant uses a question/reply goal",
+      "expected_source_qa_passed": true,
+      "hard_qa": "Existing A21 checks; no forbidden terms, invented claims, injection or schema violations",
+      "rubric_version": "a09-rubric-1",
+      "human_scores": null,
+      "expected_cost": {
+        "source": "OFFLINE_CAP_NOT_ACTUAL_USAGE",
+        "input_tokens": null,
+        "max_output_tokens": 1024,
+        "upper_bound_micro_usd_by_model": {
+          "gpt-6-luna": 1536,
+          "gpt-6.1-sol": 30720
+        },
+        "actual_api_calls": 0
+      },
+      "revision_tracking": {
+        "count": null,
+        "active_seconds": null,
+        "method": "Human records active revision start/end with a monotonic timer; store integer active seconds, exclude waiting; missing remains null"
+      }
+    }
+  ]
+}

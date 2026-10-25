@@ -1,0 +1,38 @@
+{
+  "gpt-6-luna": {
+    "provider": "openai",
+    "model": "gpt-6-luna",
+    "pricing_source_url": "https://developers.openai.com/api/docs/pricing",
+    "price_effective_date": "2026-10-25",
+    "effective_date_basis": "Local reviewed snapshot, standard short-context first-party USD list rates; not a claimed vendor price change",
+    "input_usd_per_million": "0.10",
+    "output_usd_per_million": "0.50",
+    "cached_input_usd_per_million": "0.01",
+    "cache_write_30m_usd_per_million": "0.125",
+    "cache_write_12h_usd_per_million": "0.25",
+    "max_input_tokens": 4096,
+    "max_output_tokens": 1024,
+    "limits_basis": "Local offline rehearsal caps, not vendor context/output maxima",
+    "live_enabled": false,
+    "live_cost_bound_verified": false,
+    "billing_scope": "standard first-party short-context text; no tools, regional endpoint, batch, flex, fast or ultrafast"
+  },
+  "gpt-6.1-sol": {
+    "provider": "openai",
+    "model": "gpt-6.1-sol",
+    "pricing_source_url": "https://developers.openai.com/api/docs/pricing",
+    "price_effective_date": "2026-10-25",
+    "effective_date_basis": "Local reviewed snapshot, standard short-context first-party USD list rates; not a claimed vendor price change",
+    "input_usd_per_million": "2.00",
+    "output_usd_per_million": "10.00",
+    "cached_input_usd_per_million": "0.10",
+    "cache_write_30m_usd_per_million": "2.50",
+    "cache_write_12h_usd_per_million": "5.00",
+    "max_input_tokens": 4096,
+    "max_output_tokens": 1024,
+    "limits_basis": "Local offline rehearsal caps, not vendor context/output maxima",
+    "live_enabled": false,
+    "live_cost_bound_verified": false,
+    "billing_scope": "standard first-party short-context text; no tools, regional endpoint, batch, flex, fast or ultrafast"
+  }
+}

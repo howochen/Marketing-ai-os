@@ -324,18 +324,21 @@ def test_provider_http_contract_and_explicit_opt_in(monkeypatch):
     monkeypatch.setenv('MOS_LIVE_TESTS', 'true')
     monkeypatch.setenv('ANTHROPIC_API_KEY', 'synthetic-key-never-sent')
     requests = []
-    def post(url, *, timeout, headers, json):
-        requests.append((url, json))
-        assert timeout == 60
-        assert headers['anthropic-version'] == '2023-06-01'
+    def post(request):
+        url=str(request.url)
+        payload=__import__('json').loads(request.content)
+        requests.append((url,payload))
+        assert request.extensions['timeout']['read']==60
+        assert request.headers['anthropic-version']=='2023-06-01'
         if url.endswith('count_tokens'):
-            return httpx.Response(200, json={'input_tokens': 10}, request=httpx.Request('POST', url))
-        return httpx.Response(200, json={
-            'model': MODEL['model'], 'id': 'mock-provider-message',
-            'usage': {'input_tokens': 10, 'output_tokens': 2, 'cache_read_input_tokens': 10},
-            'content': [{'type': 'text', 'text': 'Test output'}],
-        }, request=httpx.Request('POST', url))
-    monkeypatch.setattr(httpx, 'post', post)
+            return httpx.Response(200,json={'input_tokens':10})
+        return httpx.Response(200,json={
+            'model':MODEL['model'],'id':'mock-provider-message',
+            'usage':{'input_tokens':10,'output_tokens':2,'cache_read_input_tokens':10},
+            'content':[{'type':'text','text':'Test output'}]})
+    with pytest.raises(RuntimeError,match='live transport disabled'):
+        provider.generate('test',10)
+    provider.transport=httpx.MockTransport(post)
     assert provider.count_tokens('test') == 10
     result = provider.generate('test', 10)
     assert result['actual_micro'] == 21

@@ -24,6 +24,8 @@ def context(task: Task) -> CopyRequest:
     run=task.agent_run or {}
     if run.get('input'):
         return CopyRequest.model_validate(run['input'])
+    if task.receipt and task.receipt.get('request_context'):
+        return CopyRequest.model_validate(task.receipt['request_context'])
     if run.get('prompt'):
         data=json.loads(run['prompt'].rsplit('\n[REQUEST_DATA_JSON]\n',1)[1])['request']
         return CopyRequest.model_validate({**data,'idempotency_key':run['idempotency_key']})
@@ -46,15 +48,15 @@ def ensure_original(s: Session, task: Task, actor: Credential) -> DraftRevision:
     from .agent_runtime import qa
     payload=context(task)
     run=task.agent_run or {}
-    result=run.get('result')
+    result=run.get('result') or (task.receipt or {}).get('draft')
     draft={key:result.get(key,'') for key in ('draft_text','hook','call_to_action')} if result else {
         'draft_text':task.output,'hook':task.output,'call_to_action':task.output}
     _, checked=qa(json.dumps(draft),payload)
     rid=uid()
     record=DraftRevision(id=rid,tenant_id=task.tenant_id,task_id=task.id,parent_id=None,original_id=rid,
-        source='MOCK' if task.receipt_source=='MOCK' else 'LEGACY_UNVERIFIED',before_text='',after_text=draft['draft_text'],draft=draft,
+        source='MOCK' if task.receipt_source in {'MOCK','MOCK_HTTP'} else 'LEGACY_UNVERIFIED',before_text='',after_text=draft['draft_text'],draft=draft,
         reason='Original generated draft' if result else 'Legacy manual content snapshot; no inferred brand facts',
-        brand_version=hashed(payload.brand_profile.model_dump()),prompt_version=run.get('prompt_version','LEGACY_MANUAL'),
+        brand_version=hashed(payload.brand_profile.model_dump()),prompt_version=run.get('prompt_version') or (task.receipt or {}).get('prompt_version','LEGACY_MANUAL'),
         qa_result=checked.model_dump(),quality=rule_scores(draft,checked),idempotency_key='original',request_hash=hashed(draft),created_by=actor.id)
     s.add(record);s.flush()
     task.latest_revision_id=rid

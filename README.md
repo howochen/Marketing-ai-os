@@ -93,15 +93,7 @@ Every accounting/publication mutation serializes on the tenant row before readin
 
 No provider SDK was added; the existing HTTPX dependency is used. The request has a timeout and no automatic retries. Model calls require **all** of a feature flag, live-test opt-in, and a live key. CI supplies none of these.
 
-```powershell
-$env:MOS_LIVE_TESTS = 'true'
-$env:ANTHROPIC_API_KEY = '<explicitly opt-in key from your secret store>'
-.venv\Scripts\python -m pytest -q -m live
-Remove-Item Env:MOS_LIVE_TESTS
-Remove-Item Env:ANTHROPIC_API_KEY
-```
-
-The live test enables the feature only within its test, reserves USD 0.02 and caps output at 1024 tokens. It costs real money if run. Offline provider tests verify request limits, usage storage and ambiguous timeout handling without network access. Rate-card settlement is not a tax invoice; discounts, regional rates, one-hour cache writes, historical rate reconciliation and invoice reconciliation require a separately reviewed receipt importer. The built-in provider sends no cache-control directive.
+P1.2 supersedes the earlier live-test opt-in: **all real Provider transports are disabled**. The marked live test now skips even when environment keys are present. Do not run paid tests from this work order. See `docs/P12_LIVE_TEST_PLAN.md`; a plan is not spending authorization. Offline Anthropic request-contract tests use MockTransport, and rate-card settlement remains unverified rather than an invoice.
 
 ## Evidence and remaining work
 
@@ -128,3 +120,11 @@ Schema head is **0005**. See [acceptance](docs/P11_FINAL_ACCEPTANCE.md), [implem
 Read original/latest history and diffs with `GET /tasks/{id}/revisions`. Submit an owner/manager revision with `parent_revision_id`, unique `idempotency_key`, `draft` (draft_text/hook/call_to_action), and `reason`. Re-run deterministic QA with `POST /tasks/{id}/revisions/{rid}/qa`; owner approves the exact version with `POST /tasks/{id}/revisions/{rid}/approve`. Every edit clears current approval and preserves immutable history. Human scores use `/scores` with all eight rubric dimensions, a key and reason; scores never override QA. Publication requests remain MANUAL_REQUIRED and store the approved revision ID and immutable text snapshot. The legacy no-body task approval works only for the untouched original; edited content requires an explicit revision ID.
 
 Use canonical industry IDs `beauty_scalp`, `food`, `real_estate`, `ecommerce`, `education`, `b2b` to load only that industry's rules. Legacy free-text industries receive generic QA and require manual applicability review. The additive `measurement` object explicitly distinguishes UTF-8 bytes, Mock units, simulated cost, absent vendor tokens and zero real Provider cost. Legacy Mock `usage.*_tokens` fields remain compatibility units and must not be reported as real billed tokens.
+
+## MOS-P1.2-001 Provider readiness (offline only)
+
+See [research](docs/P12_PROVIDER_RESEARCH.md), [adapter design](docs/P12_ADAPTER_DESIGN.md), [token/cost safety](docs/P12_COST_AND_TOKEN_SAFETY.md), [live gate plan](docs/P12_LIVE_TEST_PLAN.md), [benchmark](docs/P12_MODEL_BENCHMARK_SPEC.md), [tests](docs/P12_TEST_EVIDENCE.md), and [acceptance](docs/P12_FINAL_ACCEPTANCE.md).
+
+Schema head is **0006**: additive frozen OpenAI readiness rate rows; historical rates and task snapshots remain unchanged. `OpenAIProvider` implements the existing LLMProvider interface but accepts only MockTransport in `MOS_ENV=test`. There is no public OpenAI generation endpoint or model fallback. `app.provider_rehearsal.rehearse` is an internal test harness that reuses tenant locks, reservation, settlement, QA and immutable revisions. Both OpenAI and legacy Anthropic adapters reject real HTTP transports. `GET /tasks/{id}/receipt` requires same-tenant read permission.
+
+The 12-case, two-model benchmark is a synthetic report rehearsal, not a real model-quality comparison. Mock HTTP token-shaped usage remains explicitly synthetic; local estimated tokens, actual Provider tokens and verified invoice amounts stay unknown. Keep model calls and live tests false by default. P1.5 remains NO-GO until separate user spending authorization and the full production billing/gate review.

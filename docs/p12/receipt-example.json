@@ -1,0 +1,76 @@
+{
+  "provider": "openai",
+  "model": "gpt-6-luna",
+  "request_id": "req_synthetic_request",
+  "usage": {
+    "input_tokens": 700,
+    "cache_read_input_tokens": 200,
+    "cache_write_30m_tokens": 60,
+    "cache_write_12h_tokens": 40,
+    "output_tokens": 200
+  },
+  "provider_usage": {
+    "input_tokens": 1000,
+    "input_tokens_details": {
+      "cached_tokens": 200,
+      "cache_write_tokens": 100,
+      "cache_write_tokens_details": {
+        "ttl_30m_tokens": 60,
+        "ttl_12h_tokens": 40
+      }
+    },
+    "output_tokens": 200,
+    "output_tokens_details": {
+      "reasoning_tokens": 50
+    },
+    "total_tokens": 1200
+  },
+  "actual_micro": 190,
+  "output": "{\"draft_text\": \"Demo Studio 合成草稿。留言討論。\", \"hook\": \"Demo Studio\", \"call_to_action\": \"留言討論。\"}",
+  "draft": {
+    "draft_text": "Demo Studio 合成草稿。留言討論。",
+    "hook": "Demo Studio",
+    "call_to_action": "留言討論。"
+  },
+  "output_valid": true,
+  "provider_status": "completed",
+  "outcome": "COMPLETE",
+  "unpriced_features": false,
+  "usage_exceeds_limits": false,
+  "rate_version": "448c4d9d3c5a0cd408928ea02086228a06e168ef3a3e5bb8ee6ab8067f1b7996",
+  "evidence_origin": "MOCK_HTTP",
+  "receipt_status": "UNVERIFIED",
+  "measurement": {
+    "mock_bytes": null,
+    "local_estimated_tokens": null,
+    "provider_reported_tokens": null,
+    "synthetic_provider_usage": {
+      "input_tokens": 1000,
+      "input_tokens_details": {
+        "cached_tokens": 200,
+        "cache_write_tokens": 100,
+        "cache_write_tokens_details": {
+          "ttl_30m_tokens": 60,
+          "ttl_12h_tokens": 40
+        }
+      },
+      "output_tokens": 200,
+      "output_tokens_details": {
+        "reasoning_tokens": 50
+      },
+      "total_tokens": 1200
+    },
+    "simulated_cost_micro_usd": 190,
+    "provider_estimated_billable_cost_micro_usd": null,
+    "verified_invoice_cost_micro_usd": null,
+    "real_api_cost_micro_usd": 0,
+    "provider_called": false,
+    "reconciled": false
+  },
+  "prompt_version": "a09-1",
+  "input_count": {
+    "value": 333,
+    "source": "MOCK_HTTP_FULL_REQUEST_COUNT"
+  },
+  "reserved_upper_bound_micro": 1536
+}

@@ -18,16 +18,19 @@ def enabled() -> bool:
 
 
 def usage_cost(usage: dict[str, int], card: dict = MODEL) -> int:
-    # shortcut: rate card supports standard/5m-cache receipts only; extend before importing other billing tiers.
+    # shortcut: only reviewed text/cache categories; review tools and other tiers before live billing.
     rates = {'input_tokens': 'input_usd_per_million', 'output_tokens': 'output_usd_per_million',
              'cache_read_input_tokens': 'cached_input_usd_per_million',
-             'cache_creation_input_tokens': 'cache_write_5m_usd_per_million'}
+             'cache_creation_input_tokens': 'cache_write_5m_usd_per_million',
+             'cache_write_30m_tokens':'cache_write_30m_usd_per_million',
+             'cache_write_12h_tokens':'cache_write_12h_usd_per_million'}
     cost = Decimal(0)
     for field, rate in rates.items():
         count = usage.get(field, 0)
         if type(count) is not int or count < 0:
             raise ValueError('Invalid provider token count')
-        cost += count * Decimal(card[rate])
+        if count:
+            cost += count * Decimal(card[rate])
     return int(cost.to_integral_value(rounding=ROUND_CEILING))
 
 
@@ -37,6 +40,9 @@ class LLMProvider(Protocol):
 
 
 class AnthropicProvider:
+    def __init__(self, transport: httpx.MockTransport | None=None) -> None:
+        self.transport=transport
+
     def request(self, path: str, payload: dict) -> dict:
         if not enabled():
             raise RuntimeError('Model calls disabled')
@@ -45,9 +51,12 @@ class AnthropicProvider:
         key = os.getenv('ANTHROPIC_API_KEY')
         if not key:
             raise RuntimeError('Provider key missing')
+        if os.getenv('MOS_ENV')!='test' or type(self.transport) is not httpx.MockTransport:
+            raise RuntimeError('P1.2 live transport disabled; MockTransport required')
         # No automatic retry: an ambiguous timeout may already have incurred a charge.
-        response = httpx.post('https://api.anthropic.com/v1/' + path, timeout=60,
-                              headers={'x-api-key': key, 'anthropic-version': '2023-06-01'}, json=payload)
+        with httpx.Client(transport=self.transport,timeout=60,follow_redirects=False,trust_env=False) as client:
+            response = client.post('https://api.anthropic.com/v1/' + path,
+                                  headers={'x-api-key': key, 'anthropic-version': '2023-06-01'}, json=payload)
         response.raise_for_status()
         data = response.json()
         if not isinstance(data, dict):

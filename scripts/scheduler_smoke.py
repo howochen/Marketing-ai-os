@@ -26,7 +26,7 @@ from app.main import app
 from app.database import SessionLocal, scope
 from app.models import Tenant, Task, now
 from app.security import uid, issue, ROLES
-assert json.load(urllib.request.urlopen('http://127.0.0.1:8000/ready'))['schema']=='0005'
+assert json.load(urllib.request.urlopen('http://127.0.0.1:8000/ready'))['schema']=='0006'
 assert json.load(urllib.request.urlopen('http://127.0.0.1:8000/health'))['model_calls_enabled'] is False
 tid=uid()
 with SessionLocal() as s:

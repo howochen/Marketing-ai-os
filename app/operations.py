@@ -13,7 +13,7 @@ logger = logging.getLogger('mos.events')
 
 
 def redact(message: str) -> str:
-    for key in ('MOS_ADMIN_KEY', 'ANTHROPIC_API_KEY', 'MOS_WORKER_TOKEN', 'POSTGRES_PASSWORD', 'MOS_APP_PASSWORD', 'MOS_MIGRATION_PASSWORD'):
+    for key in ('MOS_ADMIN_KEY', 'ANTHROPIC_API_KEY', 'OPENAI_API_KEY', 'MOS_WORKER_TOKEN', 'POSTGRES_PASSWORD', 'MOS_APP_PASSWORD', 'MOS_MIGRATION_PASSWORD'):
         value = os.getenv(key, '')
         if len(value) >= 8:
             message = message.replace(value, '[REDACTED]')

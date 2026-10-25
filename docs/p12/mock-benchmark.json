@@ -1,0 +1,1057 @@
+{
+  "models": {
+    "gpt-6-luna": {
+      "posts": [
+        {
+          "case_id": "beauty_scalp-tone-v1-p12",
+          "source": "MOCK_HTTP",
+          "rate_version": "448c4d9d3c5a0cd408928ea02086228a06e168ef3a3e5bb8ee6ab8067f1b7996",
+          "provider_schema_tokens": {
+            "input_tokens": 1000,
+            "output_tokens": 200,
+            "total_tokens": 1200,
+            "input_tokens_details": {
+              "cached_tokens": 200,
+              "cache_write_tokens": 100,
+              "cache_write_tokens_details": {
+                "ttl_30m_tokens": 60,
+                "ttl_12h_tokens": 40
+              }
+            },
+            "output_tokens_details": {
+              "reasoning_tokens": 50
+            }
+          },
+          "usage_is_synthetic": true,
+          "model_cost_micro_usd": 190,
+          "cost_kind": "SIMULATED",
+          "qa_passed": true,
+          "human_scores": {
+            "hook_appeal": 4,
+            "reader_resonance": 4,
+            "brand_tone": 4,
+            "information_clarity": 4,
+            "cta_clarity": 4,
+            "platform_native": 4,
+            "creativity": 4,
+            "claim_safety": 4
+          },
+          "scores_source": "HUMAN_SYNTHETIC",
+          "reviewer": "synthetic-reviewer-not-real-quality-study",
+          "human_total": 32,
+          "revision_count": 1,
+          "revision_seconds": 60,
+          "labor_cost_micro_usd": 16667,
+          "qualified_for_review": true
+        },
+        {
+          "case_id": "beauty_scalp-audience-v1-p12",
+          "source": "MOCK_HTTP",
+          "rate_version": "448c4d9d3c5a0cd408928ea02086228a06e168ef3a3e5bb8ee6ab8067f1b7996",
+          "provider_schema_tokens": {
+            "input_tokens": 1000,
+            "output_tokens": 200,
+            "total_tokens": 1200,
+            "input_tokens_details": {
+              "cached_tokens": 200,
+              "cache_write_tokens": 100,
+              "cache_write_tokens_details": {
+                "ttl_30m_tokens": 60,
+                "ttl_12h_tokens": 40
+              }
+            },
+            "output_tokens_details": {
+              "reasoning_tokens": 50
+            }
+          },
+          "usage_is_synthetic": true,
+          "model_cost_micro_usd": 190,
+          "cost_kind": "SIMULATED",
+          "qa_passed": true,
+          "human_scores": {
+            "hook_appeal": 4,
+            "reader_resonance": 4,
+            "brand_tone": 4,
+            "information_clarity": 4,
+            "cta_clarity": 4,
+            "platform_native": 4,
+            "creativity": 4,
+            "claim_safety": 4
+          },
+          "scores_source": "HUMAN_SYNTHETIC",
+          "reviewer": "synthetic-reviewer-not-real-quality-study",
+          "human_total": 32,
+          "revision_count": 1,
+          "revision_seconds": 60,
+          "labor_cost_micro_usd": 16667,
+          "qualified_for_review": true
+        },
+        {
+          "case_id": "food-tone-v1-p12",
+          "source": "MOCK_HTTP",
+          "rate_version": "448c4d9d3c5a0cd408928ea02086228a06e168ef3a3e5bb8ee6ab8067f1b7996",
+          "provider_schema_tokens": {
+            "input_tokens": 1000,
+            "output_tokens": 200,
+            "total_tokens": 1200,
+            "input_tokens_details": {
+              "cached_tokens": 200,
+              "cache_write_tokens": 100,
+              "cache_write_tokens_details": {
+                "ttl_30m_tokens": 60,
+                "ttl_12h_tokens": 40
+              }
+            },
+            "output_tokens_details": {
+              "reasoning_tokens": 50
+            }
+          },
+          "usage_is_synthetic": true,
+          "model_cost_micro_usd": 190,
+          "cost_kind": "SIMULATED",
+          "qa_passed": true,
+          "human_scores": {
+            "hook_appeal": 4,
+            "reader_resonance": 4,
+            "brand_tone": 4,
+            "information_clarity": 4,
+            "cta_clarity": 4,
+            "platform_native": 4,
+            "creativity": 4,
+            "claim_safety": 4
+          },
+          "scores_source": "HUMAN_SYNTHETIC",
+          "reviewer": "synthetic-reviewer-not-real-quality-study",
+          "human_total": 32,
+          "revision_count": 1,
+          "revision_seconds": 60,
+          "labor_cost_micro_usd": 16667,
+          "qualified_for_review": true
+        },
+        {
+          "case_id": "food-audience-v1-p12",
+          "source": "MOCK_HTTP",
+          "rate_version": "448c4d9d3c5a0cd408928ea02086228a06e168ef3a3e5bb8ee6ab8067f1b7996",
+          "provider_schema_tokens": {
+            "input_tokens": 1000,
+            "output_tokens": 200,
+            "total_tokens": 1200,
+            "input_tokens_details": {
+              "cached_tokens": 200,
+              "cache_write_tokens": 100,
+              "cache_write_tokens_details": {
+                "ttl_30m_tokens": 60,
+                "ttl_12h_tokens": 40
+              }
+            },
+            "output_tokens_details": {
+              "reasoning_tokens": 50
+            }
+          },
+          "usage_is_synthetic": true,
+          "model_cost_micro_usd": 190,
+          "cost_kind": "SIMULATED",
+          "qa_passed": true,
+          "human_scores": {
+            "hook_appeal": 4,
+            "reader_resonance": 4,
+            "brand_tone": 4,
+            "information_clarity": 4,
+            "cta_clarity": 4,
+            "platform_native": 4,
+            "creativity": 4,
+            "claim_safety": 4
+          },
+          "scores_source": "HUMAN_SYNTHETIC",
+          "reviewer": "synthetic-reviewer-not-real-quality-study",
+          "human_total": 32,
+          "revision_count": 1,
+          "revision_seconds": 60,
+          "labor_cost_micro_usd": 16667,
+          "qualified_for_review": true
+        },
+        {
+          "case_id": "real_estate-tone-v1-p12",
+          "source": "MOCK_HTTP",
+          "rate_version": "448c4d9d3c5a0cd408928ea02086228a06e168ef3a3e5bb8ee6ab8067f1b7996",
+          "provider_schema_tokens": {
+            "input_tokens": 1000,
+            "output_tokens": 200,
+            "total_tokens": 1200,
+            "input_tokens_details": {
+              "cached_tokens": 200,
+              "cache_write_tokens": 100,
+              "cache_write_tokens_details": {
+                "ttl_30m_tokens": 60,
+                "ttl_12h_tokens": 40
+              }
+            },
+            "output_tokens_details": {
+              "reasoning_tokens": 50
+            }
+          },
+          "usage_is_synthetic": true,
+          "model_cost_micro_usd": 190,
+          "cost_kind": "SIMULATED",
+          "qa_passed": true,
+          "human_scores": {
+            "hook_appeal": 4,
+            "reader_resonance": 4,
+            "brand_tone": 4,
+            "information_clarity": 4,
+            "cta_clarity": 4,
+            "platform_native": 4,
+            "creativity": 4,
+            "claim_safety": 4
+          },
+          "scores_source": "HUMAN_SYNTHETIC",
+          "reviewer": "synthetic-reviewer-not-real-quality-study",
+          "human_total": 32,
+          "revision_count": 1,
+          "revision_seconds": 60,
+          "labor_cost_micro_usd": 16667,
+          "qualified_for_review": true
+        },
+        {
+          "case_id": "real_estate-audience-v1-p12",
+          "source": "MOCK_HTTP",
+          "rate_version": "448c4d9d3c5a0cd408928ea02086228a06e168ef3a3e5bb8ee6ab8067f1b7996",
+          "provider_schema_tokens": {
+            "input_tokens": 1000,
+            "output_tokens": 200,
+            "total_tokens": 1200,
+            "input_tokens_details": {
+              "cached_tokens": 200,
+              "cache_write_tokens": 100,
+              "cache_write_tokens_details": {
+                "ttl_30m_tokens": 60,
+                "ttl_12h_tokens": 40
+              }
+            },
+            "output_tokens_details": {
+              "reasoning_tokens": 50
+            }
+          },
+          "usage_is_synthetic": true,
+          "model_cost_micro_usd": 190,
+          "cost_kind": "SIMULATED",
+          "qa_passed": true,
+          "human_scores": {
+            "hook_appeal": 4,
+            "reader_resonance": 4,
+            "brand_tone": 4,
+            "information_clarity": 4,
+            "cta_clarity": 4,
+            "platform_native": 4,
+            "creativity": 4,
+            "claim_safety": 4
+          },
+          "scores_source": "HUMAN_SYNTHETIC",
+          "reviewer": "synthetic-reviewer-not-real-quality-study",
+          "human_total": 32,
+          "revision_count": 1,
+          "revision_seconds": 60,
+          "labor_cost_micro_usd": 16667,
+          "qualified_for_review": true
+        },
+        {
+          "case_id": "ecommerce-tone-v1-p12",
+          "source": "MOCK_HTTP",
+          "rate_version": "448c4d9d3c5a0cd408928ea02086228a06e168ef3a3e5bb8ee6ab8067f1b7996",
+          "provider_schema_tokens": {
+            "input_tokens": 1000,
+            "output_tokens": 200,
+            "total_tokens": 1200,
+            "input_tokens_details": {
+              "cached_tokens": 200,
+              "cache_write_tokens": 100,
+              "cache_write_tokens_details": {
+                "ttl_30m_tokens": 60,
+                "ttl_12h_tokens": 40
+              }
+            },
+            "output_tokens_details": {
+              "reasoning_tokens": 50
+            }
+          },
+          "usage_is_synthetic": true,
+          "model_cost_micro_usd": 190,
+          "cost_kind": "SIMULATED",
+          "qa_passed": true,
+          "human_scores": {
+            "hook_appeal": 4,
+            "reader_resonance": 4,
+            "brand_tone": 4,
+            "information_clarity": 4,
+            "cta_clarity": 4,
+            "platform_native": 4,
+            "creativity": 4,
+            "claim_safety": 4
+          },
+          "scores_source": "HUMAN_SYNTHETIC",
+          "reviewer": "synthetic-reviewer-not-real-quality-study",
+          "human_total": 32,
+          "revision_count": 1,
+          "revision_seconds": 60,
+          "labor_cost_micro_usd": 16667,
+          "qualified_for_review": true
+        },
+        {
+          "case_id": "ecommerce-audience-v1-p12",
+          "source": "MOCK_HTTP",
+          "rate_version": "448c4d9d3c5a0cd408928ea02086228a06e168ef3a3e5bb8ee6ab8067f1b7996",
+          "provider_schema_tokens": {
+            "input_tokens": 1000,
+            "output_tokens": 200,
+            "total_tokens": 1200,
+            "input_tokens_details": {
+              "cached_tokens": 200,
+              "cache_write_tokens": 100,
+              "cache_write_tokens_details": {
+                "ttl_30m_tokens": 60,
+                "ttl_12h_tokens": 40
+              }
+            },
+            "output_tokens_details": {
+              "reasoning_tokens": 50
+            }
+          },
+          "usage_is_synthetic": true,
+          "model_cost_micro_usd": 190,
+          "cost_kind": "SIMULATED",
+          "qa_passed": true,
+          "human_scores": {
+            "hook_appeal": 4,
+            "reader_resonance": 4,
+            "brand_tone": 4,
+            "information_clarity": 4,
+            "cta_clarity": 4,
+            "platform_native": 4,
+            "creativity": 4,
+            "claim_safety": 4
+          },
+          "scores_source": "HUMAN_SYNTHETIC",
+          "reviewer": "synthetic-reviewer-not-real-quality-study",
+          "human_total": 32,
+          "revision_count": 1,
+          "revision_seconds": 60,
+          "labor_cost_micro_usd": 16667,
+          "qualified_for_review": true
+        },
+        {
+          "case_id": "education-tone-v1-p12",
+          "source": "MOCK_HTTP",
+          "rate_version": "448c4d9d3c5a0cd408928ea02086228a06e168ef3a3e5bb8ee6ab8067f1b7996",
+          "provider_schema_tokens": {
+            "input_tokens": 1000,
+            "output_tokens": 200,
+            "total_tokens": 1200,
+            "input_tokens_details": {
+              "cached_tokens": 200,
+              "cache_write_tokens": 100,
+              "cache_write_tokens_details": {
+                "ttl_30m_tokens": 60,
+                "ttl_12h_tokens": 40
+              }
+            },
+            "output_tokens_details": {
+              "reasoning_tokens": 50
+            }
+          },
+          "usage_is_synthetic": true,
+          "model_cost_micro_usd": 190,
+          "cost_kind": "SIMULATED",
+          "qa_passed": true,
+          "human_scores": {
+            "hook_appeal": 4,
+            "reader_resonance": 4,
+            "brand_tone": 4,
+            "information_clarity": 4,
+            "cta_clarity": 4,
+            "platform_native": 4,
+            "creativity": 4,
+            "claim_safety": 4
+          },
+          "scores_source": "HUMAN_SYNTHETIC",
+          "reviewer": "synthetic-reviewer-not-real-quality-study",
+          "human_total": 32,
+          "revision_count": 1,
+          "revision_seconds": 60,
+          "labor_cost_micro_usd": 16667,
+          "qualified_for_review": true
+        },
+        {
+          "case_id": "education-audience-v1-p12",
+          "source": "MOCK_HTTP",
+          "rate_version": "448c4d9d3c5a0cd408928ea02086228a06e168ef3a3e5bb8ee6ab8067f1b7996",
+          "provider_schema_tokens": {
+            "input_tokens": 1000,
+            "output_tokens": 200,
+            "total_tokens": 1200,
+            "input_tokens_details": {
+              "cached_tokens": 200,
+              "cache_write_tokens": 100,
+              "cache_write_tokens_details": {
+                "ttl_30m_tokens": 60,
+                "ttl_12h_tokens": 40
+              }
+            },
+            "output_tokens_details": {
+              "reasoning_tokens": 50
+            }
+          },
+          "usage_is_synthetic": true,
+          "model_cost_micro_usd": 190,
+          "cost_kind": "SIMULATED",
+          "qa_passed": true,
+          "human_scores": {
+            "hook_appeal": 4,
+            "reader_resonance": 4,
+            "brand_tone": 4,
+            "information_clarity": 4,
+            "cta_clarity": 4,
+            "platform_native": 4,
+            "creativity": 4,
+            "claim_safety": 4
+          },
+          "scores_source": "HUMAN_SYNTHETIC",
+          "reviewer": "synthetic-reviewer-not-real-quality-study",
+          "human_total": 32,
+          "revision_count": 1,
+          "revision_seconds": 60,
+          "labor_cost_micro_usd": 16667,
+          "qualified_for_review": true
+        },
+        {
+          "case_id": "b2b-tone-v1-p12",
+          "source": "MOCK_HTTP",
+          "rate_version": "448c4d9d3c5a0cd408928ea02086228a06e168ef3a3e5bb8ee6ab8067f1b7996",
+          "provider_schema_tokens": {
+            "input_tokens": 1000,
+            "output_tokens": 200,
+            "total_tokens": 1200,
+            "input_tokens_details": {
+              "cached_tokens": 200,
+              "cache_write_tokens": 100,
+              "cache_write_tokens_details": {
+                "ttl_30m_tokens": 60,
+                "ttl_12h_tokens": 40
+              }
+            },
+            "output_tokens_details": {
+              "reasoning_tokens": 50
+            }
+          },
+          "usage_is_synthetic": true,
+          "model_cost_micro_usd": 190,
+          "cost_kind": "SIMULATED",
+          "qa_passed": true,
+          "human_scores": {
+            "hook_appeal": 4,
+            "reader_resonance": 4,
+            "brand_tone": 4,
+            "information_clarity": 4,
+            "cta_clarity": 4,
+            "platform_native": 4,
+            "creativity": 4,
+            "claim_safety": 4
+          },
+          "scores_source": "HUMAN_SYNTHETIC",
+          "reviewer": "synthetic-reviewer-not-real-quality-study",
+          "human_total": 32,
+          "revision_count": 1,
+          "revision_seconds": 60,
+          "labor_cost_micro_usd": 16667,
+          "qualified_for_review": true
+        },
+        {
+          "case_id": "b2b-audience-v1-p12",
+          "source": "MOCK_HTTP",
+          "rate_version": "448c4d9d3c5a0cd408928ea02086228a06e168ef3a3e5bb8ee6ab8067f1b7996",
+          "provider_schema_tokens": {
+            "input_tokens": 1000,
+            "output_tokens": 200,
+            "total_tokens": 1200,
+            "input_tokens_details": {
+              "cached_tokens": 200,
+              "cache_write_tokens": 100,
+              "cache_write_tokens_details": {
+                "ttl_30m_tokens": 60,
+                "ttl_12h_tokens": 40
+              }
+            },
+            "output_tokens_details": {
+              "reasoning_tokens": 50
+            }
+          },
+          "usage_is_synthetic": true,
+          "model_cost_micro_usd": 190,
+          "cost_kind": "SIMULATED",
+          "qa_passed": true,
+          "human_scores": {
+            "hook_appeal": 4,
+            "reader_resonance": 4,
+            "brand_tone": 4,
+            "information_clarity": 4,
+            "cta_clarity": 4,
+            "platform_native": 4,
+            "creativity": 4,
+            "claim_safety": 4
+          },
+          "scores_source": "HUMAN_SYNTHETIC",
+          "reviewer": "synthetic-reviewer-not-real-quality-study",
+          "human_total": 32,
+          "revision_count": 1,
+          "revision_seconds": 60,
+          "labor_cost_micro_usd": 16667,
+          "qualified_for_review": true
+        }
+      ],
+      "qa_pass_rate": 1.0,
+      "mean_human_score": 32.0,
+      "human_scored_posts": 12,
+      "total_revision_count": 12,
+      "total_revision_seconds": 720,
+      "simulated_model_cost_micro_usd": 2280,
+      "provider_estimated_billable_cost_micro_usd": null,
+      "verified_invoice_cost_micro_usd": null,
+      "qualified_posts": 12,
+      "all_attempt_model_cost_micro_usd": 2280,
+      "labor_cost_micro_usd": 200004,
+      "total_cost_per_qualified_post_micro_usd": 16857,
+      "total_cost_scope": "All attempts including rejected drafts; labor missing => total unknown; mock totals remain simulated"
+    },
+    "gpt-6.1-sol": {
+      "posts": [
+        {
+          "case_id": "beauty_scalp-tone-v1-p12",
+          "source": "MOCK_HTTP",
+          "rate_version": "166267ebf16406ea8b1303aea13a8deb8abcda4e80bc6ffc940d8073a8469d01",
+          "provider_schema_tokens": {
+            "input_tokens": 1000,
+            "output_tokens": 200,
+            "total_tokens": 1200,
+            "input_tokens_details": {
+              "cached_tokens": 200,
+              "cache_write_tokens": 100,
+              "cache_write_tokens_details": {
+                "ttl_30m_tokens": 60,
+                "ttl_12h_tokens": 40
+              }
+            },
+            "output_tokens_details": {
+              "reasoning_tokens": 50
+            }
+          },
+          "usage_is_synthetic": true,
+          "model_cost_micro_usd": 3770,
+          "cost_kind": "SIMULATED",
+          "qa_passed": true,
+          "human_scores": {
+            "hook_appeal": 4,
+            "reader_resonance": 4,
+            "brand_tone": 4,
+            "information_clarity": 4,
+            "cta_clarity": 4,
+            "platform_native": 4,
+            "creativity": 4,
+            "claim_safety": 4
+          },
+          "scores_source": "HUMAN_SYNTHETIC",
+          "reviewer": "synthetic-reviewer-not-real-quality-study",
+          "human_total": 32,
+          "revision_count": 1,
+          "revision_seconds": 60,
+          "labor_cost_micro_usd": 16667,
+          "qualified_for_review": true
+        },
+        {
+          "case_id": "beauty_scalp-audience-v1-p12",
+          "source": "MOCK_HTTP",
+          "rate_version": "166267ebf16406ea8b1303aea13a8deb8abcda4e80bc6ffc940d8073a8469d01",
+          "provider_schema_tokens": {
+            "input_tokens": 1000,
+            "output_tokens": 200,
+            "total_tokens": 1200,
+            "input_tokens_details": {
+              "cached_tokens": 200,
+              "cache_write_tokens": 100,
+              "cache_write_tokens_details": {
+                "ttl_30m_tokens": 60,
+                "ttl_12h_tokens": 40
+              }
+            },
+            "output_tokens_details": {
+              "reasoning_tokens": 50
+            }
+          },
+          "usage_is_synthetic": true,
+          "model_cost_micro_usd": 3770,
+          "cost_kind": "SIMULATED",
+          "qa_passed": true,
+          "human_scores": {
+            "hook_appeal": 4,
+            "reader_resonance": 4,
+            "brand_tone": 4,
+            "information_clarity": 4,
+            "cta_clarity": 4,
+            "platform_native": 4,
+            "creativity": 4,
+            "claim_safety": 4
+          },
+          "scores_source": "HUMAN_SYNTHETIC",
+          "reviewer": "synthetic-reviewer-not-real-quality-study",
+          "human_total": 32,
+          "revision_count": 1,
+          "revision_seconds": 60,
+          "labor_cost_micro_usd": 16667,
+          "qualified_for_review": true
+        },
+        {
+          "case_id": "food-tone-v1-p12",
+          "source": "MOCK_HTTP",
+          "rate_version": "166267ebf16406ea8b1303aea13a8deb8abcda4e80bc6ffc940d8073a8469d01",
+          "provider_schema_tokens": {
+            "input_tokens": 1000,
+            "output_tokens": 200,
+            "total_tokens": 1200,
+            "input_tokens_details": {
+              "cached_tokens": 200,
+              "cache_write_tokens": 100,
+              "cache_write_tokens_details": {
+                "ttl_30m_tokens": 60,
+                "ttl_12h_tokens": 40
+              }
+            },
+            "output_tokens_details": {
+              "reasoning_tokens": 50
+            }
+          },
+          "usage_is_synthetic": true,
+          "model_cost_micro_usd": 3770,
+          "cost_kind": "SIMULATED",
+          "qa_passed": true,
+          "human_scores": {
+            "hook_appeal": 4,
+            "reader_resonance": 4,
+            "brand_tone": 4,
+            "information_clarity": 4,
+            "cta_clarity": 4,
+            "platform_native": 4,
+            "creativity": 4,
+            "claim_safety": 4
+          },
+          "scores_source": "HUMAN_SYNTHETIC",
+          "reviewer": "synthetic-reviewer-not-real-quality-study",
+          "human_total": 32,
+          "revision_count": 1,
+          "revision_seconds": 60,
+          "labor_cost_micro_usd": 16667,
+          "qualified_for_review": true
+        },
+        {
+          "case_id": "food-audience-v1-p12",
+          "source": "MOCK_HTTP",
+          "rate_version": "166267ebf16406ea8b1303aea13a8deb8abcda4e80bc6ffc940d8073a8469d01",
+          "provider_schema_tokens": {
+            "input_tokens": 1000,
+            "output_tokens": 200,
+            "total_tokens": 1200,
+            "input_tokens_details": {
+              "cached_tokens": 200,
+              "cache_write_tokens": 100,
+              "cache_write_tokens_details": {
+                "ttl_30m_tokens": 60,
+                "ttl_12h_tokens": 40
+              }
+            },
+            "output_tokens_details": {
+              "reasoning_tokens": 50
+            }
+          },
+          "usage_is_synthetic": true,
+          "model_cost_micro_usd": 3770,
+          "cost_kind": "SIMULATED",
+          "qa_passed": true,
+          "human_scores": {
+            "hook_appeal": 4,
+            "reader_resonance": 4,
+            "brand_tone": 4,
+            "information_clarity": 4,
+            "cta_clarity": 4,
+            "platform_native": 4,
+            "creativity": 4,
+            "claim_safety": 4
+          },
+          "scores_source": "HUMAN_SYNTHETIC",
+          "reviewer": "synthetic-reviewer-not-real-quality-study",
+          "human_total": 32,
+          "revision_count": 1,
+          "revision_seconds": 60,
+          "labor_cost_micro_usd": 16667,
+          "qualified_for_review": true
+        },
+        {
+          "case_id": "real_estate-tone-v1-p12",
+          "source": "MOCK_HTTP",
+          "rate_version": "166267ebf16406ea8b1303aea13a8deb8abcda4e80bc6ffc940d8073a8469d01",
+          "provider_schema_tokens": {
+            "input_tokens": 1000,
+            "output_tokens": 200,
+            "total_tokens": 1200,
+            "input_tokens_details": {
+              "cached_tokens": 200,
+              "cache_write_tokens": 100,
+              "cache_write_tokens_details": {
+                "ttl_30m_tokens": 60,
+                "ttl_12h_tokens": 40
+              }
+            },
+            "output_tokens_details": {
+              "reasoning_tokens": 50
+            }
+          },
+          "usage_is_synthetic": true,
+          "model_cost_micro_usd": 3770,
+          "cost_kind": "SIMULATED",
+          "qa_passed": true,
+          "human_scores": {
+            "hook_appeal": 4,
+            "reader_resonance": 4,
+            "brand_tone": 4,
+            "information_clarity": 4,
+            "cta_clarity": 4,
+            "platform_native": 4,
+            "creativity": 4,
+            "claim_safety": 4
+          },
+          "scores_source": "HUMAN_SYNTHETIC",
+          "reviewer": "synthetic-reviewer-not-real-quality-study",
+          "human_total": 32,
+          "revision_count": 1,
+          "revision_seconds": 60,
+          "labor_cost_micro_usd": 16667,
+          "qualified_for_review": true
+        },
+        {
+          "case_id": "real_estate-audience-v1-p12",
+          "source": "MOCK_HTTP",
+          "rate_version": "166267ebf16406ea8b1303aea13a8deb8abcda4e80bc6ffc940d8073a8469d01",
+          "provider_schema_tokens": {
+            "input_tokens": 1000,
+            "output_tokens": 200,
+            "total_tokens": 1200,
+            "input_tokens_details": {
+              "cached_tokens": 200,
+              "cache_write_tokens": 100,
+              "cache_write_tokens_details": {
+                "ttl_30m_tokens": 60,
+                "ttl_12h_tokens": 40
+              }
+            },
+            "output_tokens_details": {
+              "reasoning_tokens": 50
+            }
+          },
+          "usage_is_synthetic": true,
+          "model_cost_micro_usd": 3770,
+          "cost_kind": "SIMULATED",
+          "qa_passed": true,
+          "human_scores": {
+            "hook_appeal": 4,
+            "reader_resonance": 4,
+            "brand_tone": 4,
+            "information_clarity": 4,
+            "cta_clarity": 4,
+            "platform_native": 4,
+            "creativity": 4,
+            "claim_safety": 4
+          },
+          "scores_source": "HUMAN_SYNTHETIC",
+          "reviewer": "synthetic-reviewer-not-real-quality-study",
+          "human_total": 32,
+          "revision_count": 1,
+          "revision_seconds": 60,
+          "labor_cost_micro_usd": 16667,
+          "qualified_for_review": true
+        },
+        {
+          "case_id": "ecommerce-tone-v1-p12",
+          "source": "MOCK_HTTP",
+          "rate_version": "166267ebf16406ea8b1303aea13a8deb8abcda4e80bc6ffc940d8073a8469d01",
+          "provider_schema_tokens": {
+            "input_tokens": 1000,
+            "output_tokens": 200,
+            "total_tokens": 1200,
+            "input_tokens_details": {
+              "cached_tokens": 200,
+              "cache_write_tokens": 100,
+              "cache_write_tokens_details": {
+                "ttl_30m_tokens": 60,
+                "ttl_12h_tokens": 40
+              }
+            },
+            "output_tokens_details": {
+              "reasoning_tokens": 50
+            }
+          },
+          "usage_is_synthetic": true,
+          "model_cost_micro_usd": 3770,
+          "cost_kind": "SIMULATED",
+          "qa_passed": true,
+          "human_scores": {
+            "hook_appeal": 4,
+            "reader_resonance": 4,
+            "brand_tone": 4,
+            "information_clarity": 4,
+            "cta_clarity": 4,
+            "platform_native": 4,
+            "creativity": 4,
+            "claim_safety": 4
+          },
+          "scores_source": "HUMAN_SYNTHETIC",
+          "reviewer": "synthetic-reviewer-not-real-quality-study",
+          "human_total": 32,
+          "revision_count": 1,
+          "revision_seconds": 60,
+          "labor_cost_micro_usd": 16667,
+          "qualified_for_review": true
+        },
+        {
+          "case_id": "ecommerce-audience-v1-p12",
+          "source": "MOCK_HTTP",
+          "rate_version": "166267ebf16406ea8b1303aea13a8deb8abcda4e80bc6ffc940d8073a8469d01",
+          "provider_schema_tokens": {
+            "input_tokens": 1000,
+            "output_tokens": 200,
+            "total_tokens": 1200,
+            "input_tokens_details": {
+              "cached_tokens": 200,
+              "cache_write_tokens": 100,
+              "cache_write_tokens_details": {
+                "ttl_30m_tokens": 60,
+                "ttl_12h_tokens": 40
+              }
+            },
+            "output_tokens_details": {
+              "reasoning_tokens": 50
+            }
+          },
+          "usage_is_synthetic": true,
+          "model_cost_micro_usd": 3770,
+          "cost_kind": "SIMULATED",
+          "qa_passed": true,
+          "human_scores": {
+            "hook_appeal": 4,
+            "reader_resonance": 4,
+            "brand_tone": 4,
+            "information_clarity": 4,
+            "cta_clarity": 4,
+            "platform_native": 4,
+            "creativity": 4,
+            "claim_safety": 4
+          },
+          "scores_source": "HUMAN_SYNTHETIC",
+          "reviewer": "synthetic-reviewer-not-real-quality-study",
+          "human_total": 32,
+          "revision_count": 1,
+          "revision_seconds": 60,
+          "labor_cost_micro_usd": 16667,
+          "qualified_for_review": true
+        },
+        {
+          "case_id": "education-tone-v1-p12",
+          "source": "MOCK_HTTP",
+          "rate_version": "166267ebf16406ea8b1303aea13a8deb8abcda4e80bc6ffc940d8073a8469d01",
+          "provider_schema_tokens": {
+            "input_tokens": 1000,
+            "output_tokens": 200,
+            "total_tokens": 1200,
+            "input_tokens_details": {
+              "cached_tokens": 200,
+              "cache_write_tokens": 100,
+              "cache_write_tokens_details": {
+                "ttl_30m_tokens": 60,
+                "ttl_12h_tokens": 40
+              }
+            },
+            "output_tokens_details": {
+              "reasoning_tokens": 50
+            }
+          },
+          "usage_is_synthetic": true,
+          "model_cost_micro_usd": 3770,
+          "cost_kind": "SIMULATED",
+          "qa_passed": true,
+          "human_scores": {
+            "hook_appeal": 4,
+            "reader_resonance": 4,
+            "brand_tone": 4,
+            "information_clarity": 4,
+            "cta_clarity": 4,
+            "platform_native": 4,
+            "creativity": 4,
+            "claim_safety": 4
+          },
+          "scores_source": "HUMAN_SYNTHETIC",
+          "reviewer": "synthetic-reviewer-not-real-quality-study",
+          "human_total": 32,
+          "revision_count": 1,
+          "revision_seconds": 60,
+          "labor_cost_micro_usd": 16667,
+          "qualified_for_review": true
+        },
+        {
+          "case_id": "education-audience-v1-p12",
+          "source": "MOCK_HTTP",
+          "rate_version": "166267ebf16406ea8b1303aea13a8deb8abcda4e80bc6ffc940d8073a8469d01",
+          "provider_schema_tokens": {
+            "input_tokens": 1000,
+            "output_tokens": 200,
+            "total_tokens": 1200,
+            "input_tokens_details": {
+              "cached_tokens": 200,
+              "cache_write_tokens": 100,
+              "cache_write_tokens_details": {
+                "ttl_30m_tokens": 60,
+                "ttl_12h_tokens": 40
+              }
+            },
+            "output_tokens_details": {
+              "reasoning_tokens": 50
+            }
+          },
+          "usage_is_synthetic": true,
+          "model_cost_micro_usd": 3770,
+          "cost_kind": "SIMULATED",
+          "qa_passed": true,
+          "human_scores": {
+            "hook_appeal": 4,
+            "reader_resonance": 4,
+            "brand_tone": 4,
+            "information_clarity": 4,
+            "cta_clarity": 4,
+            "platform_native": 4,
+            "creativity": 4,
+            "claim_safety": 4
+          },
+          "scores_source": "HUMAN_SYNTHETIC",
+          "reviewer": "synthetic-reviewer-not-real-quality-study",
+          "human_total": 32,
+          "revision_count": 1,
+          "revision_seconds": 60,
+          "labor_cost_micro_usd": 16667,
+          "qualified_for_review": true
+        },
+        {
+          "case_id": "b2b-tone-v1-p12",
+          "source": "MOCK_HTTP",
+          "rate_version": "166267ebf16406ea8b1303aea13a8deb8abcda4e80bc6ffc940d8073a8469d01",
+          "provider_schema_tokens": {
+            "input_tokens": 1000,
+            "output_tokens": 200,
+            "total_tokens": 1200,
+            "input_tokens_details": {
+              "cached_tokens": 200,
+              "cache_write_tokens": 100,
+              "cache_write_tokens_details": {
+                "ttl_30m_tokens": 60,
+                "ttl_12h_tokens": 40
+              }
+            },
+            "output_tokens_details": {
+              "reasoning_tokens": 50
+            }
+          },
+          "usage_is_synthetic": true,
+          "model_cost_micro_usd": 3770,
+          "cost_kind": "SIMULATED",
+          "qa_passed": true,
+          "human_scores": {
+            "hook_appeal": 4,
+            "reader_resonance": 4,
+            "brand_tone": 4,
+            "information_clarity": 4,
+            "cta_clarity": 4,
+            "platform_native": 4,
+            "creativity": 4,
+            "claim_safety": 4
+          },
+          "scores_source": "HUMAN_SYNTHETIC",
+          "reviewer": "synthetic-reviewer-not-real-quality-study",
+          "human_total": 32,
+          "revision_count": 1,
+          "revision_seconds": 60,
+          "labor_cost_micro_usd": 16667,
+          "qualified_for_review": true
+        },
+        {
+          "case_id": "b2b-audience-v1-p12",
+          "source": "MOCK_HTTP",
+          "rate_version": "166267ebf16406ea8b1303aea13a8deb8abcda4e80bc6ffc940d8073a8469d01",
+          "provider_schema_tokens": {
+            "input_tokens": 1000,
+            "output_tokens": 200,
+            "total_tokens": 1200,
+            "input_tokens_details": {
+              "cached_tokens": 200,
+              "cache_write_tokens": 100,
+              "cache_write_tokens_details": {
+                "ttl_30m_tokens": 60,
+                "ttl_12h_tokens": 40
+              }
+            },
+            "output_tokens_details": {
+              "reasoning_tokens": 50
+            }
+          },
+          "usage_is_synthetic": true,
+          "model_cost_micro_usd": 3770,
+          "cost_kind": "SIMULATED",
+          "qa_passed": true,
+          "human_scores": {
+            "hook_appeal": 4,
+            "reader_resonance": 4,
+            "brand_tone": 4,
+            "information_clarity": 4,
+            "cta_clarity": 4,
+            "platform_native": 4,
+            "creativity": 4,
+            "claim_safety": 4
+          },
+          "scores_source": "HUMAN_SYNTHETIC",
+          "reviewer": "synthetic-reviewer-not-real-quality-study",
+          "human_total": 32,
+          "revision_count": 1,
+          "revision_seconds": 60,
+          "labor_cost_micro_usd": 16667,
+          "qualified_for_review": true
+        }
+      ],
+      "qa_pass_rate": 1.0,
+      "mean_human_score": 32.0,
+      "human_scored_posts": 12,
+      "total_revision_count": 12,
+      "total_revision_seconds": 720,
+      "simulated_model_cost_micro_usd": 45240,
+      "provider_estimated_billable_cost_micro_usd": null,
+      "verified_invoice_cost_micro_usd": null,
+      "qualified_posts": 12,
+      "all_attempt_model_cost_micro_usd": 45240,
+      "labor_cost_micro_usd": 200004,
+      "total_cost_per_qualified_post_micro_usd": 20437,
+      "total_cost_scope": "All attempts including rejected drafts; labor missing => total unknown; mock totals remain simulated"
+    }
+  },
+  "differences": {
+    "order": [
+      "gpt-6-luna",
+      "gpt-6.1-sol"
+    ],
+    "model_cost_micro_usd_b_minus_a": 42960,
+    "qa_pass_rate_b_minus_a": 0.0,
+    "human_score_b_minus_a": 0.0
+  },
+  "real_model_comparison_performed": false,
+  "note": "Arithmetic/report rehearsal only; no superiority, market performance, or publication authorization implied"
+}

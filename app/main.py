@@ -56,7 +56,7 @@ def task_for(s, tid, task_id):
 
 
 def event(s, tid, task, kind, amount, receipt=None):
-    if kind == 'SETTLE' and receipt and receipt.get('provider') == 'mock':
+    if kind == 'SETTLE' and receipt and (receipt.get('provider') == 'mock' or receipt.get('evidence_origin')=='MOCK_HTTP'):
         kind = 'SETTLE_MOCK'
     s.add(CostEvent(id=uid(), tenant_id=tid, task_id=task.id, type=kind,
                     amount_micro=amount, receipt_id=receipt['receipt_id'] if receipt else None,
@@ -100,6 +100,7 @@ class TaskCreate(BaseModel):
 class ReserveRequest(BaseModel):
     estimate_usd: Money = Field(gt=0, le=1000, decimal_places=6)
     idempotency_key: str = Field(default='reserve-default', min_length=8, max_length=128)
+    rate_version: str | None = Field(default=None,min_length=64,max_length=64)
 
 
 class KeyRequest(BaseModel):
@@ -145,7 +146,7 @@ def health():
 def ready(s=Depends(db)):
     try:
         version = s.scalar(text('SELECT version_num FROM alembic_version'))
-        if version != '0005' or not s.get(RateVersion, rate_id(MODEL)):
+        if version != '0006' or not s.get(RateVersion, rate_id(MODEL)):
             raise ValueError('Schema or rate card not ready')
     except Exception:
         raise HTTPException(503, 'Database or schema unavailable') from None
@@ -293,13 +294,21 @@ def reserve(task_id: str, payload: ReserveRequest, c=Depends(require('reserve'))
     task = task_for(s, c.tenant_id, task_id)
     amount = micro(payload.estimate_usd)
     if task.reserve_key == payload.idempotency_key and task.reserved_micro == amount:
+        if payload.rate_version and rate_id(task.rate_snapshot)!=payload.rate_version:
+            raise HTTPException(409,'Reservation rate version conflict')
         return {'id': task.id, 'status': task.status, 'reserved_usd': dollars(amount), 'deduplicated': True}
     if task.status != 'DRAFT':
         raise HTTPException(409, 'Can only reserve DRAFT tasks')
     if tenant.budget_paused or tenant.spent_micro + tenant.reserved_micro + amount > tenant.budget_micro:
         raise HTTPException(402, 'Budget paused or exceeded')
     tenant.reserved_micro += amount
-    rate = s.get(RateVersion, rate_id(MODEL))
+    selected=payload.rate_version or rate_id(MODEL)
+    if selected!=rate_id(MODEL):
+        import os
+        from .openai_provider import CARDS
+        if os.getenv('MOS_ENV')!='test' or selected not in {rate_id(c) for c in CARDS.values()}:
+            raise HTTPException(422,'Readiness rates are restricted to offline controlled tests')
+    rate = s.get(RateVersion, selected)
     if not rate:
         raise HTTPException(503, 'Rate version not installed')
     task.rate_snapshot = dict(rate.snapshot)
@@ -349,9 +358,14 @@ def settle_receipt(s, c, task_id, key, receipt, source='TRUSTED_WORKER_ASSERTION
     task.settle_key, task.status = key, 'PENDING_APPROVAL'
     task.receipt_status = 'UNVERIFIED'
     task.receipt_source = source
-    if source == 'MOCK':
+    if source in {'MOCK','MOCK_HTTP'}:
         from .revisions import ensure_original
         ensure_original(s, task, c)
+    if source=='MOCK_HTTP' and (receipt.get('unpriced_features') or receipt.get('usage_exceeds_limits')):
+        tenant.budget_paused=True
+        task.status='RECONCILIATION_REQUIRED'
+        task.receipt_status='RECONCILIATION_REQUIRED'
+        audit(s,c.tenant_id,'provider.billing_anomaly',task.id,c.id)
     event(s, c.tenant_id, task, 'SETTLE', receipt['actual_micro'], receipt)
     audit(s, c.tenant_id, 'task.settled', task.id, c.id)
     try:
@@ -364,11 +378,18 @@ def settle_receipt(s, c, task_id, key, receipt, source='TRUSTED_WORKER_ASSERTION
     return task
 
 
+@app.get('/tasks/{task_id}/receipt')
+def read_receipt(task_id: str,c=Depends(require('read')),s=Depends(db)):
+    task=task_for(s,c.tenant_id,task_id)
+    if not task.receipt: raise HTTPException(404,'Receipt not available')
+    return task.receipt
+
+
 @app.post('/tasks/{task_id}/settle')
 def settle(task_id: str, payload: SettleRequest, c=Depends(require('settle')), s=Depends(db)):
     task = task_for(s, c.tenant_id, task_id)
     card = task.rate_snapshot or MODEL
-    if payload.receipt.model != card['model']:
+    if payload.receipt.model != card['model'] or payload.receipt.provider != card['provider']:
         raise HTTPException(422, 'Unsupported receipt model')
     usage = payload.receipt.model_dump(exclude={'provider', 'model', 'receipt_id'})
     amount = usage_cost(usage, card)
