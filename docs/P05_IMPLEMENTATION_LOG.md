@@ -30,3 +30,7 @@ docker compose --profile recovery up --build -d recovery
 runtime/dev 直接依賴 exact pin，constraints.txt 固定 resolver 的 transitive versions（不強迫安裝無關平台套件）；Python/PostgreSQL image 固定已測 digest。mypy 只在 dev/test image。更新在獨立分支：先查來源／license／release notes → 更新需要的 pin/constraints/digest → Windows/乾淨 Linux CI、RLS、備份與型別回歸 → pip-audit → 審核後合併。沒有自動升級到未測 latest。尚未採用全 wheel hash-lock/OS image CVE scan，保留 Production Gate。
 
 收尾 commit 包含本紀錄與所有本機證據。遠端 CI 需要候選 commit 推送才能執行；不在取得成功前宣稱 P0.5 PASS。最終 SHA 與遠端結果見最後交付和 P05_TEST_EVIDENCE。
+
+## 收尾驗證
+
+程式碼候選 SHA fab11e550ac89a9a31605ef324d01baf71e21a3f 已推送，遠端 run 40152338071 實際 success，兩個 job 與備份演練均成功。P0.5 PASS／僅離線 P1 GO，後續不含 P1 實作。最終證據提交只更新 docs，最後 SHA 及其 CI 由交付訊息確認。

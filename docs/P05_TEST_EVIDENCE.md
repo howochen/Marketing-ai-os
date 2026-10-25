@@ -4,7 +4,7 @@
 
 | 檢查 | 結果 | 原始證據 |
 |---|---|---|
-| SQLite 全套 P0+P0.5 | 36 passed / 1 skipped / 1 deselected，8.69s | p05/sqlite.txt |
+| SQLite 全套 P0+P0.5 | 36 passed / 1 skipped / 1 deselected，9.28s | p05/sqlite.txt |
 | PostgreSQL 全套 P0+P0.5 | 37 passed / 1 deselected，7.45s | p05/postgres-final.txt |
 | 初始全新 PostgreSQL volume / 0001→0003 | 成功 | p05/postgres.txt |
 | mypy | 5 個模組成功 | p05/types.txt、mypy.ini |
@@ -22,7 +22,9 @@ P0 全部既有測試原樣保留；tests/conftest.py 每個 case 清除 shared 
 
 來源 SHA 的成功紀錄：[40125294300](https://github.com/howochen/Marketing-ai-os/actions/runs/40125294300)，head=0aed3c1229ac0c2d30a6e908f648ac9e96b3d852。這不是本分支驗收結果。
 
-本分支狀態：**PENDING_REMOTE_CI**。候選 commit 推送後，讀取實際 workflow headSha、jobs、conclusion，才可解除阻擋。沒有把設定有效或本機成功替代遠端成功。
+本分支候選 SHA **fab11e550ac89a9a31605ef324d01baf71e21a3f**：**REMOTE_CI_PASS**。[實際 run 40152338071](https://github.com/howochen/Marketing-ai-os/actions/runs/40152338071) status=completed / conclusion=success。sqlite 與 postgres jobs 均 success，包含 compileall、mypy、commit whitespace、pytest、pip-audit、非特權RLS、獨立 backup/restore drill 與 artifact。完整 metadata 在 p05/remote-ci.json，測試摘要在 p05/remote-ci-summary.txt。
+
+後續收尾提交只更新此遠端證據與 GO 文件，不改程式碼；最後交付會另確認最終 SHA 的 workflow，不能把來源 P0 的成功混用。
 
 ## 成本及資料安全
 
@@ -31,3 +33,7 @@ Codex per-task token 計量工具未提供：NOT_AVAILABLE。真實模型 API 0 
 資源瞬間樣本：API 70.03 MiB / 0.16% CPU、recovery 20.53 MiB / 0.00%、DB 78.62 MiB / 2.52%，合計169.18 MiB；DB 9,124,887 bytes。證據 p05/resources.jsonl、database-size.txt。新增常駐程序僅 recovery（一個 tenant）；新主機 0。樣本含演練與測試後 cache，不是和舊版相同負載下的嚴格增量對照；不含 Docker VM／host、images、DR database sizes。CI 套用帳號既有額度，未查帳單，不假造 CI 費用為零。
 
 固定 SHA 由 Git commit 識別；本文件無法包含自己的 commit hash。以 `git log -1 --format=%H -- docs/P05_TEST_EVIDENCE.md` 及最終交付訊息確認，不能拿來源 SHA 當成已完成修改的 SHA。
+
+## P0.5 必要驗收結論
+
+**PASS（受控離線基礎設施範圍）**：原P0回歸與新增測試、RLS/併發預算、遠端CI、實測備份/程序重啟、預設關閉模型/發布、固定版本/掃描與提交前檢查均完成。P1僅離線開發 GO；Production NO-GO 不變。這不是商用安全驗證。
