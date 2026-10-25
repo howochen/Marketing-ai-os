@@ -93,5 +93,7 @@ class MockLLMProvider:
         raw = output.encode('utf-8')[:max_output_tokens]
         output = raw.decode('utf-8', errors='ignore')
         usage = {'input_tokens': self.count_tokens(prompt), 'output_tokens': len(output.encode('utf-8'))}
+        from .measurement import mock_measurement
         return {'provider': 'mock', 'model': 'mock-a09-v1', 'receipt_id': 'mock_' + hashlib.sha256(prompt.encode()).hexdigest(),
-                'usage': usage, 'actual_micro': usage_cost(usage), 'output': output}
+                'usage': usage, 'actual_micro': usage_cost(usage), 'output': output,
+                'measurement':mock_measurement(prompt,output,MODEL,usage_cost(usage))}

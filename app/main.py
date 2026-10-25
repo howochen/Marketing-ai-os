@@ -124,6 +124,12 @@ class SettleRequest(KeyRequest):
 
 class PublishRequest(KeyRequest):
     platform: Literal['threads', 'instagram', 'facebook', 'tiktok']
+    revision_id: str | None = None
+
+
+class ApprovalRequest(BaseModel):
+    model_config = {'extra':'forbid'}
+    revision_id: str
 
 
 class BudgetSwitch(BaseModel):
@@ -139,7 +145,7 @@ def health():
 def ready(s=Depends(db)):
     try:
         version = s.scalar(text('SELECT version_num FROM alembic_version'))
-        if version != '0004' or not s.get(RateVersion, rate_id(MODEL)):
+        if version != '0005' or not s.get(RateVersion, rate_id(MODEL)):
             raise ValueError('Schema or rate card not ready')
     except Exception:
         raise HTTPException(503, 'Database or schema unavailable') from None
@@ -343,6 +349,9 @@ def settle_receipt(s, c, task_id, key, receipt, source='TRUSTED_WORKER_ASSERTION
     task.settle_key, task.status = key, 'PENDING_APPROVAL'
     task.receipt_status = 'UNVERIFIED'
     task.receipt_source = source
+    if source == 'MOCK':
+        from .revisions import ensure_original
+        ensure_original(s, task, c)
     event(s, c.tenant_id, task, 'SETTLE', receipt['actual_micro'], receipt)
     audit(s, c.tenant_id, 'task.settled', task.id, c.id)
     try:
@@ -465,17 +474,18 @@ def recover(c=Depends(require('recover')), s=Depends(db)):
 
 
 @app.post('/tasks/{task_id}/approve')
-def approve(task_id: str, c=Depends(require('approve')), s=Depends(db)):
+def approve(task_id: str, payload: ApprovalRequest | None = None, c=Depends(require('approve')), s=Depends(db)):
     lock_tenant(s, c.tenant_id)
     task = task_for(s, c.tenant_id, task_id)
-    if task.status == 'APPROVED':
-        return {'id': task.id, 'status': task.status}
-    if task.status != 'PENDING_APPROVAL':
+    if task.status not in {'PENDING_APPROVAL','APPROVED'}:
         raise HTTPException(409, 'Task not awaiting approval')
-    task.status, task.approved_by = 'APPROVED', c.id
-    audit(s, c.tenant_id, 'task.approved', task.id, c.id)
+    from .revisions import ensure_original, approve_revision
+    original = ensure_original(s, task, c)
+    if payload is None and original.parent_id is not None:
+        raise HTTPException(422, 'Explicit revision_id required after editing')
+    approve_revision(s, task, payload.revision_id if payload else original.id, c)
     s.commit()
-    return {'id': task.id, 'status': task.status}
+    return {'id': task.id, 'status': task.status, 'revision_id':task.approved_revision_id}
 
 
 @app.post('/tasks/{task_id}/publication-request')
@@ -484,14 +494,22 @@ def publication(task_id: str, payload: PublishRequest, c=Depends(require('publis
     task = task_for(s, c.tenant_id, task_id)
     if task.status != 'APPROVED' or not task.approved_by:
         raise HTTPException(409, 'Owner approval is required')
+    from .revisions import revision_for
+    if not task.approved_revision_id or task.latest_revision_id != task.approved_revision_id:
+        raise HTTPException(409, 'Latest revision needs explicit approval')
+    selected = payload.revision_id or task.approved_revision_id
+    if selected != task.approved_revision_id:
+        raise HTTPException(409, 'Revision does not match approval')
+    approved = revision_for(s, task.tenant_id, task.id, selected)
     previous = s.scalar(select(Publication).where(Publication.tenant_id == c.tenant_id,
                                                  Publication.idempotency_key == payload.idempotency_key))
     if previous:
-        if previous.task_id != task_id or previous.platform != payload.platform:
+        if previous.task_id != task_id or previous.platform != payload.platform or previous.revision_id != selected:
             raise HTTPException(409, 'Idempotency key reused with different publication')
         return {'id': previous.id, 'status': previous.status, 'deduplicated': True}
     publication = Publication(id=uid(), tenant_id=c.tenant_id, task_id=task.id,
-                              platform=payload.platform, idempotency_key=payload.idempotency_key)
+                              platform=payload.platform, idempotency_key=payload.idempotency_key,
+                              revision_id=selected, content_snapshot=approved.after_text)
     s.add(publication)
     audit(s, c.tenant_id, 'publication.manual_queued', publication.id, c.id)
     s.commit()
@@ -507,3 +525,5 @@ def audits(c=Depends(require('read')), s=Depends(db)):
 
 from .agent_runtime import router as agent_router
 app.include_router(agent_router)
+from .revisions import router as revision_router
+app.include_router(revision_router)

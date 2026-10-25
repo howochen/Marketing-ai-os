@@ -1,0 +1,17 @@
+{
+  "industry": "ecommerce",
+  "version": "ecommerce-1",
+  "audience": "Online shoppers",
+  "pain_points": "Specifications, returns, pricing transparency",
+  "tone_guidance": "Clear and practical, no invented scarcity",
+  "professional_claim_terms": [
+    "保證獲利",
+    "全網最低保證"
+  ],
+  "missing_information_policy": "HUMAN_REVIEW_REQUIRED",
+  "official_sources": [
+    "https://www.ftc.gov/business-guidance/advertising-marketing/advertising-marketing-basics"
+  ],
+  "checked_on": "2026-10-25",
+  "jurisdiction_note": "US reference cautions for synthetic evals; not local legal clearance"
+}

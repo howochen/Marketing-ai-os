@@ -1,10 +1,14 @@
 """Assert-based drill on the dedicated P0.5 synthetic Docker project only."""
 import json
+import os
 import subprocess
 import time
 from pathlib import Path
 
-CONTAINER = 'mos-p05-test-db-1'
+PROJECT = os.getenv('MOS_DRILL_PROJECT', 'mos-p05-test')
+if PROJECT not in {'mos-p05-test','mos-p11-test'}:
+    raise RuntimeError('Only dedicated synthetic test projects are allowed')
+CONTAINER = PROJECT + '-db-1'
 SOURCE = 'mos_p05_dr_source_001'
 TARGET = 'mos_p05_dr_restore_001'
 ARCHIVE = '/tmp/mos-p05-backups/drill.dump'
@@ -23,7 +27,7 @@ def sql(database, query):
 
 def fingerprint(database):
     result = {}
-    for table in ('tenants', 'tasks', 'credentials', 'login_challenges', 'cost_events', 'audit_logs', 'publications', 'rate_versions', 'rate_limits'):
+    for table in ('tenants', 'tasks', 'credentials', 'login_challenges', 'cost_events', 'audit_logs', 'publications', 'rate_versions', 'rate_limits', 'draft_revisions', 'revision_approvals', 'revision_scores'):
         key = 'key' if table == 'rate_limits' else 'id'
         result[table] = sql(database, f'SELECT count(*), md5(coalesce(string_agg(row_to_json(t)::text, chr(10) ORDER BY "{key}"), \'\')) FROM {table} t')
     return result
@@ -31,7 +35,7 @@ def fingerprint(database):
 
 def main():
     labels = json.loads(docker('inspect', CONTAINER).stdout)[0]['Config']['Labels']
-    assert labels['com.docker.compose.project'] == 'mos-p05-test'
+    assert labels['com.docker.compose.project'] == PROJECT
     assert labels['com.docker.compose.service'] == 'db'
     for script in ('pg_backup.sh', 'pg_restore.sh'):
         docker('cp', str(Path('scripts') / script), CONTAINER + ':/tmp/' + script)
@@ -62,13 +66,15 @@ def main():
     failed = docker('exec', '-e', 'PGUSER=postgres', '-e', 'PGDATABASE=mos_p05_dr_source_missing', CONTAINER, 'sh', '/tmp/pg_backup.sh', failed_archive, ok=False)
     assert failed.returncode != 0
     assert docker('exec', CONTAINER, 'test', '-e', failed_archive, ok=False).returncode != 0
-    report = {'result': 'PASS', 'project': 'mos-p05-test', 'backup_seconds': backup_seconds,
+    report = {'result': 'PASS', 'project': PROJECT, 'backup_seconds': backup_seconds,
               'restore_and_verify_seconds': rto_seconds, 'synthetic_snapshot_rows_lost': 0,
               'rpo_scope': 'Snapshot only; no writes during backup. No PITR or continuous RPO guarantee.',
               'fingerprints_before_and_restored': before,
               'permission_mode': '0600 file / 0700 directory', 'negative_checks': 4,
               'scope': 'isolated synthetic data only; credentials deleted in source and restored to independent target'}
-    Path('docs/p05/backup-restore.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
+    output=Path('docs/p11' if PROJECT=='mos-p11-test' else 'docs/p05')/'backup-restore.json'
+    output.parent.mkdir(parents=True,exist_ok=True)
+    output.write_text(json.dumps(report, indent=2), encoding='utf-8')
     print(json.dumps({k: v for k, v in report.items() if k != 'fingerprints_before_and_restored'}))
 
 

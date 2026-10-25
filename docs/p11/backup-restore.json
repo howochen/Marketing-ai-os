@@ -1,0 +1,25 @@
+{
+  "result": "PASS",
+  "project": "mos-p11-test",
+  "backup_seconds": 0.39107380001223646,
+  "restore_and_verify_seconds": 3.437358099996345,
+  "synthetic_snapshot_rows_lost": 0,
+  "rpo_scope": "Snapshot only; no writes during backup. No PITR or continuous RPO guarantee.",
+  "fingerprints_before_and_restored": {
+    "tenants": "232|33ab2457c3cd8ecad65b1fe3823f0e68",
+    "tasks": "296|9300abe0001accedabec26a47eb30fc4",
+    "credentials": "710|443678554291708301d8c6562c4b62d0",
+    "login_challenges": "240|b701770719a5d6dd55a79d82cc716002",
+    "cost_events": "346|b7b8e470ad738401be7b61d471fc2c78",
+    "audit_logs": "2019|acbec02d93b74557a5217799c6c82681",
+    "publications": "24|17add9828b1e617e459200812dd2ec95",
+    "rate_versions": "1|3d3d4fb08f14e46deafb440dd830bffd",
+    "rate_limits": "0|d41d8cd98f00b204e9800998ecf8427e",
+    "draft_revisions": "133|207223369369297b6365eec5a3df09e9",
+    "revision_approvals": "33|1338e01f8ecba373b337882e06e512a2",
+    "revision_scores": "8|eaca9486100407a58f2505aedd8c6830"
+  },
+  "permission_mode": "0600 file / 0700 directory",
+  "negative_checks": 4,
+  "scope": "isolated synthetic data only; credentials deleted in source and restored to independent target"
+}

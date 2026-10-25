@@ -1,0 +1,44 @@
+{
+  "version": "a09-industry-evals-1",
+  "industries": [
+    {
+      "industry": "beauty_scalp",
+      "cases": 10,
+      "expectation_matches": 10,
+      "qa_passed": 3
+    },
+    {
+      "industry": "food",
+      "cases": 10,
+      "expectation_matches": 10,
+      "qa_passed": 3
+    },
+    {
+      "industry": "real_estate",
+      "cases": 10,
+      "expectation_matches": 10,
+      "qa_passed": 3
+    },
+    {
+      "industry": "ecommerce",
+      "cases": 10,
+      "expectation_matches": 10,
+      "qa_passed": 3
+    },
+    {
+      "industry": "education",
+      "cases": 10,
+      "expectation_matches": 10,
+      "qa_passed": 3
+    },
+    {
+      "industry": "b2b",
+      "cases": 10,
+      "expectation_matches": 10,
+      "qa_passed": 3
+    }
+  ],
+  "real_provider_calls": 0,
+  "subjective_scores": "UNEVALUATED",
+  "market_quality_validated": false
+}

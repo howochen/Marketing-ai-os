@@ -1,0 +1,19 @@
+{
+  "industry": "beauty_scalp",
+  "version": "beauty_scalp-1",
+  "audience": "Cosmetic and scalp-care shoppers",
+  "pain_points": "Sensitive skin, routine clarity",
+  "tone_guidance": "Gentle, specific, no medical promises",
+  "professional_claim_terms": [
+    "治療",
+    "生髮",
+    "cure",
+    "regrow hair"
+  ],
+  "missing_information_policy": "HUMAN_REVIEW_REQUIRED",
+  "official_sources": [
+    "https://www.fda.gov/cosmetics/cosmetics-labeling/cosmetics-labeling-claims"
+  ],
+  "checked_on": "2026-10-25",
+  "jurisdiction_note": "US reference cautions for synthetic evals; not local legal clearance"
+}

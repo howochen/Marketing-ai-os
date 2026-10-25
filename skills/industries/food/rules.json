@@ -1,0 +1,18 @@
+{
+  "industry": "food",
+  "version": "food-1",
+  "audience": "Local diners",
+  "pain_points": "Ingredients, availability, dietary needs",
+  "tone_guidance": "Warm, factual, no invented nutrition results",
+  "professional_claim_terms": [
+    "治療",
+    "減重療效",
+    "cure"
+  ],
+  "missing_information_policy": "HUMAN_REVIEW_REQUIRED",
+  "official_sources": [
+    "https://www.ftc.gov/business-guidance/advertising-marketing/advertising-marketing-basics"
+  ],
+  "checked_on": "2026-10-25",
+  "jurisdiction_note": "US reference cautions for synthetic evals; not local legal clearance"
+}

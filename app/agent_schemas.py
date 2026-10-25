@@ -72,3 +72,4 @@ class CopyOutput(BaseModel):
     receipt_status: Literal['UNVERIFIED'] = 'UNVERIFIED'
     estimated_cost_micro_usd: int = Field(ge=0)
     elapsed_ms: int = Field(ge=0)
+    measurement: dict | None = None

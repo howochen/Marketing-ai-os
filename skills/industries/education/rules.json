@@ -1,0 +1,18 @@
+{
+  "industry": "education",
+  "version": "education-1",
+  "audience": "Learners and caregivers",
+  "pain_points": "Course prerequisites and realistic expectations",
+  "tone_guidance": "Supportive, no guaranteed qualifications",
+  "professional_claim_terms": [
+    "保證錄取",
+    "保證就業",
+    "guaranteed admission"
+  ],
+  "missing_information_policy": "HUMAN_REVIEW_REQUIRED",
+  "official_sources": [
+    "https://www.ftc.gov/business-guidance/advertising-marketing/advertising-marketing-basics"
+  ],
+  "checked_on": "2026-10-25",
+  "jurisdiction_note": "US reference cautions for synthetic evals; not local legal clearance"
+}

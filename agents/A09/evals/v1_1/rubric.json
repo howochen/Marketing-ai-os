@@ -1,0 +1,39 @@
+{
+  "version": "a09-rubric-1",
+  "dimensions": [
+    "hook_appeal",
+    "reader_resonance",
+    "brand_tone",
+    "information_clarity",
+    "cta_clarity",
+    "platform_native",
+    "creativity",
+    "claim_safety"
+  ],
+  "anchors": {
+    "0": "Absent/unsafe",
+    "1": "Very weak",
+    "2": "Partial",
+    "3": "Adequate for review",
+    "4": "Strong with minor issues",
+    "5": "Clear and specific to the stated brief"
+  },
+  "sources": [
+    "HUMAN",
+    "RULE",
+    "UNEVALUATED"
+  ],
+  "unevaluated_value": null,
+  "rule_scores_are_proxies": true,
+  "never_overrides_qa": true,
+  "dimension_guidance": {
+    "hook_appeal": "Does the opening give this stated reader a specific reason to continue? HUMAN only.",
+    "reader_resonance": "Does it address supplied audience needs without inventing customer facts? HUMAN only.",
+    "brand_tone": "Does it match the supplied tone and brand facts? HUMAN only.",
+    "information_clarity": "Can the reader understand the offered next step? Rule score tests format only; HUMAN evaluates meaning.",
+    "cta_clarity": "Is the requested action concrete and appropriate? Rule score checks presence only.",
+    "platform_native": "Does the short conversational format suit Threads? Rule score checks length/schema only.",
+    "creativity": "Is the framing distinct without unsupported novelty claims? HUMAN only.",
+    "claim_safety": "Are claims grounded in supplied evidence? Rule score is a lexical screen, never professional certification."
+  }
+}

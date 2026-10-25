@@ -1,0 +1,11 @@
+{
+  "selected_industry": "beauty_scalp",
+  "prompt_build_file_reads": 4,
+  "selected_industry_files": 2,
+  "all_industry_files_counterfactual": 12,
+  "selected_skill_utf8_bytes": 569,
+  "all_skill_utf8_bytes_counterfactual": 3481,
+  "actual_prompt_utf8_bytes": 2302,
+  "vendor_tokens": null,
+  "comparison": "Byte/file comparison only; all skills never sent together"
+}

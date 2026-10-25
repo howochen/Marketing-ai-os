@@ -1,0 +1,7 @@
+{
+  "compileall": "PASS",
+  "mypy_modules": 11,
+  "dependency_scan": "0 known vulnerabilities",
+  "git_diff_check": "PASS",
+  "scope": "local offline acceptance"
+}

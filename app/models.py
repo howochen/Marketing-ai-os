@@ -75,6 +75,8 @@ class Task(Base):
     receipt_status: Mapped[ReceiptStatus] = mapped_column(SqlEnum(ReceiptStatus, native_enum=False, validate_strings=True), default=ReceiptStatus.UNVERIFIED)
     receipt_source: Mapped[str | None] = mapped_column(String(50))
     agent_run: Mapped[dict | None] = mapped_column(JSON)
+    latest_revision_id: Mapped[str | None] = mapped_column(String(36))
+    approved_revision_id: Mapped[str | None] = mapped_column(String(36))
     approved_by: Mapped[str | None] = mapped_column(String(36))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
 
@@ -102,6 +104,7 @@ class Publication(Base):
     __table_args__ = (
         UniqueConstraint('tenant_id', 'idempotency_key'),
         ForeignKeyConstraint(['tenant_id', 'task_id'], ['tasks.tenant_id', 'tasks.id']),
+        ForeignKeyConstraint(['tenant_id', 'task_id', 'revision_id'], ['draft_revisions.tenant_id', 'draft_revisions.task_id', 'draft_revisions.id']),
     )
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     tenant_id: Mapped[str] = mapped_column(ForeignKey('tenants.id'), index=True)
@@ -109,6 +112,8 @@ class Publication(Base):
     platform: Mapped[str] = mapped_column(String(30))
     idempotency_key: Mapped[str] = mapped_column(String(128))
     status: Mapped[str] = mapped_column(String(30), default='MANUAL_REQUIRED')
+    revision_id: Mapped[str | None] = mapped_column(String(36))
+    content_snapshot: Mapped[str | None] = mapped_column(Text)
 
 
 class Audit(Base):
@@ -136,3 +141,62 @@ class RateLimit(Base):
     key: Mapped[str] = mapped_column(String(64), primary_key=True)
     count: Mapped[int] = mapped_column(BigInteger)
     window_end: Mapped[int] = mapped_column(BigInteger)
+
+
+class DraftRevision(Base):
+    __tablename__ = 'draft_revisions'
+    __table_args__ = (
+        UniqueConstraint('tenant_id', 'task_id', 'id'),
+        UniqueConstraint('tenant_id', 'task_id', 'idempotency_key'),
+        ForeignKeyConstraint(['tenant_id', 'task_id'], ['tasks.tenant_id', 'tasks.id']),
+        ForeignKeyConstraint(['tenant_id', 'task_id', 'parent_id'], ['draft_revisions.tenant_id', 'draft_revisions.task_id', 'draft_revisions.id']),
+    )
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey('tenants.id'), index=True)
+    task_id: Mapped[str] = mapped_column(String(36), index=True)
+    parent_id: Mapped[str | None] = mapped_column(String(36))
+    original_id: Mapped[str] = mapped_column(String(36))
+    source: Mapped[str] = mapped_column(String(20))
+    before_text: Mapped[str] = mapped_column(Text)
+    after_text: Mapped[str] = mapped_column(Text)
+    draft: Mapped[dict] = mapped_column(JSON)
+    reason: Mapped[str] = mapped_column(Text)
+    brand_version: Mapped[str] = mapped_column(String(64))
+    prompt_version: Mapped[str] = mapped_column(String(80))
+    qa_result: Mapped[dict] = mapped_column(JSON)
+    quality: Mapped[dict] = mapped_column(JSON)
+    idempotency_key: Mapped[str] = mapped_column(String(128))
+    request_hash: Mapped[str] = mapped_column(String(64))
+    created_by: Mapped[str] = mapped_column(String(36))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+class RevisionApproval(Base):
+    __tablename__ = 'revision_approvals'
+    __table_args__ = (UniqueConstraint('tenant_id', 'revision_id'),
+        ForeignKeyConstraint(['tenant_id', 'task_id', 'revision_id'], ['draft_revisions.tenant_id', 'draft_revisions.task_id', 'draft_revisions.id']))
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey('tenants.id'), index=True)
+    task_id: Mapped[str] = mapped_column(String(36))
+    revision_id: Mapped[str] = mapped_column(String(36))
+    reviewer_id: Mapped[str] = mapped_column(String(36))
+    status: Mapped[str] = mapped_column(String(20), default='APPROVED')
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+class RevisionScore(Base):
+    __tablename__ = 'revision_scores'
+    __table_args__ = (UniqueConstraint('tenant_id', 'revision_id', 'idempotency_key'),
+        ForeignKeyConstraint(['tenant_id', 'task_id', 'revision_id'], ['draft_revisions.tenant_id', 'draft_revisions.task_id', 'draft_revisions.id']))
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey('tenants.id'), index=True)
+    task_id: Mapped[str] = mapped_column(String(36))
+    revision_id: Mapped[str] = mapped_column(String(36))
+    rubric_version: Mapped[str] = mapped_column(String(30))
+    scores: Mapped[dict] = mapped_column(JSON)
+    source: Mapped[str] = mapped_column(String(20), default='HUMAN')
+    reason: Mapped[str] = mapped_column(Text)
+    actor_id: Mapped[str] = mapped_column(String(36))
+    idempotency_key: Mapped[str] = mapped_column(String(128))
+    request_hash: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)

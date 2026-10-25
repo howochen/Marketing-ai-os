@@ -6,6 +6,7 @@ COPY app ./app
 COPY config ./config
 COPY agents ./agents
 COPY skills/threads-copywriting ./skills/threads-copywriting
+COPY skills/industries ./skills/industries
 COPY migrations ./migrations
 COPY alembic.ini ./
 EXPOSE 8000

@@ -1,0 +1,30 @@
+{
+  "scope": "synthetic only; regenerate with pytest tests/test_quality_revisions.py",
+  "original": {
+    "draft_text": "Demo Studio，讓日常多一點靈感。\n為creative students帶來新的選擇：Explore a new notebook。\n歡迎留言分享你的想法。",
+    "hook": "Demo Studio，讓日常多一點靈感。",
+    "call_to_action": "歡迎留言分享你的想法。"
+  },
+  "revised": {
+    "draft_text": "Demo Studio，讓日常多一點靈感。\n為creative students帶來新的選擇：Explore a new notebook。\n歡迎留言分享你的想法。 Compare the synthetic options.",
+    "hook": "Demo Studio，讓日常多一點靈感。",
+    "call_to_action": "歡迎留言分享你的想法。"
+  },
+  "reason": "Clarify the synthetic offer for human review",
+  "diff": [
+    "--- ",
+    "+++ ",
+    "@@ -1,3 +1,3 @@",
+    " Demo Studio，讓日常多一點靈感。",
+    " 為creative students帶來新的選擇：Explore a new notebook。",
+    "-歡迎留言分享你的想法。",
+    "+歡迎留言分享你的想法。 Compare the synthetic options."
+  ],
+  "qa": {
+    "passed": true,
+    "reasons": [],
+    "certification": "RULE_CHECK_ONLY"
+  },
+  "approval": "Both versions explicitly approved separately; queued original content stays original",
+  "new_version_inherits_approval": false
+}

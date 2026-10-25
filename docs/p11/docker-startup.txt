@@ -1,0 +1,104 @@
+ Image mos-p11-test-api Building
+ Image mos-p11-test-migrate Building
+#1 [internal] load local bake definitions
+#1 reading from stdin 977B 0.1s done
+#1 DONE 0.1s
+
+#2 [migrate internal] load build definition from Dockerfile
+#2 transferring dockerfile: 778B done
+#2 DONE 0.0s
+
+#3 [migrate internal] load metadata for docker.io/library/python:3.12-slim@sha256:a0f57064cbdcd6285fa45f51237ab0b35ea8ebaed06a1f5973e89e19dfb86704
+#3 DONE 0.1s
+
+#4 [migrate internal] load .dockerignore
+#4 transferring context:
+#4 transferring context: 93B 0.0s done
+#4 DONE 0.0s
+
+#5 [migrate internal] load build context
+#5 transferring context: 4.33kB 0.0s done
+#5 DONE 0.1s
+
+#6 [migrate runtime  1/11] FROM docker.io/library/python:3.12-slim@sha256:a0f57064cbdcd6285fa45f51237ab0b35ea8ebaed06a1f5973e89e19dfb86704
+#6 resolve docker.io/library/python:3.12-slim@sha256:a0f57064cbdcd6285fa45f51237ab0b35ea8ebaed06a1f5973e89e19dfb86704
+#6 resolve docker.io/library/python:3.12-slim@sha256:a0f57064cbdcd6285fa45f51237ab0b35ea8ebaed06a1f5973e89e19dfb86704 0.1s done
+#6 DONE 0.1s
+
+#5 [api internal] load build context
+#5 DONE 0.1s
+
+#7 [api runtime  3/11] COPY requirements.txt constraints.txt ./
+#7 CACHED
+
+#8 [api runtime  4/11] RUN pip install --no-cache-dir -r requirements.txt
+#8 CACHED
+
+#9 [api runtime  6/11] COPY config ./config
+#9 CACHED
+
+#10 [api runtime 10/11] COPY migrations ./migrations
+#10 CACHED
+
+#11 [api runtime  5/11] COPY app ./app
+#11 CACHED
+
+#12 [api runtime  7/11] COPY agents ./agents
+#12 CACHED
+
+#13 [api runtime  8/11] COPY skills/threads-copywriting ./skills/threads-copywriting
+#13 CACHED
+
+#14 [api runtime  9/11] COPY skills/industries ./skills/industries
+#14 CACHED
+
+#15 [api runtime  2/11] WORKDIR /srv
+#15 CACHED
+
+#16 [api runtime 11/11] COPY alembic.ini ./
+#16 CACHED
+
+#17 [api] exporting to image
+#17 exporting layers 0.0s done
+#17 exporting manifest sha256:2605c42324b76a2737b5d47ea106c00909d1e829eab4a75086c99af06c34e46e 0.1s done
+#17 exporting config sha256:b2bc50433ae3aaab63c5e7afb20518df7bf30e4e78eefeff93fccc176e160cf8
+#17 exporting config sha256:b2bc50433ae3aaab63c5e7afb20518df7bf30e4e78eefeff93fccc176e160cf8 0.1s done
+#17 exporting attestation manifest sha256:b604f6eb2346c1ac46d05b8dea162d4f14e194aa635fa7990c1d1d52b53209ce
+#17 exporting attestation manifest sha256:b604f6eb2346c1ac46d05b8dea162d4f14e194aa635fa7990c1d1d52b53209ce 0.2s done
+#17 exporting manifest list sha256:5d3857470c1d458bc699d00f72aa09084b58a17e3e622e05a9d028e1c04b3b14
+#17 exporting manifest list sha256:5d3857470c1d458bc699d00f72aa09084b58a17e3e622e05a9d028e1c04b3b14 0.1s done
+#17 naming to docker.io/library/mos-p11-test-api:latest
+#17 naming to docker.io/library/mos-p11-test-api:latest 0.0s done
+#17 unpacking to docker.io/library/mos-p11-test-api:latest 0.0s done
+#17 DONE 0.7s
+
+#18 [migrate] exporting to image
+#18 exporting layers 0.0s done
+#18 exporting manifest sha256:4f67f1f117b503a80d32c1ac5366f03eecc052f2bd086f57ad1d52d00baa5e49 0.1s done
+#18 exporting config sha256:3f8b6478626b58c233f1dc5063c307f4b571b743fa8e322c4ac10f5f99c9d305 0.1s done
+#18 exporting attestation manifest sha256:0aebef3767b53b1dc17184eea2dafc5ac84a7bebed641a55a5125f791f7f87e9 0.2s done
+#18 exporting manifest list sha256:8661af6ced3d2a65a263550cb27f202acee4f0f04532fea3134115b628428de6 0.1s done
+#18 naming to docker.io/library/mos-p11-test-migrate:latest 0.0s done
+#18 unpacking to docker.io/library/mos-p11-test-migrate:latest 0.0s done
+#18 DONE 0.7s
+
+#19 [api] resolving provenance for metadata file
+#19 DONE 0.1s
+
+#20 [migrate] resolving provenance for metadata file
+#20 DONE 0.1s
+ Image mos-p11-test-migrate Built
+ Image mos-p11-test-api Built
+ Container mos-p11-test-db-1 Running
+ Container mos-p11-test-migrate-1 Creating
+ Container mos-p11-test-migrate-1 Created
+ Container mos-p11-test-api-1 Creating
+ Container mos-p11-test-api-1 Created
+ Container mos-p11-test-db-1 Waiting
+ Container mos-p11-test-db-1 Healthy
+ Container mos-p11-test-migrate-1 Starting
+ Container mos-p11-test-migrate-1 Started
+ Container mos-p11-test-migrate-1 Waiting
+ Container mos-p11-test-migrate-1 Exited
+ Container mos-p11-test-api-1 Starting
+ Container mos-p11-test-api-1 Started

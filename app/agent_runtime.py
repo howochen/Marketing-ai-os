@@ -16,6 +16,8 @@ from .operations import emit
 from .providers import LLMProvider, MockLLMProvider, MODEL, enabled, usage_cost, rate_id
 from .registry import AGENTS
 from .security import require, audit
+from .industry_rules import load_industry
+from .measurement import mock_measurement
 
 router = APIRouter()
 ROOT = Path(__file__).resolve().parent.parent
@@ -38,7 +40,9 @@ def build_prompt(payload: CopyRequest, tenant_id: str) -> str:
     data = {'context': {'tenant_id': tenant_id, 'task_id': payload.task_id},
             'request': payload.model_dump(exclude={'idempotency_key', 'tools', 'model'})}
     escaped = json.dumps(data, ensure_ascii=False, sort_keys=True).replace('<', '\\u003c').replace('>', '\\u003e')
-    return system + '\n' + skill + '\n[REQUEST_DATA_JSON]\n' + escaped
+    industry = load_industry(payload.industry, include_prompt=True)
+    selected = '\n' + industry['prompt_text'] if industry else ''
+    return system + '\n' + skill + selected + '\n[REQUEST_DATA_JSON]\n' + escaped
 
 
 def qa(raw: str, payload: CopyRequest) -> tuple[Draft | None, QAResult]:
@@ -58,6 +62,14 @@ def qa(raw: str, payload: CopyRequest) -> tuple[Draft | None, QAResult]:
         reasons.append('REQUIRED_BRAND_TERM_MISSING')
     if re.search(r'已發[布佈]|已帶來客戶|已創造營收|營收翻倍|保證|100%|guaranteed|already posted|system\s*:|ignore.{0,20}instructions|\[SYSTEM', all_text, re.I):
         reasons.append('UNSAFE_CLAIM_OR_SYSTEM_IMPERSONATION')
+    request_text = json.dumps(payload.model_dump(), ensure_ascii=False)
+    if re.search(r'ignore.{0,25}instructions|ignore all previous|\[SYSTEM|忽略.{0,12}指令|(?:tenant_id|budget|approval)\s*[:=]', request_text, re.I):
+        reasons.append('UNTRUSTED_INSTRUCTION_ATTEMPT')
+    if len(payload.brand_profile.description.strip()) < 12 or payload.brief.strip().lower() in {'unknown', '資訊不足'}:
+        reasons.append('INSUFFICIENT_INFORMATION')
+    industry = load_industry(payload.industry)
+    if industry and any(term.casefold() in all_text.casefold() for term in industry['professional_claim_terms']):
+        reasons.append('PROFESSIONAL_REVIEW_REQUIRED')
     return draft, QAResult(passed=not reasons, reasons=reasons)
 
 
@@ -118,6 +130,7 @@ def run_agent(task_id: str, payload: CopyRequest, c: Credential = Depends(requir
             raise HTTPException(402, 'Input or output token limit exceeded')
         estimate = usage_cost({'input_tokens': tokens, 'output_tokens': payload.max_output_tokens}, card)
         run = {'request_hash': digest, 'idempotency_key': payload.idempotency_key,
+               'input': payload.model_dump(),
                'prompt': prompt, 'prompt_version': 'a09-1', 'skill_version': 'threads-1',
                'prompt_sha256': hashlib.sha256(prompt.encode()).hexdigest(), 'route': route_name,
                'input_tokens_estimate': tokens, 'estimated_cost_micro_usd': estimate,
@@ -155,12 +168,13 @@ def run_agent(task_id: str, payload: CopyRequest, c: Credential = Depends(requir
                             hook=draft.hook if draft else '', call_to_action=draft.call_to_action if draft else '',
                             warnings=['Synthetic mock; no content posted or revenue generated.'] + ([] if checked.passed else ['Manual correction/review required.']),
                             qa_result=checked, usage=usage, cost_micro_usd=cost,
-                            receipt_id=receipt['receipt_id'], estimated_cost_micro_usd=run['estimated_cost_micro_usd'], elapsed_ms=elapsed)
+                            receipt_id=receipt['receipt_id'], estimated_cost_micro_usd=run['estimated_cost_micro_usd'], elapsed_ms=elapsed,
+                            measurement=mock_measurement(run['prompt'], receipt['output'], task.rate_snapshot, cost))
         lock_tenant(s, c.tenant_id)
         task = task_for(s, c.tenant_id, task_id)
         task.agent_run = {**run, 'generation_calls': 1, 'elapsed_ms': elapsed, 'result': result.model_dump()}
         receipt = {**receipt, 'actual_micro': cost, 'output': result.model_dump_json(),
-                   'pricing_basis': 'MOCK_USING_REQUEST_RATE_SNAPSHOT', 'prompt_version': 'a09-1'}
+                   'pricing_basis': 'MOCK_USING_REQUEST_RATE_SNAPSHOT', 'prompt_version': 'a09-1', 'measurement':result.measurement}
         settle_receipt(s, c, task_id, payload.idempotency_key, receipt, 'MOCK')
         return result
     except Exception:

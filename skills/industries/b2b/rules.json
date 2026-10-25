@@ -1,0 +1,18 @@
+{
+  "industry": "b2b",
+  "version": "b2b-1",
+  "audience": "Professional service buyers",
+  "pain_points": "Scope, evidence, delivery expectations",
+  "tone_guidance": "Precise, restrained, no professional guarantees",
+  "professional_claim_terms": [
+    "保證投報",
+    "guaranteed ROI",
+    "法律保證"
+  ],
+  "missing_information_policy": "HUMAN_REVIEW_REQUIRED",
+  "official_sources": [
+    "https://www.ftc.gov/business-guidance/advertising-marketing/advertising-marketing-basics"
+  ],
+  "checked_on": "2026-10-25",
+  "jurisdiction_note": "US reference cautions for synthetic evals; not local legal clearance"
+}

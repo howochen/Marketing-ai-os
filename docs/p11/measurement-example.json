@@ -1,0 +1,27 @@
+{
+  "measurement_version": "mock-bytes-v1",
+  "source": "MOCK_LOCAL_TEMPLATE",
+  "model": "mock-a09-v1",
+  "rate_version": "baa3a57f57272963f2ef5f1919b58474ae336c8339238efe560dbde1f5b8833a",
+  "provider_called": false,
+  "pricing_basis": "MOCK_UNITS_USING_REQUEST_RATE_SNAPSHOT",
+  "reference_rate_provider": "anthropic",
+  "reference_rate_model": "claude-haiku-4-5-20251001",
+  "rate_source_url": "https://platform.claude.com/docs/en/models/haiku-4-5/overview",
+  "rate_effective_date": "2026-10-25",
+  "utf8_bytes": {
+    "input": 1817,
+    "output": 265
+  },
+  "mock_units": {
+    "input": 1817,
+    "output": 265,
+    "definition": "1 unit = 1 UTF-8 byte"
+  },
+  "vendor_tokens": null,
+  "model_specific_token_estimate": null,
+  "simulated_cost_micro_usd": 3142,
+  "provider_cost_micro_usd": 0,
+  "reconciled": false,
+  "legacy_usage_fields": "input_tokens/output_tokens contain MOCK_UNITS only for compatibility"
+}

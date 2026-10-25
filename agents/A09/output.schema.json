@@ -135,6 +135,19 @@
       "minimum": 0,
       "title": "Elapsed Ms",
       "type": "integer"
+    },
+    "measurement": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Measurement"
     }
   },
   "required": [
