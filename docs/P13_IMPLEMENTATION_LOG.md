@@ -22,3 +22,5 @@ Batch 的 reserved／estimated_spent 是原 Tenant Ledger 的同交易批次投�
 重現：`pytest -q tests/test_durable_gate.py`，完整 `pytest -q`、`mypy`、`python -m compileall -q app tests migrations scripts`、`pip-audit -r requirements-dev.txt`。PostgreSQL 使用僅供測試的 compose 密碼，`docker compose -p mos-p13-test --profile test run --build --rm tests`。所有產物在 `docs/p13/`，不含 dump、真實憑證或客戶資料。
 
 備份：僅對本次新建合成卷設定 `MOS_DRILL_PROJECT=mos-p13-test` 執行 `python scripts/backup_drill.py`，核對 Docker labels、15表指紋與獨立還原目標。未觸碰既有資料卷；腳本拒絕覆寫還原目標。實測時間與權限結果見 `p13/backup-restore.json`。
+
+實作提交 `e0cfbe5b5bcfcf5de5a22a0a86de4981d008a08f` 已推送；[遠端CI 40211352227](https://github.com/howochen/Marketing-ai-os/actions/runs/40211352227) SQLite212／PG213／mypy17／漏洞掃描／備份還原皆成功。後續僅文件與證據提交，最後交付仍核對其exact SHA CI。專屬合成API／DB容器已停止，volume／備份保留，未停止其他專案。
