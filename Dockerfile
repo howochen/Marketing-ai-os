@@ -4,6 +4,8 @@ COPY requirements.txt constraints.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 COPY app ./app
 COPY config ./config
+COPY agents ./agents
+COPY skills/threads-copywriting ./skills/threads-copywriting
 COPY migrations ./migrations
 COPY alembic.ini ./
 EXPOSE 8000

@@ -56,6 +56,8 @@ def task_for(s, tid, task_id):
 
 
 def event(s, tid, task, kind, amount, receipt=None):
+    if kind == 'SETTLE' and receipt and receipt.get('provider') == 'mock':
+        kind = 'SETTLE_MOCK'
     s.add(CostEvent(id=uid(), tenant_id=tid, task_id=task.id, type=kind,
                     amount_micro=amount, receipt_id=receipt['receipt_id'] if receipt else None,
                     usage=receipt, rate_version=rate_id(task.rate_snapshot) if task.rate_snapshot else None,
@@ -137,7 +139,7 @@ def health():
 def ready(s=Depends(db)):
     try:
         version = s.scalar(text('SELECT version_num FROM alembic_version'))
-        if version != '0003' or not s.get(RateVersion, rate_id(MODEL)):
+        if version != '0004' or not s.get(RateVersion, rate_id(MODEL)):
             raise ValueError('Schema or rate card not ready')
     except Exception:
         raise HTTPException(503, 'Database or schema unavailable') from None
@@ -242,10 +244,13 @@ def models(c=Depends(require('read'))):
 @app.get('/budget')
 def budget(c=Depends(require('read')), s=Depends(db)):
     tenant = s.get(Tenant, c.tenant_id)
+    mock_spent = sum(e.amount_micro for e in s.scalars(select(CostEvent).where(
+        CostEvent.tenant_id == c.tenant_id, CostEvent.type == 'SETTLE_MOCK')))
     return {'budget_usd': dollars(tenant.budget_micro), 'spent_usd': dollars(tenant.spent_micro),
             'reserved_usd': dollars(tenant.reserved_micro),
             'available_usd': dollars(tenant.budget_micro - tenant.spent_micro - tenant.reserved_micro),
-            'paused': tenant.budget_paused}
+            'paused': tenant.budget_paused, 'mock_spent_usd': dollars(mock_spent),
+            'non_mock_spent_usd': dollars(tenant.spent_micro - mock_spent)}
 
 
 @app.put('/budget/kill-switch')
@@ -498,3 +503,7 @@ def publication(task_id: str, payload: PublishRequest, c=Depends(require('publis
 def audits(c=Depends(require('read')), s=Depends(db)):
     return [{'action': a.action, 'resource_id': a.resource_id, 'actor_id': a.actor_id}
             for a in s.scalars(select(Audit).where(Audit.tenant_id == c.tenant_id))]
+
+
+from .agent_runtime import router as agent_router
+app.include_router(agent_router)

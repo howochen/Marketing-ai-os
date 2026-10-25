@@ -1,0 +1,27 @@
+{
+  "task_id": "placeholder",
+  "agent_id": "A09",
+  "platform": "threads",
+  "industry": "synthetic retail",
+  "brand_profile": {
+    "name": "Demo Studio",
+    "description": "Synthetic stationery brand",
+    "forbidden_terms": [
+      "guaranteed"
+    ]
+  },
+  "target_audience": "creative students",
+  "campaign_goal": "Explore a new notebook",
+  "tone": "friendly",
+  "brief": "Create one synthetic draft; no real products or accounts.",
+  "constraints": {
+    "forbidden_terms": [
+      "已發布"
+    ],
+    "required_terms": [
+      "Demo Studio"
+    ],
+    "max_chars": 500
+  },
+  "idempotency_key": "fixture-seed-zero"
+}

@@ -72,3 +72,26 @@ class AnthropicProvider:
         return {'provider': MODEL['provider'], 'model': data['model'], 'receipt_id': data['id'],
                 'usage': data['usage'], 'actual_micro': usage_cost(data['usage']),
                 'output': '\n'.join(block['text'] for block in data['content'] if block['type'] == 'text')}
+
+
+class MockLLMProvider:
+    """Fixed seed 0, byte-based synthetic token units, no network or secret access."""
+    def count_tokens(self, prompt: str) -> int:
+        return len(prompt.encode('utf-8'))
+
+    def generate(self, prompt: str, max_output_tokens: int) -> dict:
+        if not enabled() or os.getenv('MOS_ENV', 'development') not in {'development', 'test'}:
+            raise RuntimeError('Offline mock generation disabled')
+        data = json.loads(prompt.rsplit('\n[REQUEST_DATA_JSON]\n', 1)[1])['request']
+        name = data['brand_profile']['name']
+        hook = f"{name}，讓日常多一點靈感。"
+        action = '歡迎留言分享你的想法。'
+        draft = f"{hook}\n為{data['target_audience']}帶來新的選擇：{data['campaign_goal']}。\n{action}"
+        output = json.dumps({'draft_text': draft, 'hook': hook, 'call_to_action': action},
+                            ensure_ascii=False, separators=(',', ':'))
+        # Synthetic units are explicitly bytes, not a claim about a vendor tokenizer.
+        raw = output.encode('utf-8')[:max_output_tokens]
+        output = raw.decode('utf-8', errors='ignore')
+        usage = {'input_tokens': self.count_tokens(prompt), 'output_tokens': len(output.encode('utf-8'))}
+        return {'provider': 'mock', 'model': 'mock-a09-v1', 'receipt_id': 'mock_' + hashlib.sha256(prompt.encode()).hexdigest(),
+                'usage': usage, 'actual_micro': usage_cost(usage), 'output': output}

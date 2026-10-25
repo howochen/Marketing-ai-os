@@ -1,4 +1,4 @@
-name: P0.5 checks
+name: P1 offline checks
 on: [push, pull_request]
 permissions:
   contents: read

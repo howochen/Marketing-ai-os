@@ -1,0 +1,20 @@
+{
+  "seed": 0,
+  "token_unit": "MOCK_UTF8_BYTES",
+  "input_tokens": 1780,
+  "usage": {
+    "input_tokens": 1780,
+    "output_tokens": 265
+  },
+  "mock_cost_micro_usd": 3105,
+  "estimate_micro_usd": 6900,
+  "counterfactual_24x_prompt_tokens": 42720,
+  "counterfactual_avoided_input_tokens": 40940,
+  "real_api_calls": 0,
+  "real_api_cost_usd": "0",
+  "draft": {
+    "draft_text": "Demo Studio，讓日常多一點靈感。\n為creative students帶來新的選擇：Explore a new notebook。\n歡迎留言分享你的想法。",
+    "hook": "Demo Studio，讓日常多一點靈感。",
+    "call_to_action": "歡迎留言分享你的想法。"
+  }
+}

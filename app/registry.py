@@ -9,3 +9,7 @@ NAMES = [
 ('A19','CRM / Lead Nurturing'),('A20','Customer Success'),('A21','Quality Assurance'),
 ('A22','Policy / Compliance'),('A23','Finance / Token Manager'),('A24','Red Team')]
 AGENTS={agent_id:{'id':agent_id,'name':name,'status':'REGISTERED_NOT_EXECUTING'} for agent_id,name in NAMES}
+AGENTS['A09']['executor'] = 'THREADS_MOCK_ONLY'
+AGENTS['A01']['rule_role'] = 'DETERMINISTIC_ROUTER'
+AGENTS['A21']['rule_role'] = 'RULE_QA'
+AGENTS['A23']['rule_role'] = 'EXISTING_LEDGER'

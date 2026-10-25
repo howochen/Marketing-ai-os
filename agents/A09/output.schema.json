@@ -1,0 +1,155 @@
+{
+  "$defs": {
+    "QAResult": {
+      "properties": {
+        "passed": {
+          "title": "Passed",
+          "type": "boolean"
+        },
+        "reasons": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Reasons",
+          "type": "array"
+        },
+        "certification": {
+          "const": "RULE_CHECK_ONLY",
+          "default": "RULE_CHECK_ONLY",
+          "title": "Certification",
+          "type": "string"
+        }
+      },
+      "required": [
+        "passed",
+        "reasons"
+      ],
+      "title": "QAResult",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "task_id": {
+      "title": "Task Id",
+      "type": "string"
+    },
+    "agent_id": {
+      "const": "A09",
+      "default": "A09",
+      "title": "Agent Id",
+      "type": "string"
+    },
+    "platform": {
+      "const": "threads",
+      "default": "threads",
+      "title": "Platform",
+      "type": "string"
+    },
+    "draft_text": {
+      "title": "Draft Text",
+      "type": "string"
+    },
+    "hook": {
+      "title": "Hook",
+      "type": "string"
+    },
+    "call_to_action": {
+      "title": "Call To Action",
+      "type": "string"
+    },
+    "warnings": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Warnings",
+      "type": "array"
+    },
+    "qa_result": {
+      "$ref": "#/$defs/QAResult"
+    },
+    "approval_required": {
+      "const": true,
+      "default": true,
+      "title": "Approval Required",
+      "type": "boolean"
+    },
+    "prompt_version": {
+      "const": "a09-1",
+      "default": "a09-1",
+      "title": "Prompt Version",
+      "type": "string"
+    },
+    "provider": {
+      "const": "mock",
+      "default": "mock",
+      "title": "Provider",
+      "type": "string"
+    },
+    "model": {
+      "const": "mock-a09-v1",
+      "default": "mock-a09-v1",
+      "title": "Model",
+      "type": "string"
+    },
+    "usage": {
+      "additionalProperties": {
+        "type": "integer"
+      },
+      "title": "Usage",
+      "type": "object"
+    },
+    "cost_micro_usd": {
+      "minimum": 0,
+      "title": "Cost Micro Usd",
+      "type": "integer"
+    },
+    "receipt_id": {
+      "title": "Receipt Id",
+      "type": "string"
+    },
+    "receipt_source": {
+      "const": "MOCK",
+      "default": "MOCK",
+      "title": "Receipt Source",
+      "type": "string"
+    },
+    "receipt_status": {
+      "const": "UNVERIFIED",
+      "default": "UNVERIFIED",
+      "title": "Receipt Status",
+      "type": "string"
+    },
+    "estimated_cost_micro_usd": {
+      "minimum": 0,
+      "title": "Estimated Cost Micro Usd",
+      "type": "integer"
+    },
+    "elapsed_ms": {
+      "minimum": 0,
+      "title": "Elapsed Ms",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "task_id",
+    "draft_text",
+    "hook",
+    "call_to_action",
+    "warnings",
+    "qa_result",
+    "usage",
+    "cost_micro_usd",
+    "receipt_id",
+    "estimated_cost_micro_usd",
+    "elapsed_ms"
+  ],
+  "title": "CopyOutput",
+  "type": "object"
+}

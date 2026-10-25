@@ -74,6 +74,7 @@ class Task(Base):
     rate_snapshot: Mapped[dict | None] = mapped_column(JSON)
     receipt_status: Mapped[ReceiptStatus] = mapped_column(SqlEnum(ReceiptStatus, native_enum=False, validate_strings=True), default=ReceiptStatus.UNVERIFIED)
     receipt_source: Mapped[str | None] = mapped_column(String(50))
+    agent_run: Mapped[dict | None] = mapped_column(JSON)
     approved_by: Mapped[str | None] = mapped_column(String(36))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
 

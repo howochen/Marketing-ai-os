@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session, sessionmaker, with_loader_criteria
 from .models import Tenant, Task, CostEvent, Publication, Audit, Credential, LoginChallenge, RateVersion
 
 DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///./marketing_os.db')
-engine = create_engine(DATABASE_URL, pool_pre_ping=True, connect_args={
+engine = create_engine(DATABASE_URL, pool_pre_ping=True, hide_parameters=True, connect_args={
     'check_same_thread': False, 'timeout': 30,
 } if DATABASE_URL.startswith('sqlite') else {'connect_timeout': 5, 'options': '-c statement_timeout=10000 -c lock_timeout=5000'})
 
