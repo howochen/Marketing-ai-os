@@ -4,7 +4,7 @@ This checklist is NOT a spending or execution approval.
 
 | Independent decision | Current state | Evidence / required action |
 |---|---|---|
-| Technical preparation | Offline locked wiring and internal record preparation; final test evidence in P14 | Real executor/grant activation is deliberately not implemented; separate reviewed execution change must bind true grants, receipts and recovery without reclassifying Mock history |
+| Technical preparation | DONE for P1.4 offline scope; NOT READY for actual Live execution. Local and actual CI evidence in P14 | Real executor/grant activation is deliberately not implemented; separate reviewed execution change must bind true grants, receipts and recovery without reclassifying Mock history |
 | Actual account verified | NO — ACCOUNT_ACCESS_NOT_VERIFIED | Trusted read-only account/project/model/region/tier/limits evidence, no paid probe as substitute |
 | Cost upper bound verified | NO for real account | Current offline full-input/output reference formula only; verify schema/token count/cache/reasoning/service/region/extra fees and immutable rate validity before any send |
 | Human approved spend | NO | Separate explicit informed approval of account/models/per-request/total/count/time/stops, independently authenticated evidence |

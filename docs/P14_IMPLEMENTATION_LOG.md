@@ -11,3 +11,5 @@ Internal approval creation requires both existing administrator authentication a
 Migration 0008 adds one table and RLS/append-only guards without changing existing rows. Destructive downgrade is rejected; take/verify backup and restore to a separate database before an operational rollback. Fresh database migration and 16-table synthetic restore are acceptance checks.
 
 Initial checks caught a shared admin throttle bucket in the test fixture and stale readiness expectation 0007; fixture window and expected additive version were corrected without weakening runtime throttling. Final results are recorded in P14_TEST_EVIDENCE.md. Only after local acceptance is a candidate committed/pushed for real CI verification.
+
+Implementation ac0d0e74d9efd4aff502689a840abe6f39867d3b pushed successfully; real CI40214433374 succeeded. Remaining commit only records acceptance evidence/checklist; no live activation or new runtime behavior.
