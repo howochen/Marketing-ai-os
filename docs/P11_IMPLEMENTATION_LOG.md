@@ -23,3 +23,5 @@ Schema 0004 → 0005 新增三張表及 nullable 指標／發布快照。SQLite 
 重現方式：安裝既有 `requirements-dev.txt`，執行 `pytest -q`、`mypy`、`python -m compileall -q app tests migrations scripts`、`pip-audit -r requirements-dev.txt`。PostgreSQL：設定僅供測試的 compose 密碼後 `docker compose -p mos-p11-test --profile test run --build --rm tests`；備份演練需在該獨立測試專案設定 `MOS_DRILL_PROJECT=mos-p11-test` 執行 `python scripts/backup_drill.py`。腳本只接受 p05/p11 兩個合成測試專案，且以 Docker label 再核對；重跑演練應使用新測試卷，禁止覆蓋既有還原目標。
 
 部署與 CI 狀態以 [最終驗收](P11_FINAL_ACCEPTANCE.md) 為準。
+
+實作提交 `aea0fc09a49a387c64d2ce1ccd011cbe5de996a0` 已推送，遠端 CI [40156837776](https://github.com/howochen/Marketing-ai-os/actions/runs/40156837776) success；測試與 backup job 實際通過，原始摘要見 `p11/remote-ci-summary.txt`。後續提交僅補入此證據與驗收狀態，最終交付仍核對最後 SHA 的 CI。

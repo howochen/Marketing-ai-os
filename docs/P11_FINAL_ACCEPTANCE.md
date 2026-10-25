@@ -1,8 +1,8 @@
 # MOS-P1.1-001 最終驗收
 
-狀態：**PARTIAL — PENDING_REMOTE_CI**。本機驗收已通過；遠端新 SHA 成功前不得宣稱 PASS。
+狀態：**PASS（僅離線品質驗證與人工修訂）**。本機與實際遠端 CI 均成功，不代表正式營運准入。
 
-範圍：離線、受控、合成資料。來源 `cc23f454e1414315714efc7b2695583619939f3f`，交付分支 `codex/marketing-ai-os-p1-1-quality-evals`。提交 SHA 與遠端 CI 將在推送後記錄；來源分支保留。
+範圍：離線、受控、合成資料。來源 `cc23f454e1414315714efc7b2695583619939f3f`，交付分支 `codex/marketing-ai-os-p1-1-quality-evals`。實作提交 `aea0fc09a49a387c64d2ce1ccd011cbe5de996a0` 已推送並通過遠端 CI；來源分支仍指向原 SHA。其後收尾為證據／文件提交，最終 SHA 及該 SHA 的 CI 以 GitHub headSha 與交付回報為準，避免文件自我參照。
 
 | 要求 | 結果與證據 |
 |---|---|
@@ -16,7 +16,7 @@
 | 型別／靜態／漏洞 | mypy 11 modules PASS，compileall PASS，pip-audit 0 known；`p11/mypy.txt`, `p11/pip-audit.json` |
 | Docker／migration | runtime/test build PASS，health／ready schema 0005；`p11/docker-startup.txt`, `p11/docker-health.json`；0004 舊內容保留回歸 |
 | 備份歷史 | 合成專案 12 表完整指紋一致，檔案0600／目錄0700、4負面檢查；`p11/backup-restore.json` |
-| 遠端 CI | PENDING_REMOTE_CI，需本分支實際 GitHub Actions success |
+| 遠端 CI | [40156837776 success](https://github.com/howochen/Marketing-ai-os/actions/runs/40156837776)，兩個 job 均 success；`p11/remote-ci-candidate.json`, `p11/remote-ci-summary.txt` |
 | 真實 API／服務 | 模型 0 calls、USD 0；無新依賴／付費服務；`P11_TOKEN_UNIT_AUDIT.md` |
 | Skill 按需／單位分離 | 產業2檔 vs 全部12檔；569 vs 3,481 bytes；`p11/skill-context.json` |
 
@@ -24,6 +24,6 @@ SQLite 跳過的唯一測試是 `test_postgres_all_tables_raw_isolation`：SQLit
 
 備份本機實測 backup 約 0.391 秒、restore + 12 表驗證約 3.437 秒，snapshot rows lost 0。只代表這次無同時寫入的小型合成 snapshot，沒有 PITR、連續 RPO 或正式 RTO 保證，不能接觸客戶資料卷。
 
-提交前 git diff --check 通過；已檢視變更範圍並掃描密鑰／私鑰格式，沒有真實密鑰發現，見 `p11/secret-scan.json`（模式掃描並非完整安全認證）。遠端 CI 證據待推送後補齊。版本識別採 Git commit 及 CI 的 headSha，不以文件內自我參照假造最終 SHA。
+提交前 git diff --check 通過；已檢視變更範圍並掃描密鑰／私鑰格式，沒有真實密鑰發現，見 `p11/secret-scan.json`（模式掃描並非完整安全認證）。實際 CI 證據已保存，測試數量、mypy、掃描及備份結果與本機一致。git diff --check／cached check 通過，無無關檔案或真實憑證加入。版本識別採 Git commit 及 CI 的 headSha，不以文件內自我參照假造最終 SHA。
 
-下一階段：**NO-GO，等待遠端 CI**。即使離線 GO，也不授權真實客戶發布或正式營運。未解風險包括詞彙 QA 不具完整語義判斷、人工評分非專業驗證、真實 Token／Provider invoice 未對帳、正式身份供應商／加密備份／營運地合規與正式環境安全驗證未完成。
+下一階段：**GO，僅允許離線、受控 Agent 開發；Production NO-GO**。不授權真實客戶發布或正式營運。未解風險包括詞彙 QA 不具完整語義判斷、人工評分非專業驗證、真實 Token／Provider invoice 未對帳、正式身份供應商／加密備份／營運地合規與正式環境安全驗證未完成。
