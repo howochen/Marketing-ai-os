@@ -11,7 +11,7 @@
 | 固定依賴漏洞 | 0 known vulnerabilities；`p12/pip-audit.json`；沒有新增套件 |
 | Docker／新資料庫 | 新 mos-p12-test volume，0001→0006 migration、test/runtime image build；`p12/postgres.txt`、`p12/docker-startup.txt`、`p12/docker-health.json` |
 | Mock benchmark | 12案例×2模型，24合成稿，格式 QA24/24；`p12/mock-benchmark.json` |
-| 遠端 CI | 待推送驗證；不能以本機 PASS 代替 |
+| 遠端 CI | [40206743183 success](https://github.com/howochen/Marketing-ai-os/actions/runs/40206743183)，exact SHA `482d52a9ef922b80b9218b11f917ee12cd06b46a`；`p12/remote-ci-summary.txt` |
 
 SQLite 唯一跳過是 `test_postgres_all_tables_raw_isolation`，因 SQLite 無原生 PostgreSQL RLS；該案例與新表的原始 SQL 保護都在 PG 執行。Live marker 依預設 deselect，即使單獨指定也明確 skip。Starlette/HTTPX 棄用警告保留，沒有為消警告而升級依賴。起初 Docker Linux engine pipe 未就緒，啟動／確認 Docker 後才執行隔離卷測試，沒有以此略過 PG。
 
@@ -28,3 +28,5 @@ SQLite 唯一跳過是 `test_postgres_all_tables_raw_isolation`，因 SQLite 無
 - Live plan 各條件與停止上限；即使計畫有效也無 Live 授權；Benchmark空缺評分／人工時間不冒充0成本、重複case/model拒絕。
 
 重現：既有 `requirements-dev.txt` 安裝後 `pytest -q`、`mypy`、`python -m compileall -q app tests migrations scripts`、`pip-audit -r requirements-dev.txt`。Compose 需合成測試密碼，`docker compose -p mos-p12-test --profile test run --build --rm tests`。不得把MOS_ENV改production、注入真實資料或透過任何測試試圖送出Live請求。
+
+實際 CI 結果與本機一致：SQLite184／PG185／mypy15／0 known vulnerabilities，合成備份還原 job 也成功。最後文件提交仍核對其 exact SHA 的 CI，不以本次 run 代替另一個 SHA。

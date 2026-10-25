@@ -1,8 +1,8 @@
 # MOS-P1.2-001 最終驗收
 
-**PARTIAL — 等待遠端 CI**。離線本機驗收通過，尚不可宣稱整單 PASS。
+**P1.2 PASS（僅離線 Provider 準備）**。本機與實際遠端 CI 均通過，沒有真實模型品質評比或付費呼叫授權。
 
-交付分支 `codex/marketing-ai-os-p1-2-provider-readiness`，來源 `df40071a67b9ff16f340059b0fe2b4b439bcf02d`。main／develop／原 P1.1 分支不修改。提交與最終 SHA 的 CI 結果在推送後核對，不以舊成功摘要替代。
+交付分支 `codex/marketing-ai-os-p1-2-provider-readiness`，來源 `df40071a67b9ff16f340059b0fe2b4b439bcf02d`。main／develop／原 P1.1 分支不修改。實作提交 `482d52a9ef922b80b9218b11f917ee12cd06b46a` 已推送並通過 [CI 40206743183](https://github.com/howochen/Marketing-ai-os/actions/runs/40206743183)。其後只補文件及證據，最終提交 SHA／該 SHA 的 CI 以交付回報與 GitHub headSha 為準，避免文件自我參照。
 
 | 驗收 | 證據 |
 |---|---|
@@ -15,8 +15,8 @@
 | Mock報表 | 24篇合成，QA格式24/24，人工分數／時間皆合成；`p12/mock-benchmark.json` |
 | SQLite／PostgreSQL | 184 passed＋1原生RLS skip；PG185 passed；各1 live deselect，`P12_TEST_EVIDENCE.md` |
 | mypy／static／scan／Docker | mypy15 modules、compileall、0 known vulnerabilities、Docker隔離測試；`p12/`原始紀錄 |
-| 遠端 CI exact SHA | 待推送驗證，阻擋 PASS |
-| 密鑰與範圍 | 提交前 diff／密鑰掃描，僅合成資料，沒有真實密鑰／customer data／社群操作 |
+| 遠端 CI exact SHA | [40206743183 success](https://github.com/howochen/Marketing-ai-os/actions/runs/40206743183)，SQLite／PostgreSQL／mypy／scan／backup全部成功；`p12/remote-ci-candidate.json`、`p12/remote-ci-summary.txt` |
+| 密鑰與範圍 | 提交前 diff／cached check通過，密鑰模式掃描無發現；`p12/secret-scan.json`。僅合成資料，沒有真實密鑰／customer data／社群操作 |
 
 新增依賴0、付費服務0、真實模型呼叫0、真實模型 API 成本USD0。Mock benchmark模型費用USD0.047520是試算，人工費用亦為合成；不是實際帳單。Codex使用量工具未提供。
 
