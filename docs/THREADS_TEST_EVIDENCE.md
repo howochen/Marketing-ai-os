@@ -23,6 +23,8 @@ SQLite原生PG RLS測試跳過是引擎限制，不當成隔離已通過；Postg
 
 第一次29項版本全套267/268通過、加入容器狀態後33項版本271/272通過，均保留初始建置紀錄；最後採用275/276為本單完整驗收值。三個權限快取回歸使用Core UPDATE不更新既有ORM identity，驗證發送前確實重讀而非靠舊物件判斷。最後全套已包含所有37項。Starlette提示HTTPX TestClient將來需升級，尚未為此重構既有依賴。
 
-遠端CI尚待精確實作SHA驗證，不以前次分支CI代替本次。真實Threads HTTP／公開發布0，真實模型API0，實際AI費用USD0。以上Mock token與ID皆合成，無任何Live驗真含義。
+實際遠端CI40218909368已驗證實作SHA 2e6ddf479bf24dad9d8404c451e4435bdef004f9：兩個jobs成功，完整275/276、mypy22、漏洞掃描及18表還原均成功。原始metadata與摘要見threads/remote-ci-candidate.json／remote-ci-summary.txt；最後文件SHA的CI另於交付回報精確核對。真實Threads HTTP／公開發布0，真實模型API0，實際AI費用USD0。以上Mock token與ID皆合成，無任何Live驗真含義。
 
 threads/new-tests-final.txt是加入權限快取回歸時的36項補測；其後相同Container/Media ID負面例加入後，最終37項已完整包含在sqlite-final.txt／postgres-final.txt（275／276），不以中間補測數量取代全套結果。
+
+本工單的mos-pub-test API／DB容器已停止，保留資料卷及備份；其他專案不變。GitHub Actions仍有原有Node20 action強制Node24與ubuntu-latest更換映像的提示，本單未為警告新增依賴或修改main；工作流顯示快取名稱P0 checks，驗收以headSha與jobs實際狀態為準。

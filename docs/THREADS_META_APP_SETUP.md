@@ -14,3 +14,31 @@
 10. callback只回連接metadata與官方讀到的帳號ID／username／到期時間／scopes，不回Token。核對確實是預期帳號。若沒有取得正確grants或平台拒絕，依錯誤重新設定，不用合成帳號補齊。初次連接與重新授權均預設account publishing_enabled=false。
 
 完成以上設定後仍須回到工單第二道驗收：由持有人確認**指定帳號及一篇確定要公開的文字**，另行明確執行一次。沒有這項確認，本次程式工作不可自行發文。
+
+## 平台設定後：一篇貼文的受控操作
+
+以下是日後**帳號持有人已確認帳號與完整公開文字後**的操作，不是本次允許你立即執行的發文腳本。現在沒有Meta App，請停在設定階段。
+
+1. 在HTTPS `/docs` 的連接清單確認OAuth讀到的connection ID、Threads user ID、username、scopes與到期時間。MOCK來源不可用於Live，不要從測試報表複製10001等數值。
+2. 透過既有Task／Revision流程準備文字；不需要OpenAI。可把離線草稿用人工Revision改成已同意的測試文字，維持A21要求的hook／CTA與品牌限制。GET `/tasks/{task_id}/revisions`，仔細核對最新版本的after_text；owner以既有approve API指定revision_id。若重新修改，必須重新批准新版本。
+3. owner執行 POST `/tasks/{task_id}/publication-request`，body為：
+
+```json
+{"platform":"threads","idempotency_key":"replace-with-a-unique-publication-key","revision_id":"APPROVED_REVISION_ID"}
+```
+
+4. 管理者只在該次Live已獲持有人同意後，將受控環境MOS_THREADS_PUBLISH_ENABLED=true（HTTP開關也需true）；模型開關繼續false。owner對指定connection執行 POST `/threads/connections/{connection_id}/publishing`，body `{"enabled":true}`。這會再次檢查官方帳號及權限，並不直接發文。
+5. 用**原始after_text、不去空白或換行**計算UTF8 SHA256，例如Python `hashlib.sha256(text.encode("utf-8")).hexdigest()`。owner再次確認該帳號與逐字內容，POST `/threads/publications/{publication_id}/authorize`：
+
+```json
+{"connection_id":"OFFICIAL_CONNECTION_ID","threads_user_id":"OFFICIAL_THREADS_USER_ID","revision_id":"APPROVED_REVISION_ID","content_sha256":"EXACT_UTF8_SHA256","confirm_public_post":true}
+```
+
+以上大寫文字是占位符，不是可用憑證或帳號；必須來自本人官方OAuth與已批准Revision。不要由自動化工具代替持有人決定confirm_public_post。
+
+6. 使用同Tenant worker的MOS Bearer憑證，**明確只執行一次** POST `/threads/publications/{publication_id}/execute`。它可能真的公開內容，不能拿來測試帳號是否有效。owner角色本身不可越權代用worker端點。
+7. 檢查回傳publish_status／container_id／published_media_id／verification_status。只有真實OFFICIAL_READBACK_VERIFIED及PUBLISHED_VERIFIED才有系統讀回證據；還要由持有人開啟Meta返回的permalink，在Threads App看見同一篇，才完成工單第二道驗收。
+8. RESULT_UNKNOWN／RECONCILIATION_REQUIRED時不要重按execute，不要另建同文工作。已知Media ID但讀回暫失敗時可用 `/reconcile`，它只GET；未知ID則按THREADS_FAILURE_RECOVERY.md人工查明，不能以Container ID當Published ID。
+9. 測試結束，將全域發布開關false，並對該connection POST publishing `{"enabled":false}`。需要撤銷時DELETE本地connection，再到Threads設定移除App授權。保留審核／讀回證據，勿把Token貼進報告。
+
+本次沒有執行以上真實發文步驟，沒有任何真實post ID或permalink。定時發布與取消API仍須等立即發布驗收成功後另行開發。
