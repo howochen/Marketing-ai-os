@@ -111,7 +111,9 @@ Final P0 closeout: [acceptance](docs/P0_FINAL_ACCEPTANCE.md), [cost report](docs
 
 Current implementation and evidence: [implementation log](docs/P05_IMPLEMENTATION_LOG.md), [tests](docs/P05_TEST_EVIDENCE.md), [backup/restore](docs/P05_BACKUP_RESTORE.md), [security](docs/P05_SECURITY_REVIEW.md), [model costs](docs/P05_MODEL_COST_DESIGN.md), [open-source review](docs/P05_OPEN_SOURCE_REVIEW.md), [offline P1 gate](docs/P1_GO_NO_GO.md).
 
-Install exact pins with `pip install -r requirements-dev.txt`; run `mypy`, `python -m compileall -q app tests migrations scripts`, and `pytest -q`. Schema head is now 0011. Read the log before upgrading: old credentials become legacy and need reissue; old tasks have no fabricated historical price snapshot. `/health` is liveness; `/ready` checks DB/schema/rate-card readiness. Production mode refuses unsafe configuration and requires actual HTTPS or an explicitly trusted TLS-terminating proxy. Public production validation remains a separate gate.
+Install exact pins with `pip install -r requirements-dev.txt`; run `mypy`, `python -m compileall -q app tests migrations scripts`, and `pytest -q`. Schema head is now 0012. Read the log before upgrading: old credentials become legacy and need reissue; old tasks have no fabricated historical price snapshot. `/health` is liveness; `/ready` checks DB/schema/rate-card readiness. Production mode refuses unsafe configuration and requires actual HTTPS or an explicitly trusted TLS-terminating proxy. Public production validation remains a separate gate.
+
+Manual content workbench: double-click `Start-Content.cmd` for an isolated local workspace at `http://127.0.0.1:8893/app/content`, using the existing one-time login flow. See [繁體中文操作說明](docs/CONTENT_WORKBENCH_GUIDE.md) and [implementation/security](docs/CONTENT_IMPLEMENTATION.md). AI, publishing, Threads HTTP and phone setup remain disabled; publication plans never dispatch automatically.
 
 ## MOS-P1-001 offline A09 runtime
 

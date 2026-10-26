@@ -169,7 +169,7 @@ def request(url,*,vault=None,path='',payload=None,admin=False):
 def wait_ready(vault):
     for _ in range(45):
         try:
-            if request(LOCAL,vault=vault,path='/ready').get('schema')=='0011':return
+            if request(LOCAL,vault=vault,path='/ready').get('schema')=='0012':return
         except (OSError,ValueError):pass
         time.sleep(1)
     raise SetupError('API_TLS_READINESS_FAILED')

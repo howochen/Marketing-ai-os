@@ -18,6 +18,7 @@ jobs:
       - run: pip install -r requirements-dev.txt
       - run: python -m pytest -q tests/test_threads_setup.py
       - run: python -m pytest -q tests/test_phone_setup.py
+      - run: python -m pytest -q tests/test_content_workbench.py
   sqlite:
     runs-on: ubuntu-latest
     steps:

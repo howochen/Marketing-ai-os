@@ -11,3 +11,6 @@ __pycache__
 .phone-setup-test
 **/__pycache__
 **/*.pyc
+
+.content-local/
+.content-test/

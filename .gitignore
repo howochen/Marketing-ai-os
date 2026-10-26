@@ -11,3 +11,6 @@ __pycache__/
 .taste-skill/
 .threads-local/
 .phone-setup-test/
+
+.content-local/
+.content-test/

@@ -1,7 +1,7 @@
 import os
 from sqlalchemy import create_engine, event, text, inspect
 from sqlalchemy.orm import Session, sessionmaker, with_loader_criteria
-from .models import Tenant, Task, CostEvent, Publication, Audit, Credential, LoginChallenge, RateVersion, DraftRevision, RevisionApproval, RevisionScore, TestBatch, BatchAttempt, ReconciliationEvidence, SpendAuthorization, ThreadsConnection, ThreadsOAuthState, PhoneSetupDevice, PhoneSetupGrant
+from .models import Tenant, Task, CostEvent, Publication, Audit, Credential, LoginChallenge, RateVersion, DraftRevision, RevisionApproval, RevisionScore, TestBatch, BatchAttempt, ReconciliationEvidence, SpendAuthorization, ThreadsConnection, ThreadsOAuthState, PhoneSetupDevice, PhoneSetupGrant, ContentPlan
 
 DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///./marketing_os.db')
 engine = create_engine(DATABASE_URL, pool_pre_ping=True, hide_parameters=True, connect_args={
@@ -16,7 +16,7 @@ def configure_connection(connection, record):
 
 
 SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
-SCOPED = (Task, CostEvent, Publication, Audit, Credential, LoginChallenge, DraftRevision, RevisionApproval, RevisionScore, TestBatch, BatchAttempt, ReconciliationEvidence, SpendAuthorization, ThreadsConnection, ThreadsOAuthState, PhoneSetupDevice, PhoneSetupGrant)
+SCOPED = (Task, CostEvent, Publication, Audit, Credential, LoginChallenge, DraftRevision, RevisionApproval, RevisionScore, TestBatch, BatchAttempt, ReconciliationEvidence, SpendAuthorization, ThreadsConnection, ThreadsOAuthState, PhoneSetupDevice, PhoneSetupGrant, ContentPlan)
 
 
 def scope(session, tenant_id=None, token_hash=''):
@@ -54,7 +54,7 @@ def isolate_writes(session, context, instances):
             raise ValueError('Cross-tenant write denied')
         if isinstance(obj, Tenant) and obj.id != tid:
             raise ValueError('Cross-tenant write denied')
-        if isinstance(obj, (Audit, CostEvent, RateVersion, DraftRevision, RevisionApproval, RevisionScore, ReconciliationEvidence, SpendAuthorization)) and obj not in session.new:
+        if isinstance(obj, (ContentPlan, Audit, CostEvent, RateVersion, DraftRevision, RevisionApproval, RevisionScore, ReconciliationEvidence, SpendAuthorization)) and obj not in session.new:
             raise ValueError('Append-only record')
         if isinstance(obj, Task) and obj not in session.new:
             history = inspect(obj).attrs.rate_snapshot.history

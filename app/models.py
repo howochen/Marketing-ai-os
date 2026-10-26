@@ -62,6 +62,7 @@ class Task(Base):
     agent_id: Mapped[str] = mapped_column(String(8))
     title: Mapped[str] = mapped_column(String(200))
     brief: Mapped[str] = mapped_column(Text)
+    content_brief: Mapped[dict | None] = mapped_column(JSON)
     status: Mapped[str] = mapped_column(String(30), default='DRAFT')
     reserved_micro: Mapped[int] = mapped_column(BigInteger, default=0)
     reserve_key: Mapped[str | None] = mapped_column(String(128))
@@ -79,6 +80,25 @@ class Task(Base):
     approved_revision_id: Mapped[str | None] = mapped_column(String(36))
     approved_by: Mapped[str | None] = mapped_column(String(36))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+class ContentPlan(Base):
+    __tablename__ = 'content_plans'
+    __table_args__ = (UniqueConstraint('tenant_id','idempotency_key'),
+        ForeignKeyConstraint(['tenant_id','task_id','revision_id'],['draft_revisions.tenant_id','draft_revisions.task_id','draft_revisions.id']))
+    id: Mapped[str] = mapped_column(String(36),primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey('tenants.id'),index=True)
+    task_id: Mapped[str] = mapped_column(String(36))
+    revision_id: Mapped[str] = mapped_column(String(36))
+    publication_id: Mapped[str] = mapped_column(ForeignKey('publications.id'))
+    scheduled_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    timezone: Mapped[str] = mapped_column(String(80))
+    connection_id: Mapped[str | None] = mapped_column(String(36))
+    note: Mapped[str] = mapped_column(Text)
+    idempotency_key: Mapped[str] = mapped_column(String(128))
+    request_hash: Mapped[str] = mapped_column(String(64))
+    created_by: Mapped[str] = mapped_column(String(36))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True),default=now)
 
 
 class CostEvent(Base):

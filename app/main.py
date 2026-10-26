@@ -146,7 +146,7 @@ def health():
 def ready(s=Depends(db)):
     try:
         version = s.scalar(text('SELECT version_num FROM alembic_version'))
-        if version != '0011' or not s.get(RateVersion, rate_id(MODEL)):
+        if version != '0012' or not s.get(RateVersion, rate_id(MODEL)):
             raise ValueError('Schema or rate card not ready')
     except Exception:
         raise HTTPException(503, 'Database or schema unavailable') from None
@@ -526,6 +526,10 @@ def approve(task_id: str, payload: ApprovalRequest | None = None, c=Depends(requ
 
 @app.post('/tasks/{task_id}/publication-request')
 def publication(task_id: str, payload: PublishRequest, c=Depends(require('publish')), s=Depends(db)):
+    return queue_publication(task_id,payload,c,s)
+
+
+def queue_publication(task_id,payload,c,s,*,commit=True):
     lock_tenant(s, c.tenant_id)
     task = task_for(s, c.tenant_id, task_id)
     if task.status != 'APPROVED' or not task.approved_by:
@@ -548,7 +552,8 @@ def publication(task_id: str, payload: PublishRequest, c=Depends(require('publis
                               revision_id=selected, content_snapshot=approved.after_text)
     s.add(publication)
     audit(s, c.tenant_id, 'publication.manual_queued', publication.id, c.id)
-    s.commit()
+    if commit:s.commit()
+    else:s.flush()
     return {'id': publication.id, 'status': publication.status, 'deduplicated': False,
             'note': 'Manual only. No platform API request or posted-content claim.'}
 
@@ -590,6 +595,8 @@ from starlette.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from pathlib import Path
 app.include_router(phone_setup_router)
+from .content_workbench import router as content_router
+app.include_router(content_router)
 app.include_router(social_ui_router)
 app.mount('/assets',StaticFiles(directory=Path(__file__).parent/'web'),name='social_ui_assets')
 app.add_exception_handler(StarletteHTTPException,ui_http_error)

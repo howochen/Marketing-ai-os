@@ -21,6 +21,9 @@ def hashed(data: dict) -> str:
 
 
 def context(task: Task) -> CopyRequest:
+    if task.content_brief:
+        from .content_workbench import Brief
+        return Brief.model_validate(task.content_brief).request(task.id)
     run=task.agent_run or {}
     if run.get('input'):
         return CopyRequest.model_validate(run['input'])
@@ -74,6 +77,7 @@ def approve_revision(s: Session, task: Task, revision_id: str, actor: Credential
     previous=s.scalar(select(RevisionApproval).where(RevisionApproval.tenant_id==task.tenant_id,RevisionApproval.revision_id==record.id))
     if not previous:
         s.add(RevisionApproval(id=uid(),tenant_id=task.tenant_id,task_id=task.id,revision_id=record.id,reviewer_id=actor.id))
+    if task.approved_revision_id!=record.id:
         audit(s,task.tenant_id,'revision.approved',record.id,actor.id)
     task.approved_revision_id=record.id
     task.approved_by=actor.id

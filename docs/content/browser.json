@@ -1,0 +1,18 @@
+{
+  "engine": "Chromium; iPhone viewport, not physical Safari",
+  "http_database_flow": true,
+  "widths": [
+    1440,
+    768,
+    390
+  ],
+  "real_ai_calls": 0,
+  "real_social_posts": 0,
+  "qa_fail_blocks_approval": true,
+  "manual_revision_approval_plan": true,
+  "new_revision_invalidates_approval": true,
+  "restore_creates_new_revision": true,
+  "conflict_preserves_unsaved_text": true,
+  "horizontal_overflow": false,
+  "console_errors": 0
+}
