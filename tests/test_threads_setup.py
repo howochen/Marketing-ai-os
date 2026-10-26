@@ -170,6 +170,27 @@ def test_dpapi_encrypts_and_reloads_without_rotating(vault,monkeypatch,tmp_path)
     assert setup.load()==vault
 
 
+@pytest.mark.skipif(os.name!='nt',reason='Installer lock requires Windows msvcrt')
+def test_readonly_login_window_does_not_hold_setup_lock(vault,monkeypatch,tmp_path):
+    import msvcrt
+    monkeypatch.delenv('CI',raising=False);monkeypatch.delenv('PYTEST_CURRENT_TEST',raising=False)
+    monkeypatch.setattr(setup,'PRIVATE',tmp_path)
+    monkeypatch.setattr(setup.shutil,'which',lambda name:'synthetic-tool')
+    monkeypatch.setattr(setup,'command',lambda args:'synthetic-version')
+    monkeypatch.setattr(setup,'protect_directory',lambda:None)
+    monkeypatch.setattr(setup,'load',lambda:vault)
+    checked=[]
+    def login(*args,**kwargs):
+        with (tmp_path/'setup.lock').open('r+b') as other:
+            msvcrt.locking(other.fileno(),msvcrt.LK_NBLCK,1)
+            checked.append(True)
+            msvcrt.locking(other.fileno(),msvcrt.LK_UNLCK,1)
+    monkeypatch.setattr(setup,'login_window',login)
+    args=types.SimpleNamespace(stop=False,non_interactive=False,diagnose=False,login=True,mobile=True)
+    setup.run(args)
+    assert checked==[True]
+
+
 @pytest.mark.parametrize('flag,value',[('MOS_ENV','production'),('MOS_LOCAL_SETUP_ENABLED','false'),
                                      ('MOS_MODEL_CALLS_ENABLED','true'),('MOS_THREADS_PUBLISH_ENABLED','true')])
 def test_https_entrypoint_refuses_unsafe_modes(monkeypatch,flag,value):

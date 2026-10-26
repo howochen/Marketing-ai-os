@@ -59,7 +59,6 @@ def protect_directory():
         if not apply(str(PRIVATE),0x80000004,descriptor):raise SetupError('DACL_FAILED')
     finally:
         free=ctypes.WinDLL('kernel32').LocalFree;free.argtypes=[ctypes.c_void_p];free(descriptor)
-    for name in ('runtime.env','ngrok-runtime.yml'):(PRIVATE/name).unlink(missing_ok=True)
 
 
 class Blob(ctypes.Structure):
@@ -320,7 +319,9 @@ def run(args):
         lock.seek(0);lock.write(b'0');lock.flush();lock.seek(0)
         try:msvcrt.locking(lock.fileno(),msvcrt.LK_NBLCK,1)
         except OSError:raise SetupError('SETUP_ALREADY_RUNNING') from None
+        locked=True
         try:
+            for name in ('runtime.env','ngrok-runtime.yml'):(PRIVATE/name).unlink(missing_ok=True)
             vault=load()
             cert=x509.load_pem_x509_certificate(vault['tls_cert'].encode())
             if cert.not_valid_after_utc<=datetime.now(timezone.utc)+timedelta(days=1):
@@ -345,6 +346,7 @@ def run(args):
                 (PRIVATE/'status.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8')
                 print(json.dumps(report,ensure_ascii=False,indent=2));return
             if args.login:
+                lock.seek(0);msvcrt.locking(lock.fileno(),msvcrt.LK_UNLCK,1);locked=False
                 login_window(vault,mobile=args.mobile);return
             print('正在啟動隔離的 PostgreSQL 與 HTTPS API…',flush=True)
             compose(vault,'up','--build','-d','db','migrate','api');wait_ready(vault)
@@ -362,8 +364,11 @@ def run(args):
             (PRIVATE/'status.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8')
             print(json.dumps(report,ensure_ascii=False,indent=2))
             print('請在 Meta 後台登錄上方 Redirect URI，再透過 /app/threads 官方登入。發布保持關閉。')
-            if not args.non_interactive:login_window(vault,mobile=args.mobile)
-        finally:lock.seek(0);msvcrt.locking(lock.fileno(),msvcrt.LK_UNLCK,1)
+            if not args.non_interactive:
+                lock.seek(0);msvcrt.locking(lock.fileno(),msvcrt.LK_UNLCK,1);locked=False
+                login_window(vault,mobile=args.mobile)
+        finally:
+            if locked:lock.seek(0);msvcrt.locking(lock.fileno(),msvcrt.LK_UNLCK,1)
 
 
 if __name__=='__main__':
