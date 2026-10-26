@@ -110,6 +110,16 @@ def test_cmd_defaults_to_desktop_module_not_mobile():
     assert '-m scripts.threads_setup %*' in text and '--mobile' not in text
 
 
+@pytest.mark.skipif(sys.platform!='win32',reason='Actual Windows cmd.exe parsing')
+def test_windows_launcher_parses_and_prints_help():
+    import subprocess
+    data=Path('Setup-Threads.cmd').read_bytes()
+    assert b'\n' not in data.replace(b'\r\n',b'')
+    result=subprocess.run(['cmd.exe','/d','/c','Setup-Threads.cmd --help'],capture_output=True,timeout=20)
+    assert result.returncode==0,result.stderr.decode(errors='replace')
+    assert b'usage:' in result.stdout and b'--diagnose' in result.stdout
+
+
 def native_order(monkeypatch,state):
     from scripts.threads_setup_ui import Wizard
     monkeypatch.setattr(setup,'prepare_install',lambda v,p:{'vault':v,'callback':'https://new.ngrok-free.app/threads/oauth/callback','changed':False})
