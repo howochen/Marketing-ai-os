@@ -146,7 +146,7 @@ def health():
 def ready(s=Depends(db)):
     try:
         version = s.scalar(text('SELECT version_num FROM alembic_version'))
-        if version != '0012' or not s.get(RateVersion, rate_id(MODEL)):
+        if version != '0013' or not s.get(RateVersion, rate_id(MODEL)):
             raise ValueError('Schema or rate card not ready')
     except Exception:
         raise HTTPException(503, 'Database or schema unavailable') from None
@@ -597,6 +597,8 @@ from pathlib import Path
 app.include_router(phone_setup_router)
 from .content_workbench import router as content_router
 app.include_router(content_router)
+from .threads_privacy import router as privacy_router
+app.include_router(privacy_router)
 app.include_router(social_ui_router)
 app.mount('/assets',StaticFiles(directory=Path(__file__).parent/'web'),name='social_ui_assets')
 app.add_exception_handler(StarletteHTTPException,ui_http_error)

@@ -1,0 +1,10 @@
+{
+  "deployment": "NOT_PERFORMED_AUTO_REVIEW_DENIED",
+  "http_status": {
+    "redirect": 400,
+    "deauthorize": 404,
+    "data_deletion": 404
+  },
+  "real_meta_callback_verified": false,
+  "scope": "read-only existing ngrok; no signed request sent"
+}

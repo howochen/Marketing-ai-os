@@ -168,7 +168,7 @@ def request(url,*,vault=None,path='',payload=None,admin=False):
 def wait_ready(vault):
     for _ in range(45):
         try:
-            if request(LOCAL,vault=vault,path='/ready').get('schema')=='0012':return
+            if request(LOCAL,vault=vault,path='/ready').get('schema')=='0013':return
         except (OSError,ValueError):pass
         time.sleep(1)
     raise SetupError('API_TLS_READINESS_FAILED')
@@ -292,6 +292,8 @@ def diagnose(vault):
             'https_verified':probe,'tls_upstream_verified':True,'trusted_proxies':[],
             'external_checks':external,
             'redirect_uri':status['redirect_uri'],'missing':status['missing'],
+            'callback_urls':status.get('callback_urls',{}),
+            'meta_privacy_callback_confirmation':'USER_CONFIRMED_NOT_PROVIDER_VERIFIED' if vault.get('meta_privacy_callbacks_confirmed_for')==vault.get('public_url') else 'MANUAL_HANDOFF_REQUIRED',
             'OAUTH_VERIFIED':bool(official),'oauth_evidence':'fresh official identity/scope/expiry check; Mock excluded',
             'accounts':[{k:c[k] for k in ('threads_user_id','username','granted_scopes','token_expires_at','last_verified_at')} for c in official],
             'PUBLISH_VERIFIED':False,'publishing_enabled':status['publishing_enabled'],
@@ -348,7 +350,7 @@ def prepare_install(vault,progress=lambda message:None):
         vault['public_url']=public;vault.pop('meta_redirect_confirmed_for',None);save(vault)
         compose(vault,'up','-d','api');wait_ready(vault)
     checks=probe_public(public)
-    if not checks.get('ui_available') or not checks.get('callback_reachable') or checks.get('schema')!='0012':
+    if not checks.get('ui_available') or not checks.get('callback_reachable') or checks.get('schema')!='0013':
         raise SetupError('HTTPS_CALLBACK_NOT_READY')
     return {'vault':vault,'callback':public+'/threads/oauth/callback','changed':changed}
 

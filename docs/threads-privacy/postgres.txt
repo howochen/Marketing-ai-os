@@ -1,0 +1,115 @@
+ Container mos-privacy-test-db-1 Running
+ Image mos-privacy-test-tests Building
+#1 [internal] load local bake definitions
+#1 reading from stdin 538B 0.2s done
+#1 DONE 0.2s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile:
+#2 transferring dockerfile: 1.04kB 0.0s done
+#2 DONE 0.6s
+
+#3 [internal] load metadata for docker.io/library/python:3.12-slim@sha256:a0f57064cbdcd6285fa45f51237ab0b35ea8ebaed06a1f5973e89e19dfb86704
+#3 DONE 0.2s
+
+#4 [internal] load .dockerignore
+#4 transferring context: 272B 0.0s done
+#4 DONE 0.1s
+
+#5 [internal] load build context
+#5 transferring context: 20.31kB 0.1s done
+#5 DONE 0.1s
+
+#6 [runtime  1/11] FROM docker.io/library/python:3.12-slim@sha256:a0f57064cbdcd6285fa45f51237ab0b35ea8ebaed06a1f5973e89e19dfb86704
+#6 resolve docker.io/library/python:3.12-slim@sha256:a0f57064cbdcd6285fa45f51237ab0b35ea8ebaed06a1f5973e89e19dfb86704 0.1s done
+#6 DONE 0.2s
+
+#7 [runtime  6/11] COPY config ./config
+#7 CACHED
+
+#8 [runtime  3/11] COPY requirements.txt constraints.txt ./
+#8 CACHED
+
+#9 [tests 1/8] COPY requirements-dev.txt ./
+#9 CACHED
+
+#10 [runtime  2/11] WORKDIR /srv
+#10 CACHED
+
+#11 [runtime 10/11] COPY migrations ./migrations
+#11 CACHED
+
+#12 [runtime  4/11] RUN pip install --no-cache-dir -r requirements.txt
+#12 CACHED
+
+#13 [runtime  5/11] COPY app ./app
+#13 CACHED
+
+#14 [runtime  8/11] COPY skills/threads-copywriting ./skills/threads-copywriting
+#14 CACHED
+
+#15 [runtime  9/11] COPY skills/industries ./skills/industries
+#15 CACHED
+
+#16 [runtime 11/11] COPY alembic.ini ./
+#16 CACHED
+
+#17 [runtime  7/11] COPY agents ./agents
+#17 CACHED
+
+#18 [tests 2/8] RUN pip install --no-cache-dir -r requirements-dev.txt
+#18 CACHED
+
+#19 [tests 3/8] COPY tests ./tests
+#19 DONE 0.2s
+
+#20 [tests 4/8] COPY scripts/threads_setup.py ./scripts/threads_setup.py
+#20 DONE 0.2s
+
+#21 [tests 5/8] COPY scripts/phone_setup.py ./scripts/phone_setup.py
+#21 DONE 0.3s
+
+#22 [tests 6/8] COPY scripts/content_local.py ./scripts/content_local.py
+#22 DONE 0.3s
+
+#23 [tests 7/8] COPY Setup-Threads.cmd ./Setup-Threads.cmd
+#23 DONE 0.3s
+
+#24 [tests 8/8] COPY pytest.ini ./
+#24 DONE 0.4s
+
+#25 exporting to image
+#25 exporting layers
+#25 exporting layers 1.5s done
+#25 exporting manifest sha256:523b6c9ea66d730cfd2df52d288fa3e09258a3288a06c128473e673e6f298216 0.1s done
+#25 exporting config sha256:b8351a7c06e7cf7784401681575005698888b241ef09ae28a1f9fb5c1aebf6e3
+#25 exporting config sha256:b8351a7c06e7cf7784401681575005698888b241ef09ae28a1f9fb5c1aebf6e3 0.1s done
+#25 exporting attestation manifest sha256:5eba67439d3dc62a1f257c9485ec762c25c95c3ed843c8b2032e0afd030e3bc6
+#25 exporting attestation manifest sha256:5eba67439d3dc62a1f257c9485ec762c25c95c3ed843c8b2032e0afd030e3bc6 0.1s done
+#25 exporting manifest list sha256:4af675a7af57223dc9588486e4bf3ca81bd1b92cda59b604c39ed572606551ae
+#25 exporting manifest list sha256:4af675a7af57223dc9588486e4bf3ca81bd1b92cda59b604c39ed572606551ae 0.1s done
+#25 naming to docker.io/library/mos-privacy-test-tests:latest 0.0s done
+#25 unpacking to docker.io/library/mos-privacy-test-tests:latest
+#25 unpacking to docker.io/library/mos-privacy-test-tests:latest 0.7s done
+#25 DONE 3.1s
+
+#26 resolving provenance for metadata file
+#26 DONE 0.3s
+ Image mos-privacy-test-tests Built
+ Container mos-privacy-test-db-1 Waiting
+ Container mos-privacy-test-db-1 Healthy
+ Container mos-privacy-test-tests-run-2198d4309f83 Creating
+ Container mos-privacy-test-tests-run-2198d4309f83 Created
+........................................................................ [ 17%]
+........................................................................ [ 34%]
+............s........................................................... [ 52%]
+........................................................................ [ 69%]
+........................................................................ [ 86%]
+.................................ss.................sss                  [100%]
+=============================== warnings summary ===============================
+../usr/local/lib/python3.12/site-packages/fastapi/testclient.py:1
+  /usr/local/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+409 passed, 6 skipped, 1 deselected, 1 warning in 506.92s (0:08:26)

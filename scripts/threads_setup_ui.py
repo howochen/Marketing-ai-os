@@ -40,7 +40,15 @@ class Wizard:
         ttk.Label(frame,textvariable=self.stage,font=('Microsoft JhengHei UI',13,'bold')).pack(anchor='w',pady=8)
         self.status=tk.StringVar(value='準備檢查。不需要先提供 Threads App ID／Secret。')
         ttk.Label(frame,textvariable=self.status,wraplength=740).pack(anchor='w',pady=6)
-        self.body=ttk.Frame(frame);self.body.pack(fill='both',expand=True,pady=10)
+        scroll=ttk.Frame(frame);scroll.pack(fill='both',expand=True,pady=10)
+        self.canvas=tk.Canvas(scroll,highlightthickness=0);self.canvas.pack(side='left',fill='both',expand=True)
+        bar=ttk.Scrollbar(scroll,orient='vertical',command=self.canvas.yview);bar.pack(side='right',fill='y')
+        self.canvas.configure(yscrollcommand=bar.set)
+        self.body=ttk.Frame(self.canvas);self.body_item=self.canvas.create_window((0,0),window=self.body,anchor='nw')
+        self.body.bind('<Configure>',lambda e:self.canvas.configure(scrollregion=self.canvas.bbox('all')))
+        self.canvas.bind('<Configure>',lambda e:self.canvas.itemconfigure(self.body_item,width=e.width))
+        self.root.bind('<MouseWheel>',lambda e:self.canvas.yview_scroll(-int(e.delta/120),'units'))
+        self.footer=ttk.Frame(frame);self.footer.pack(fill='x')
         self.retry=ttk.Button(frame,text='重新檢查 Docker／HTTPS／Callback',command=self.prepare);self.retry.pack(anchor='w',pady=6)
         ttk.Label(frame,text='中斷後可再次雙擊 Setup-Threads.cmd；既有資料庫、加密金鑰與憑證會保留。',wraplength=740).pack(anchor='w',pady=6)
         self.root.protocol('WM_DELETE_WINDOW',self.close)
@@ -51,6 +59,8 @@ class Wizard:
 
     def clear(self):
         for widget in self.body.winfo_children():widget.destroy()
+        for widget in self.footer.winfo_children():widget.destroy()
+        self.canvas.yview_moveto(0)
 
     def start(self,work,done):
         if self.busy:return
@@ -94,18 +104,25 @@ class Wizard:
     def callback_page(self,result):
         self.clear();self.callback=result['callback'];self.stage.set('第二階段｜將 Callback 保存到 Meta Threads App')
         self.status.set('網址已改變！舊 Callback 不再有效，必須更新 Meta 設定。' if result['changed'] else 'HTTPS 與 Callback 已連通。下一步：複製網址並開啟 Meta 後台。')
-        self.label('OAuth Callback URL（請完整複製，包含 /threads/oauth/callback）')
-        uri=ttk.Entry(self.body);uri.insert(0,self.callback);uri.configure(state='readonly');uri.pack(fill='x',pady=6)
+        from app.threads_api import callback_urls
+        callbacks=callback_urls(self.vault['public_url'])
+        for key,label in (('redirect','Redirect Callback URL'),('deauthorize','Uninstall／Deauthorize Callback URL'),('data_deletion','Data Deletion Request Callback URL')):
+            self.label(label)
+            uri=ttk.Entry(self.body);uri.insert(0,callbacks[key]);uri.configure(state='readonly');uri.pack(fill='x',pady=4)
+            def copy_url(value=callbacks[key]):
+                self.root.clipboard_clear();self.root.clipboard_append(value);self.root.update()
+                self.status.set('網址已複製。請填入 Meta 對應欄位，不要將三種 Callback 混用。')
+            ttk.Button(self.body,text='複製 '+label,command=copy_url).pack(anchor='w',pady=3)
         row=ttk.Frame(self.body);row.pack(anchor='w',pady=6)
         ttk.Button(row,text='複製 Callback URL',command=self.copy_callback).pack(side='left',padx=(0,10))
         ttk.Button(row,text='開啟 Meta 開發者後台',command=lambda:webbrowser.open(META)).pack(side='left')
         self.label('優先沿用既有 App；確認 App 有「存取 Threads API」使用案例。進入 Threads 的設定，將上方網址加入 Redirect Callback URLs 並保存。不要填到 Facebook Login 的其他 App 設定。')
         self.label('Threads App ID／Secret：在 App 後台找「Threads App ID」及「Threads App secret」（官方欄位位於 App settings → Basic）。使用 Threads 專用值，不是其他 Facebook Login 憑證。')
         ttk.Button(self.body,text='開啟 Meta 官方 Threads 說明',command=lambda:webbrowser.open(DOCS)).pack(anchor='w',pady=4)
-        self.confirmed=tk.BooleanVar(value=self.vault.get('meta_redirect_confirmed_for')==self.callback)
-        self.confirm=ttk.Checkbutton(self.body,text='我已在這次使用的 Meta Threads App 保存上述完整 Callback',variable=self.confirmed)
+        self.confirmed=tk.BooleanVar(value=self.vault.get('meta_privacy_callbacks_confirmed_for')==self.vault['public_url'])
+        self.confirm=ttk.Checkbutton(self.footer,text='我已在 Meta Threads App 的對應欄位保存上述三個網址',variable=self.confirmed)
         self.confirm.pack(anchor='w',pady=12)
-        self.next=ttk.Button(self.body,text='已保存 Callback，繼續輸入 Threads 憑證',command=self.confirm_callback)
+        self.next=ttk.Button(self.footer,text='已保存 Callback，繼續輸入 Threads 憑證',command=self.confirm_callback)
         self.next.pack(anchor='w',pady=6)
 
     def copy_callback(self):
@@ -115,7 +132,10 @@ class Wizard:
     def confirm_callback(self):
         if self.busy:return
         if not self.confirmed.get():self.status.set('請先到 Meta 保存 Callback，再勾選確認；系統不能代替 Meta 保存。');return
-        self.start(lambda:setup.confirm_callback(self.vault,self.callback),lambda _:self.credentials_page())
+        def confirm():
+            setup.confirm_callback(self.vault,self.callback)
+            self.vault['meta_privacy_callbacks_confirmed_for']=self.vault['public_url'];setup.save(self.vault)
+        self.start(confirm,lambda _:self.credentials_page())
 
     def credentials_page(self):
         self.clear();self.stage.set('第三階段｜Windows 本機安全輸入 Threads 憑證')

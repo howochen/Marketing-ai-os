@@ -15,3 +15,4 @@ __pycache__
 .content-local/
 .content-test/
 .threads-setup-test/
+.threads-callback-test/

@@ -159,6 +159,8 @@ class ThreadsConnection(Base):
     username: Mapped[str]=mapped_column(String(100))
     granted_scopes: Mapped[list]=mapped_column(JSON)
     token_reference: Mapped[str]=mapped_column(String(36))
+    meta_app_id: Mapped[str | None]=mapped_column(String(100))
+    callback_lookup: Mapped[str | None]=mapped_column(String(64),index=True)
     token_ciphertext: Mapped[str | None]=mapped_column(Text)
     token_expires_at: Mapped[datetime]=mapped_column(DateTime(timezone=True))
     token_issued_at: Mapped[datetime]=mapped_column(DateTime(timezone=True))
@@ -171,6 +173,40 @@ class ThreadsConnection(Base):
     next_maintenance_at: Mapped[datetime | None]=mapped_column(DateTime(timezone=True))
     maintenance_error: Mapped[str | None]=mapped_column(String(60))
     refresh_failures: Mapped[int]=mapped_column(BigInteger,default=0)
+
+
+class ThreadsPrivacyRequest(Base):
+    __tablename__='threads_privacy_requests'
+    __table_args__=(CheckConstraint("state IN ('PENDING','RECONCILIATION_REQUIRED','REVIEW_REQUIRED')"),)
+    id: Mapped[str]=mapped_column(String(36),primary_key=True)
+    request_hash: Mapped[str]=mapped_column(String(64),unique=True)
+    subject_lookup: Mapped[str]=mapped_column(String(64))
+    payload_hash: Mapped[str]=mapped_column(String(64))
+    app_id: Mapped[str]=mapped_column(String(100))
+    kind: Mapped[str]=mapped_column(String(20))
+    issued_at: Mapped[int]=mapped_column(BigInteger)
+    confirmation_hash: Mapped[str]=mapped_column(String(64),unique=True)
+    state: Mapped[str]=mapped_column(String(50))
+    targets: Mapped[list]=mapped_column(JSON)
+    created_at: Mapped[datetime]=mapped_column(DateTime(timezone=True),default=now)
+    processed_at: Mapped[datetime | None]=mapped_column(DateTime(timezone=True))
+
+
+class ThreadsPrivacyAction(Base):
+    __tablename__='threads_privacy_actions'
+    __table_args__=(UniqueConstraint('request_id','connection_id'),
+        ForeignKeyConstraint(['tenant_id','connection_id'],['threads_connections.tenant_id','threads_connections.id']))
+    id: Mapped[str]=mapped_column(String(36),primary_key=True)
+    tenant_id: Mapped[str]=mapped_column(ForeignKey('tenants.id'),index=True)
+    request_id: Mapped[str]=mapped_column(ForeignKey('threads_privacy_requests.id'))
+    request_hash: Mapped[str]=mapped_column(String(64))
+    connection_id: Mapped[str]=mapped_column(String(36))
+    state: Mapped[str]=mapped_column(String(50))
+    details: Mapped[dict]=mapped_column(JSON)
+    review_reason: Mapped[str | None]=mapped_column(Text)
+    reviewed_by: Mapped[str | None]=mapped_column(String(36))
+    reviewed_at: Mapped[datetime | None]=mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime]=mapped_column(DateTime(timezone=True),default=now)
 
 
 class ThreadsOAuthState(Base):

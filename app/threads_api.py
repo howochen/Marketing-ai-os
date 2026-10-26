@@ -11,6 +11,15 @@ HOST='https://graph.threads.com'
 AUTH_HOST='https://www.threads.com/oauth/authorize'
 
 
+def callback_urls(origin: str) -> dict:
+    parsed=urlsplit(origin)
+    if parsed.scheme!='https' or not parsed.hostname or parsed.username or parsed.password or parsed.path not in ('','/') or parsed.query or parsed.fragment:
+        raise ValueError('HTTPS_CALLBACK_ORIGIN_REQUIRED')
+    base=origin.rstrip('/')
+    return {'redirect':base+'/threads/oauth/callback','deauthorize':base+'/threads/privacy/deauthorize',
+        'data_deletion':base+'/threads/privacy/data-deletion'}
+
+
 class ThreadsFailure(RuntimeError):
     def __init__(self,category: str,unknown: bool=False) -> None:
         self.category=category;self.unknown=unknown

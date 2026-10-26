@@ -140,7 +140,7 @@ class Boundary:
         async def safe_send(message: Message) -> None:
             if message['type'] == 'http.response.start' and (message['status'] in (401,403) or (scope['path'].startswith(('/phone-setup/','/ui/admin/phone-setup/')) and message['status']>=400)):
                 emit('security.denied', status=message['status'])
-            if message['type']=='http.response.start' and (scope['path'].startswith(('/ui/','/threads/oauth/','/phone-setup/'))):
+            if message['type']=='http.response.start' and (scope['path'].startswith(('/ui/','/threads/oauth/','/phone-setup/','/threads/privacy/'))):
                 message['headers']=[(k,v) for k,v in message.get('headers',[]) if k.lower() not in {b'cache-control',b'referrer-policy'}]
                 message['headers'] += [(b'cache-control',b'no-store'),(b'referrer-policy',b'no-referrer')]
             await send(message)

@@ -1,0 +1,8 @@
+{
+  "setup_cmd_bytes_preserved": true,
+  "content_cmd_bytes_preserved": true,
+  "original_vault_bytes_preserved": true,
+  "original_backup_created": true,
+  "original_database_migration_performed": false,
+  "public_deployment_performed": false
+}

@@ -88,7 +88,8 @@ def setup_status() -> dict:
         'redirect_matches':bool(redirect and os.getenv('MOS_THREADS_REDIRECT_URI')==redirect)}
     try:Fernet(os.getenv('MOS_THREADS_TOKEN_KEY','').encode());checks['token_key']=True
     except (ValueError,TypeError):pass
-    return {'checks':checks,'missing':[key for key,value in checks.items() if not value], 'redirect_uri':redirect,
+    from .threads_api import callback_urls
+    return {'callback_urls':callback_urls(public) if https else {},'checks':checks,'missing':[key for key,value in checks.items() if not value], 'redirect_uri':redirect,
         'http_enabled':os.getenv('MOS_THREADS_HTTP_ENABLED','false')=='true',
         'publishing_enabled':os.getenv('MOS_THREADS_PUBLISH_ENABLED','false')=='true',
         'maintenance_enabled':os.getenv('MOS_THREADS_MAINTENANCE_ENABLED','false')=='true'}

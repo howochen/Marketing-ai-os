@@ -29,7 +29,7 @@ def prepared(monkeypatch,state,old=None,new='https://new.ngrok-free.app'):
     monkeypatch.setattr(setup,'compose',lambda v,*args:calls.append(('compose',args)))
     monkeypatch.setattr(setup,'wait_ready',lambda v:calls.append(('ready',None)))
     monkeypatch.setattr(setup,'tunnel',lambda v:new)
-    monkeypatch.setattr(setup,'probe_public',lambda url:{'schema':'0012','ui_available':True,'callback_reachable':True})
+    monkeypatch.setattr(setup,'probe_public',lambda url:{'schema':'0013','ui_available':True,'callback_reachable':True})
     return setup.prepare_install(state),calls
 
 
@@ -100,7 +100,7 @@ def test_finish_requires_backend_checks(monkeypatch,state,ready):
 
 def test_public_phase_failure_does_not_request_credentials(monkeypatch,state):
     prepared(monkeypatch,state)
-    monkeypatch.setattr(setup,'probe_public',lambda url:{'schema':'0012','ui_available':True,'callback_reachable':False})
+    monkeypatch.setattr(setup,'probe_public',lambda url:{'schema':'0013','ui_available':True,'callback_reachable':False})
     with pytest.raises(setup.SetupError,match='HTTPS_CALLBACK'):setup.prepare_install(state)
     assert 'app_secret' not in state
 

@@ -51,7 +51,10 @@ def view(item: ThreadsConnection) -> dict:
         'next_maintenance_at','maintenance_error','refresh_failures')}
 
 
-def token_for(item: ThreadsConnection) -> str:
+def token_for(item: ThreadsConnection,*,allow_unbound: bool=False) -> str:
+    from .threads_privacy import lookup
+    if not allow_unbound and (item.meta_app_id!=os.getenv('MOS_THREADS_APP_ID') or item.callback_lookup!=lookup(item.meta_app_id or '',item.threads_user_id)):
+        raise ThreadsFailure('APP_BINDING_REVIEW_REQUIRED')
     if item.revoked_at or item.connection_status!='ACTIVE':raise ThreadsFailure('AUTH_REQUIRED')
     if utc(item.token_expires_at)<=now():raise ThreadsFailure('TOKEN_EXPIRED')
     return unseal(item.token_ciphertext,item.tenant_id,item.id)
@@ -122,6 +125,8 @@ def oauth_callback(response: Response,request: Request,state: str='',code: str='
         record.username=profile['username'];record.granted_scopes=debug['scopes'];record.connection_status='ACTIVE'
         record.evidence_source=client.source;record.last_verified_at=now();record.revoked_at=None;record.publishing_enabled=False
         record.maintenance_error=None;record.refresh_failures=0;record.next_maintenance_at=now()+timedelta(hours=24)
+        from .threads_privacy import bind
+        bind(record)
         audit(s,record.tenant_id,'threads.connected',record.id,actor.id);s.commit()
         if request.cookies.get('mos_ui_session'):
             from starlette.responses import RedirectResponse
@@ -194,9 +199,11 @@ def check_connection(cid: str,c: Credential=Depends(require('credentials')),s: S
     owner(c);lock_tenant(s,c.tenant_id);item=connection(s,c.tenant_id,cid)
     try:
         if item.evidence_source!=client.source:raise ThreadsFailure('EVIDENCE_SOURCE_MISMATCH')
-        profile,debug,expires=verified_identity(client,token_for(item))
+        profile,debug,expires=verified_identity(client,token_for(item,allow_unbound=True))
         if profile['id']!=item.threads_user_id or item.evidence_source!=client.source:raise ThreadsFailure('ACCOUNT_MISMATCH')
         item.username=profile['username'];item.granted_scopes=debug['scopes'];item.token_expires_at=expires;item.last_verified_at=now()
+        from .threads_privacy import bind
+        bind(item)
         item.maintenance_error=None;audit(s,c.tenant_id,'threads.connection_checked',item.id,c.id);s.commit()
         return view(item)
     except ThreadsFailure as exc:
