@@ -1,0 +1,16 @@
+{
+  "version": "1.0",
+  "executed": false,
+  "app_management_api_verified": false,
+  "locator_policy": "Use observed visible controls; dashboard labels may change. Do not invent selectors or bypass review.",
+  "steps": [
+    {"action": "navigate", "url": "https://developers.facebook.com/apps/", "handoff": "User completes login, MFA and identity checks; do not extract cookies."},
+    {"action": "select_or_create_threads_app", "handoff": "User confirms actual app and account eligibility."},
+    {"action": "open_threads_use_case_settings", "handoff": "Read current UI; stop if no Threads option is present."},
+    {"action": "set_oauth_redirect", "value_source": "Local installer status.json redirect_uri", "handoff": "Save exact OAuth Redirect URI and reopen to verify; not a webhook URL."},
+    {"action": "review_test_roles_and_permissions", "required_scopes": ["threads_basic", "threads_content_publish"], "handoff": "User accepts test invitation and completes required policies/App Review; do not fabricate approval."},
+    {"action": "configure_app_secret", "handoff": "Pause automation and screenshots. User enters secret into local hidden prompt; never return secret to agent/chat."},
+    {"action": "open_existing_threads_ui", "path": "/app/threads", "handoff": "User performs official OAuth login and consent personally."},
+    {"action": "diagnose", "command": "Setup-Threads.cmd --diagnose", "handoff": "Report actual official ID/scope/expiry only after fresh official verification. Never publish."}
+  ]
+}

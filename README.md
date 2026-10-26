@@ -4,6 +4,8 @@
 
 Browser account management is available at `/app`, with the administrator wizard at `/app/admin`. See the [Traditional Chinese UI guide](docs/PUB002_UI_GUIDE.md) for safe local preview, deployment, official OAuth and troubleshooting. This supersedes the older manual Swagger instructions below. Real HTTP and publishing remain off by default; connecting an account does not authorize a post.
 
+Windows guided setup: run `Setup-Threads.cmd`. It creates an isolated encrypted local configuration, Docker workspace and verified ngrok HTTPS callback. See [首次安裝與 Meta 交接](docs/PUB003_FIRST_RUN.md). It never enables publication or model calls; official login and consent remain with the account owner.
+
 P0 provides passwordless owner sessions, role/scoped credentials, forced PostgreSQL row security, append-only audit/cost events, integer micro-USD reserve/settle/release, receipt deduplication, timeout recovery, token limits, a budget kill switch, and manual-only platform adapters. Model calls default to **false** and the actual HTTP provider also requires explicit integration-test opt-in.
 
 ## Local SQLite (PowerShell, Python 3.12)

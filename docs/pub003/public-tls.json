@@ -1,0 +1,9 @@
+{
+  "scope": "certificate metadata only; no HTTP or credentials; functional checks retain TLS verification",
+  "host": "[LOCAL_ONLY_NGROK_HOST]",
+  "checked_at": "2026-10-26T03:56:16.484476+00:00",
+  "not_before": "2026-09-25T14:08:43+00:00",
+  "not_after": "2026-12-24T14:08:42+00:00",
+  "issuer": "CN=YE2,O=Let's Encrypt,C=US",
+  "resolution": "Leaf was valid; Windows default CA chain failed. Existing HTTPX strict certifi validation succeeded; TLS was not bypassed for application requests."
+}

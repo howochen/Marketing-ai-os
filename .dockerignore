@@ -7,3 +7,6 @@ __pycache__
 .pytest_cache
 .ui-preview
 .taste-skill
+.threads-local
+**/__pycache__
+**/*.pyc

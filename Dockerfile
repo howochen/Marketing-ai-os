@@ -16,5 +16,6 @@ FROM runtime AS tests
 COPY requirements-dev.txt ./
 RUN pip install --no-cache-dir -r requirements-dev.txt
 COPY tests ./tests
+COPY scripts/threads_setup.py ./scripts/threads_setup.py
 COPY pytest.ini ./
 CMD ["pytest", "-q", "-m", "not live"]

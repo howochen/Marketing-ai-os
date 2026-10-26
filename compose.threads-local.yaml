@@ -1,0 +1,10 @@
+# Used only by scripts/threads_setup.py with its own project and protected environment.
+services:
+  api:
+    ports: !override
+      - "127.0.0.1:18080:8000"
+    command: ["python", "-m", "app.local_https"]
+    environment:
+      MOS_LOCAL_SETUP_ENABLED: "true"
+      MOS_SETUP_TLS_CERT: ${MOS_SETUP_TLS_CERT:?Installer required}
+      MOS_SETUP_TLS_KEY: ${MOS_SETUP_TLS_KEY:?Installer required}

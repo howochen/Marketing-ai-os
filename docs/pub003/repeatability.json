@@ -1,0 +1,13 @@
+{
+  "same_credentials_and_tenant": {
+    "admin": true,
+    "postgres": true,
+    "app": true,
+    "migration": true,
+    "token_key": true,
+    "tenant_id": true
+  },
+  "stop_restart_exercised": true,
+  "ngrok_restarted": true,
+  "runtime_plaintext_files_absent": true
+}

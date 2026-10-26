@@ -1,0 +1,25 @@
+{
+  "SETUP_READY": false,
+  "LOCAL_SETUP_READY": true,
+  "meta_redirect_confirmation": "MANUAL_HANDOFF_REQUIRED",
+  "https_verified": true,
+  "tls_upstream_verified": true,
+  "trusted_proxies": [],
+  "external_checks": {
+    "schema": "0010",
+    "ui_available": true,
+    "callback_reachable": true
+  },
+  "redirect_uri": "[LOCAL_ONLY_NGROK_ORIGIN]/threads/oauth/callback",
+  "missing": [
+    "app_id",
+    "app_secret"
+  ],
+  "OAUTH_VERIFIED": false,
+  "oauth_evidence": "fresh official identity/scope/expiry check; Mock excluded",
+  "accounts": [],
+  "PUBLISH_VERIFIED": false,
+  "publishing_enabled": false,
+  "publish_evidence": "NOT_RUN_INSTALLER_NEVER_PUBLISHES",
+  "production_ready": false
+}

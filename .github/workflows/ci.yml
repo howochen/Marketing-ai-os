@@ -1,4 +1,4 @@
-name: Threads browser UI offline checks
+name: Threads local setup offline checks
 on: [push, pull_request]
 env:
   MOS_THREADS_HTTP_ENABLED: "false"
@@ -7,6 +7,15 @@ env:
 permissions:
   contents: read
 jobs:
+  windows-installer:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements-dev.txt
+      - run: python -m pytest -q tests/test_threads_setup.py
   sqlite:
     runs-on: ubuntu-latest
     steps:

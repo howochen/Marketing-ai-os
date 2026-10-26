@@ -1,0 +1,103 @@
+ Container mos-pub003-test-db-1 Running
+ Image mos-pub003-test-tests Building
+#1 [internal] load local bake definitions
+#1 reading from stdin 536B 0.1s done
+#1 DONE 0.1s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile: 874B done
+#2 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/python:3.12-slim@sha256:a0f57064cbdcd6285fa45f51237ab0b35ea8ebaed06a1f5973e89e19dfb86704
+#3 DONE 0.1s
+
+#4 [internal] load .dockerignore
+#4 transferring context: 157B 0.0s done
+#4 DONE 0.0s
+
+#5 [internal] load build context
+#5 transferring context: 36.30kB 0.0s done
+#5 DONE 0.1s
+
+#6 [runtime  1/11] FROM docker.io/library/python:3.12-slim@sha256:a0f57064cbdcd6285fa45f51237ab0b35ea8ebaed06a1f5973e89e19dfb86704
+#6 resolve docker.io/library/python:3.12-slim@sha256:a0f57064cbdcd6285fa45f51237ab0b35ea8ebaed06a1f5973e89e19dfb86704
+#6 resolve docker.io/library/python:3.12-slim@sha256:a0f57064cbdcd6285fa45f51237ab0b35ea8ebaed06a1f5973e89e19dfb86704 0.1s done
+#6 DONE 0.1s
+
+#7 [tests 1/5] COPY requirements-dev.txt ./
+#7 CACHED
+
+#8 [runtime 11/11] COPY alembic.ini ./
+#8 CACHED
+
+#9 [runtime  4/11] RUN pip install --no-cache-dir -r requirements.txt
+#9 CACHED
+
+#10 [runtime  5/11] COPY app ./app
+#10 CACHED
+
+#11 [runtime  6/11] COPY config ./config
+#11 CACHED
+
+#12 [runtime  9/11] COPY skills/industries ./skills/industries
+#12 CACHED
+
+#13 [runtime  8/11] COPY skills/threads-copywriting ./skills/threads-copywriting
+#13 CACHED
+
+#14 [runtime  7/11] COPY agents ./agents
+#14 CACHED
+
+#15 [runtime  2/11] WORKDIR /srv
+#15 CACHED
+
+#16 [runtime  3/11] COPY requirements.txt constraints.txt ./
+#16 CACHED
+
+#17 [runtime 10/11] COPY migrations ./migrations
+#17 CACHED
+
+#18 [tests 2/5] RUN pip install --no-cache-dir -r requirements-dev.txt
+#18 CACHED
+
+#19 [tests 3/5] COPY tests ./tests
+#19 DONE 0.1s
+
+#20 [tests 4/5] COPY scripts/threads_setup.py ./scripts/threads_setup.py
+#20 DONE 0.1s
+
+#21 [tests 5/5] COPY pytest.ini ./
+#21 DONE 0.1s
+
+#22 exporting to image
+#22 exporting layers
+#22 exporting layers 0.6s done
+#22 exporting manifest sha256:5172c0e8280c6fe0508901f1b67c1527da7dd92a8dc2d05135f149822b086177 0.1s done
+#22 exporting config sha256:3f3e2537f62c0a8e0c54fb0f02a66a048da67b43a989c7abbe86d035dae5296a 0.1s done
+#22 exporting attestation manifest sha256:ee8e67ad5b4e7cdcfd5f6933bf8c42a42a0664952bf7a90b8a6cd522a0c10b53 0.1s done
+#22 exporting manifest list sha256:d99e3e19a176e5f1d363416f30c20812f9bf0942913c9f2869e88def5eb94588
+#22 exporting manifest list sha256:d99e3e19a176e5f1d363416f30c20812f9bf0942913c9f2869e88def5eb94588 0.0s done
+#22 naming to docker.io/library/mos-pub003-test-tests:latest done
+#22 unpacking to docker.io/library/mos-pub003-test-tests:latest
+#22 unpacking to docker.io/library/mos-pub003-test-tests:latest 0.2s done
+#22 DONE 1.3s
+
+#23 resolving provenance for metadata file
+#23 DONE 0.0s
+ Image mos-pub003-test-tests Built
+ Container mos-pub003-test-db-1 Waiting
+ Container mos-pub003-test-db-1 Healthy
+ Container mos-pub003-test-tests-run-a380198be65a Creating
+ Container mos-pub003-test-tests-run-a380198be65a Created
+........................................................................ [ 23%]
+........................................................................ [ 46%]
+........................................................................ [ 69%]
+........................................................................ [ 92%]
+...................s.....                                                [100%]
+=============================== warnings summary ===============================
+../usr/local/lib/python3.12/site-packages/fastapi/testclient.py:1
+  /usr/local/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+312 passed, 1 skipped, 1 deselected, 1 warning in 74.93s (0:01:14)
