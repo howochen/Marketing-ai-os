@@ -4,6 +4,7 @@ env:
   MOS_THREADS_HTTP_ENABLED: "false"
   MOS_THREADS_PUBLISH_ENABLED: "false"
   MOS_THREADS_MAINTENANCE_ENABLED: "false"
+  MOS_PHONE_SETUP_ENABLED: "false"
 permissions:
   contents: read
 jobs:
@@ -16,6 +17,7 @@ jobs:
           python-version: '3.12'
       - run: pip install -r requirements-dev.txt
       - run: python -m pytest -q tests/test_threads_setup.py
+      - run: python -m pytest -q tests/test_phone_setup.py
   sqlite:
     runs-on: ubuntu-latest
     steps:

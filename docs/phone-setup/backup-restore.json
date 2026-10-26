@@ -1,0 +1,33 @@
+{
+  "result": "PASS",
+  "project": "mos-phone-setup-test",
+  "backup_seconds": 0.4498540999775287,
+  "restore_and_verify_seconds": 6.899727999989409,
+  "synthetic_snapshot_rows_lost": 0,
+  "rpo_scope": "Snapshot only; no writes during backup. No PITR or continuous RPO guarantee.",
+  "fingerprints_before_and_restored": {
+    "tenants": "423|bc9a069f38eacf23e6339730016a23cc",
+    "tasks": "384|42ccc57b9d5aaf83a3e50f94ee9474ee",
+    "credentials": "1295|0ab9a875cca6e60b8c110437d387e1d4",
+    "login_challenges": "437|54180cbb53ba68820cfa24a4232fbb18",
+    "cost_events": "448|c7e80982eb74ccc01e402569ad32ad49",
+    "audit_logs": "4362|e4cd3ba970f92c5d0a7fcaa183882952",
+    "publications": "70|a6d1bde1eee3068409fa9a42767b64d0",
+    "rate_versions": "3|f3a8552d85f2c6d7d44a506dff7ac53a",
+    "rate_limits": "2|4a25270c12bfb55dcedae53285f4c2a7",
+    "draft_revisions": "178|12cf77fc6d0cc04c0e5c128426c3e367",
+    "revision_approvals": "76|a51c7944da59b279825b03e601b09dc8",
+    "revision_scores": "4|4de56feb0338a647c3c70aedc490c3ac",
+    "test_batches": "80|c2294180e85c66c717da34a56d489da2",
+    "batch_attempts": "60|c9318ba111fc107af6a5592cdae2558d",
+    "reconciliation_evidence": "10|a7a881c1b90a8826add54f94ea7c7043",
+    "spend_authorizations": "4|f9718e62e2c70ce47b6e30b3c46e8d2b",
+    "threads_connections": "74|bb9b0a5bae9be7eda254471ed392a1a3",
+    "threads_oauth_states": "78|d4f1ad7b32146c24d61cd31315ac6dda",
+    "phone_setup_devices": "79|bea7f3ad0cf09b4d12e1f5e3b1dd74a6",
+    "phone_setup_grants": "56|529cb42e0c2ba70a3d183a232dd2298b"
+  },
+  "permission_mode": "0600 file / 0700 directory",
+  "negative_checks": 4,
+  "scope": "isolated synthetic data only; credentials deleted in source and restored to independent target"
+}

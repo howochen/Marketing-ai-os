@@ -1,0 +1,6 @@
+{
+  "actual_dpapi_vault_unchanged": true,
+  "tests_use_isolated_vault_and_database": true,
+  "public_activation_authorized": false,
+  "deployment_performed": false
+}

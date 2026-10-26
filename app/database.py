@@ -1,7 +1,7 @@
 import os
 from sqlalchemy import create_engine, event, text, inspect
 from sqlalchemy.orm import Session, sessionmaker, with_loader_criteria
-from .models import Tenant, Task, CostEvent, Publication, Audit, Credential, LoginChallenge, RateVersion, DraftRevision, RevisionApproval, RevisionScore, TestBatch, BatchAttempt, ReconciliationEvidence, SpendAuthorization, ThreadsConnection, ThreadsOAuthState
+from .models import Tenant, Task, CostEvent, Publication, Audit, Credential, LoginChallenge, RateVersion, DraftRevision, RevisionApproval, RevisionScore, TestBatch, BatchAttempt, ReconciliationEvidence, SpendAuthorization, ThreadsConnection, ThreadsOAuthState, PhoneSetupDevice, PhoneSetupGrant
 
 DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///./marketing_os.db')
 engine = create_engine(DATABASE_URL, pool_pre_ping=True, hide_parameters=True, connect_args={
@@ -16,7 +16,7 @@ def configure_connection(connection, record):
 
 
 SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
-SCOPED = (Task, CostEvent, Publication, Audit, Credential, LoginChallenge, DraftRevision, RevisionApproval, RevisionScore, TestBatch, BatchAttempt, ReconciliationEvidence, SpendAuthorization, ThreadsConnection, ThreadsOAuthState)
+SCOPED = (Task, CostEvent, Publication, Audit, Credential, LoginChallenge, DraftRevision, RevisionApproval, RevisionScore, TestBatch, BatchAttempt, ReconciliationEvidence, SpendAuthorization, ThreadsConnection, ThreadsOAuthState, PhoneSetupDevice, PhoneSetupGrant)
 
 
 def scope(session, tenant_id=None, token_hash=''):

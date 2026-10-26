@@ -1,0 +1,13 @@
+{
+  "applied": true,
+  "existing_keys_preserved": true,
+  "real_provider_calls": 0,
+  "private_key_export_rejected": true,
+  "key_substitution_rejected": true,
+  "viewport_widths": [
+    1440,
+    768,
+    390
+  ],
+  "screenshots": "empty fields only; none after secret input"
+}

@@ -130,7 +130,7 @@ def test_production_configuration_and_https_boundary(client, monkeypatch):
 
 
 def test_ready_and_body_size(client):
-    assert client.get('/ready').json()['schema'] == '0010'
+    assert client.get('/ready').json()['schema'] == '0011'
     assert client.post('/auth/login', content='x'*65537).status_code == 413
 
 

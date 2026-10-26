@@ -1,0 +1,110 @@
+ Container mos-phone-setup-test-db-1 Running
+ Image mos-phone-setup-test-tests Building
+#1 [internal] load local bake definitions
+#1 reading from stdin 546B 0.1s done
+#1 DONE 0.1s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile: 942B 0.0s done
+#2 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/python:3.12-slim@sha256:a0f57064cbdcd6285fa45f51237ab0b35ea8ebaed06a1f5973e89e19dfb86704
+#3 ...
+
+#4 [auth] library/python:pull token for registry-1.docker.io
+#4 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/python:3.12-slim@sha256:a0f57064cbdcd6285fa45f51237ab0b35ea8ebaed06a1f5973e89e19dfb86704
+#3 DONE 1.9s
+
+#5 [internal] load .dockerignore
+#5 transferring context: 177B done
+#5 DONE 0.0s
+
+#6 [internal] load build context
+#6 transferring context: 5.27kB 0.0s done
+#6 DONE 0.0s
+
+#7 [runtime  1/11] FROM docker.io/library/python:3.12-slim@sha256:a0f57064cbdcd6285fa45f51237ab0b35ea8ebaed06a1f5973e89e19dfb86704
+#7 resolve docker.io/library/python:3.12-slim@sha256:a0f57064cbdcd6285fa45f51237ab0b35ea8ebaed06a1f5973e89e19dfb86704 0.1s done
+#7 DONE 0.1s
+
+#8 [runtime  4/11] RUN pip install --no-cache-dir -r requirements.txt
+#8 CACHED
+
+#9 [runtime  5/11] COPY app ./app
+#9 CACHED
+
+#10 [runtime  8/11] COPY skills/threads-copywriting ./skills/threads-copywriting
+#10 CACHED
+
+#11 [runtime  2/11] WORKDIR /srv
+#11 CACHED
+
+#12 [runtime  7/11] COPY agents ./agents
+#12 CACHED
+
+#13 [runtime 10/11] COPY migrations ./migrations
+#13 CACHED
+
+#14 [tests 4/6] COPY scripts/threads_setup.py ./scripts/threads_setup.py
+#14 CACHED
+
+#15 [tests 5/6] COPY scripts/phone_setup.py ./scripts/phone_setup.py
+#15 CACHED
+
+#16 [tests 3/6] COPY tests ./tests
+#16 CACHED
+
+#17 [runtime  9/11] COPY skills/industries ./skills/industries
+#17 CACHED
+
+#18 [tests 2/6] RUN pip install --no-cache-dir -r requirements-dev.txt
+#18 CACHED
+
+#19 [runtime  6/11] COPY config ./config
+#19 CACHED
+
+#20 [tests 1/6] COPY requirements-dev.txt ./
+#20 CACHED
+
+#21 [runtime  3/11] COPY requirements.txt constraints.txt ./
+#21 CACHED
+
+#22 [runtime 11/11] COPY alembic.ini ./
+#22 CACHED
+
+#23 [tests 6/6] COPY pytest.ini ./
+#23 CACHED
+
+#24 exporting to image
+#24 exporting layers 0.0s done
+#24 exporting manifest sha256:66d76183b5b1cc96c5ed89fb6a4521edd2bdda1b632c6723eefb1182be403a29 done
+#24 exporting config sha256:ef44ea7b02625ff779323a978a8e59dc5410bd3b996fa0a86b9060aee76d782b done
+#24 exporting attestation manifest sha256:eb976c1dbbb4b2822f952e43afbd9e0139c1981e1296bbfaedb4e8b79099a139
+#24 exporting attestation manifest sha256:eb976c1dbbb4b2822f952e43afbd9e0139c1981e1296bbfaedb4e8b79099a139 0.1s done
+#24 exporting manifest list sha256:bba0e8e558a269a7c4d11c8c44ee423a54483d2b317087810ab43b28b075769e 0.1s done
+#24 naming to docker.io/library/mos-phone-setup-test-tests:latest
+#24 naming to docker.io/library/mos-phone-setup-test-tests:latest done
+#24 unpacking to docker.io/library/mos-phone-setup-test-tests:latest 0.0s done
+#24 DONE 0.4s
+
+#25 resolving provenance for metadata file
+#25 DONE 0.0s
+ Image mos-phone-setup-test-tests Built
+ Container mos-phone-setup-test-db-1 Waiting
+ Container mos-phone-setup-test-db-1 Healthy
+ Container mos-phone-setup-test-tests-run-b34615a224ef Creating
+ Container mos-phone-setup-test-tests-run-b34615a224ef Created
+........................................................................ [ 20%]
+............................................................s........... [ 41%]
+........................................................................ [ 62%]
+........................................................................ [ 83%]
+...................................................ss.....               [100%]
+=============================== warnings summary ===============================
+../usr/local/lib/python3.12/site-packages/fastapi/testclient.py:1
+  /usr/local/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+343 passed, 3 skipped, 1 deselected, 1 warning in 94.34s (0:01:34)

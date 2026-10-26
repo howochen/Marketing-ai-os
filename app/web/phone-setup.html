@@ -1,0 +1,7 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><title>一次性手機初始化 · Marketing AI OS</title><link rel="stylesheet" href="/assets/app.css"><script src="/assets/phone-setup.js" defer></script></head>
+<body><main class="sheet phone-setup-sheet"><p>Marketing AI OS · 受限管理作業</p><h1>一次性 Threads 初始化</h1><p>僅接受已認證裝置與有效操作授權。設定不會發布貼文。</p><p id="phone-status" role="status" aria-live="polite">尚未驗證裝置。</p>
+<section class="panel"><h2>首次可信裝置註冊</h2><p>只有已登入系統管理員的手機才能註冊；一般工作區登入或公開指紋不能替代。</p><label for="tenant">指定工作區 ID</label><input id="tenant" autocomplete="off"><button id="enroll-device">以目前管理員身分註冊此裝置</button></section>
+<section class="panel"><h2>執行一次性授權</h2><label for="grant">操作授權 ID（不是 Secret）</label><input id="grant" autocomplete="off"><button id="verify-device">驗證裝置與授權</button>
+<form id="credentials" hidden autocomplete="off"><label for="app-id">本次指定的 Threads App ID</label><input id="app-id" readonly><p id="deadline"></p><label for="app-secret">Threads App Secret</label><input id="app-secret" type="password" autocomplete="off" maxlength="256" required><button type="submit" class="primary">加密傳送並關閉本次通道</button></form></section>
+<p>若未有可信管理員工作階段，請停止，先完成受信任註冊。不要把 Secret 貼到聊天或網址。</p><a class="inline-link" href="/app/threads">Windows 確認套用後，返回 Threads 連接</a></main></body></html>

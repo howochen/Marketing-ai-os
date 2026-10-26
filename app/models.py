@@ -353,3 +353,40 @@ class ReconciliationEvidence(Base):
     reported_micro_usd: Mapped[int]=mapped_column(BigInteger)
     difference_micro_usd: Mapped[int | None]=mapped_column(BigInteger)
     created_at: Mapped[datetime]=mapped_column(DateTime(timezone=True),default=now)
+
+
+class PhoneSetupDevice(Base):
+    __tablename__='phone_setup_devices'
+    __table_args__=(UniqueConstraint('tenant_id','id'),)
+    id: Mapped[str]=mapped_column(String(36),primary_key=True)
+    tenant_id: Mapped[str]=mapped_column(ForeignKey('tenants.id'),index=True)
+    origin: Mapped[str]=mapped_column(String(300))
+    authority: Mapped[str]=mapped_column(String(512))
+    public_key: Mapped[str | None]=mapped_column(String(512))
+    nonce: Mapped[str | None]=mapped_column(String(100))
+    status: Mapped[str]=mapped_column(String(20),default='PENDING')
+    enrolled_by: Mapped[str]=mapped_column(String(100),default='system-admin')
+    enrollment_receipt: Mapped[str | None]=mapped_column(String(64))
+    expires_at: Mapped[datetime]=mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime]=mapped_column(DateTime(timezone=True),default=now)
+
+
+class PhoneSetupGrant(Base):
+    __tablename__='phone_setup_grants'
+    __table_args__=(ForeignKeyConstraint(['tenant_id','device_id'],['phone_setup_devices.tenant_id','phone_setup_devices.id']),)
+    id: Mapped[str]=mapped_column(String(36),primary_key=True)
+    tenant_id: Mapped[str]=mapped_column(ForeignKey('tenants.id'),index=True)
+    lookup_hash: Mapped[str]=mapped_column(String(64),unique=True)
+    device_id: Mapped[str]=mapped_column(String(36))
+    manifest: Mapped[dict]=mapped_column(JSON)
+    signature: Mapped[str]=mapped_column(String(128))
+    status: Mapped[str]=mapped_column(String(40),default='OPEN')
+    nonce: Mapped[str | None]=mapped_column(String(100))
+    nonce_expires_at: Mapped[datetime | None]=mapped_column(DateTime(timezone=True))
+    requests: Mapped[int]=mapped_column(BigInteger,default=0)
+    failures: Mapped[int]=mapped_column(BigInteger,default=0)
+    envelope: Mapped[dict | None]=mapped_column(JSON)
+    envelope_hash: Mapped[str | None]=mapped_column(String(64))
+    device_proof: Mapped[dict | None]=mapped_column(JSON)
+    expires_at: Mapped[datetime]=mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime]=mapped_column(DateTime(timezone=True),default=now)

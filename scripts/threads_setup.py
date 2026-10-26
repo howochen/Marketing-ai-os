@@ -123,6 +123,10 @@ def public_url(value):
 
 def environment(vault):
     public=public_url(vault['public_url']) if vault.get('public_url') else ''
+    authority=''
+    if vault.get('phone_setup',{}).get('authority_key'):
+        from app.phone_crypto import public as public_key
+        authority=public_key(serialization.load_pem_private_key(vault['phone_setup']['authority_key'].encode(),password=None))
     return {'POSTGRES_PASSWORD':vault['postgres'],'MOS_APP_PASSWORD':vault['app'],'MOS_MIGRATION_PASSWORD':vault['migration'],
             'MOS_ADMIN_KEY':vault['admin'],'MOS_SETUP_TLS_CERT':base64.b64encode(vault['tls_cert'].encode()).decode(),
             'MOS_SETUP_TLS_KEY':base64.b64encode(vault['tls_key'].encode()).decode(),
@@ -131,7 +135,7 @@ def environment(vault):
             'MOS_THREADS_REDIRECT_URI':public+'/threads/oauth/callback' if public else '',
             'MOS_TRUSTED_PROXIES':'','MOS_THREADS_HTTP_ENABLED':'true' if vault.get('app_id') and vault.get('app_secret') and public else 'false',
             'MOS_MODEL_CALLS_ENABLED':'false','MOS_LIVE_TESTS':'false','MOS_THREADS_PUBLISH_ENABLED':'false',
-            'MOS_THREADS_MAINTENANCE_ENABLED':'false'}
+            'MOS_THREADS_MAINTENANCE_ENABLED':'false','MOS_PHONE_SETUP_AUTHORITY':authority}
 
 
 def compose(vault,*args):
@@ -165,7 +169,7 @@ def request(url,*,vault=None,path='',payload=None,admin=False):
 def wait_ready(vault):
     for _ in range(45):
         try:
-            if request(LOCAL,vault=vault,path='/ready').get('schema')=='0010':return
+            if request(LOCAL,vault=vault,path='/ready').get('schema')=='0011':return
         except (OSError,ValueError):pass
         time.sleep(1)
     raise SetupError('API_TLS_READINESS_FAILED')
