@@ -239,3 +239,35 @@ def test_raw_rls_and_immutable_request_binding(client,privacy_env):
         with SessionLocal() as s:
             scope(s,'unrelated');assert s.execute(text('SELECT id FROM threads_privacy_actions WHERE id=:id'),{'id':aid}).first() is None
             assert s.execute(text('SELECT id FROM threads_privacy_requests')).first() is None
+
+@pytest.mark.parametrize('requested_user',['10001','99999'])
+def test_deletion_preserves_authored_history_and_unrelated_account(client,privacy_env,requested_user):
+    from app.models import Task,DraftRevision,RevisionApproval,RevisionScore,CostEvent,ContentPlan,Audit
+    from test_content_workbench import plan_body
+    tid,owner,worker,_=tenant(client);conn,_,_=connect(client,owner)
+    pid,taskid,_=ready(client,owner,worker,conn['id'])
+    _,other,_,_=tenant(client);other_conn,_,_=connect(client,other)
+    with SessionLocal() as s:
+        scope(s,other_conn['tenant_id']);c=s.get(ThreadsConnection,other_conn['id']);c.threads_user_id='10002'
+        c.callback_lookup=privacy.lookup('12345','10002');s.commit()
+    rid=client.get('/ui/content/tasks/'+taskid,headers=owner).json()['approved_revision_id']
+    planned=client.post('/ui/content/tasks/'+taskid+'/plans',headers=owner,json=plan_body(rid,connection_id=conn['id']))
+    assert planned.status_code==201,planned.text
+    def snapshot(tenant_id):
+        with SessionLocal() as s:
+            scope(s,tenant_id)
+            return {m.__tablename__:{r.id:{col.name:getattr(r,col.name) for col in m.__table__.columns}
+                for r in s.scalars(select(m)).all()} for m in (Task,DraftRevision,RevisionApproval,RevisionScore,CostEvent,ContentPlan,Audit)}
+    before=snapshot(tid);other_before=snapshot(other_conn['tenant_id'])
+    assert post(client,body=form(user=requested_user)).status_code==200
+    after=snapshot(tid)
+    for table,rows in before.items():
+        if table=='audit_logs':assert all(after[table].get(key)==row for key,row in rows.items())
+        else:assert after[table]==rows
+    assert snapshot(other_conn['tenant_id'])==other_before
+    with SessionLocal() as s:
+        scope(s,tid);c=s.get(ThreadsConnection,conn['id']);p=s.get(Publication,pid)
+        if requested_user=='10001':assert c.token_ciphertext is None and p.publish_status=='AUTH_REQUIRED'
+        else:assert c.token_ciphertext and p.publish_status=='READY_TO_PUBLISH'
+        scope(s,other_conn['tenant_id']);assert s.get(ThreadsConnection,other_conn['id']).token_ciphertext
+    assert not any(path.endswith('/threads_publish') for _,path in privacy_env['calls'])

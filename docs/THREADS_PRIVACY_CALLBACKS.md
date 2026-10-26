@@ -2,6 +2,8 @@
 
 查核日期：2026-10-27。原專案已有OAuth Redirect與Owner本地撤銷，**沒有Meta解除安裝或資料刪除接收端**。本次沿用原Adapter、DPAPI、Token加密、Tenant／RLS、內容工作台與發布狀態機，不新增套件。
 
+**現行 Threads 官方契約 NOT_VERIFIED；以下描述本機實作，不代表官方相容性。新端點未部署，正式部署 NO-GO。** 最新隔離還原、升級與回復計畫見[部署前驗證](THREADS_PRIVACY_PREFLIGHT.md)。
+
 ## Meta 後台怎麼填
 
 安裝精靈第二階段、`/app/admin`現會列出三個可複製網址。必須使用當次真實公開HTTPS網域：
