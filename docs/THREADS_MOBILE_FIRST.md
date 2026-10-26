@@ -1,5 +1,6 @@
 # Threads 手機優先：首次初始化與日後連接
 
+> 2026-10-26 更新：預設雙擊已改成 Windows Callback 優先精靈。手機交接必須明確加 --mobile，且後端設定通過才提供登入。下方保留原手機階段的歷史驗收與限制；目前規則見 THREADS_SETUP_FLOW.md。
 2026-10-26 實際檢查：HTTPS／公開 UI／Callback 可用，加密 key 與 Docker 已具備；**運行中的後端尚未配置 Threads App ID／App Secret**。Meta Redirect 登錄與本人官方 OAuth 未驗證，沒有真正 Threads ID。Facebook Login 或 Chrome 設定檔登入不能代替 Threads App 設定。
 
 `Setup-Threads.cmd` 已預設手機模式；`--mobile` 可明確指定，原 Python CLI 的桌面相容模式仍保留。沒有使用 Computer Use 或操作任何 Chrome 設定檔。

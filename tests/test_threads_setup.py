@@ -28,7 +28,7 @@ def test_tunnel_origin_rejects_untrusted_configuration(url):
 
 def test_policy_forces_safe_environment_despite_host_flags(vault,monkeypatch):
     monkeypatch.setenv('MOS_THREADS_PUBLISH_ENABLED','true')
-    vault.update(public_url='https://example.ngrok-free.app',app_id='123456',app_secret='synthetic-secret')
+    vault.update(public_url='https://example.ngrok-free.app',app_id='123456',app_secret='synthetic-secret',meta_redirect_confirmed_for='https://example.ngrok-free.app/threads/oauth/callback')
     values=setup.environment(vault)
     assert values['MOS_THREADS_PUBLISH_ENABLED']==values['MOS_MODEL_CALLS_ENABLED']=='false'
     assert values['MOS_TRUSTED_PROXIES']=='' and values['MOS_ENV']=='test'
@@ -72,7 +72,8 @@ def test_public_probe_uses_strict_tls_without_environment_proxy(monkeypatch):
 
 
 @pytest.mark.parametrize('source,accepted',[('MOCK',True),('OFFICIAL_API',True),('OFFICIAL_API',False)])
-def test_diagnosis_requires_fresh_official_identity_and_never_publishes(vault,monkeypatch,source,accepted):
+@pytest.mark.parametrize('valid_scopes',[True,False])
+def test_diagnosis_requires_fresh_official_identity_and_never_publishes(vault,monkeypatch,source,accepted,valid_scopes):
     uri='https://test.ngrok-free.app/threads/oauth/callback'
     vault.update(public_url='https://test.ngrok-free.app',tenant_id='synthetic',meta_redirect_confirmed_for=uri)
     def request(url,*,path,**kwargs):
@@ -83,6 +84,7 @@ def test_diagnosis_requires_fresh_official_identity_and_never_publishes(vault,mo
     connection={'id':'synthetic-id','evidence_source':source,'connection_status':'ACTIVE','threads_user_id':'10001',
                 'username':'synthetic','granted_scopes':['threads_basic','threads_content_publish'],
                 'token_expires_at':'2099-01-01T00:00:00+00:00','last_verified_at':'synthetic-before'}
+    if not valid_scopes:connection['granted_scopes']=[]
     calls=[]
     class Opener:
         def open(self,req,**kwargs):
@@ -96,7 +98,7 @@ def test_diagnosis_requires_fresh_official_identity_and_never_publishes(vault,mo
     monkeypatch.setattr(setup.urllib.request,'build_opener',lambda *args:Opener())
     report=setup.diagnose(vault)
     assert report['SETUP_READY'] and not report['PUBLISH_VERIFIED']
-    assert report['OAUTH_VERIFIED']==(source=='OFFICIAL_API' and accepted)
+    assert report['OAUTH_VERIFIED']==(source=='OFFICIAL_API' and accepted and valid_scopes)
     assert calls[-1]==('DELETE',setup.LOCAL+'/ui/session')
     assert all('publish' not in url for method,url in calls)
     if report['OAUTH_VERIFIED']:assert report['accounts'][0]['last_verified_at']=='synthetic-fresh'
@@ -149,7 +151,7 @@ def test_phone_handoff_reuses_login_without_browser_or_secret_url(monkeypatch,mo
     monkeypatch.setattr(setup,'request',request)
     setup.login_window({'tenant_id':'synthetic','public_url':'https://test.ngrok-free.app'},mobile=mobile)
     assert calls==['/admin/login-challenges']
-    assert opened==([] if mobile else ['https://test.ngrok-free.app/app'])
+    assert opened==([] if mobile else ['https://test.ngrok-free.app/app/threads'])
     if mobile:assert 'https://test.ngrok-free.app/app/threads' in texts
     assert all('synthetic-one-time-code' not in value for value in texts if value.startswith('https://'))
 
@@ -179,6 +181,7 @@ def test_readonly_login_window_does_not_hold_setup_lock(vault,monkeypatch,tmp_pa
     monkeypatch.setattr(setup,'command',lambda args:'synthetic-version')
     monkeypatch.setattr(setup,'protect_directory',lambda:None)
     monkeypatch.setattr(setup,'load',lambda:vault)
+    monkeypatch.setattr(setup,'diagnose',lambda v:{'SETUP_READY':True})
     checked=[]
     def login(*args,**kwargs):
         with (tmp_path/'setup.lock').open('r+b') as other:

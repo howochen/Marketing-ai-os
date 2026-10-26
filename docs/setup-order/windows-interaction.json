@@ -1,0 +1,13 @@
+{
+  "platform": "Windows native Tk",
+  "mode": "ISOLATED_SYNTHETIC_REHEARSAL",
+  "tested_actions": [
+    "unconfirmed callback blocks credential stage",
+    "copy callback button",
+    "confirm then reveal empty hidden-secret input"
+  ],
+  "secret_entered_via_computer_use": false,
+  "screenshots_only_empty_secret_fields": true,
+  "actual_meta_oauth_performed": false,
+  "actual_original_setup_executed": false
+}

@@ -19,5 +19,6 @@ COPY tests ./tests
 COPY scripts/threads_setup.py ./scripts/threads_setup.py
 COPY scripts/phone_setup.py ./scripts/phone_setup.py
 COPY scripts/content_local.py ./scripts/content_local.py
+COPY Setup-Threads.cmd ./Setup-Threads.cmd
 COPY pytest.ini ./
 CMD ["pytest", "-q", "--tb=short", "-m", "not live"]

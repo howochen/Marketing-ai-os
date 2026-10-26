@@ -1,0 +1,9 @@
+{
+  "mode": "READ_ONLY_EXISTING_ENVIRONMENT",
+  "new_setup_executed_against_original": false,
+  "original_vault_written": false,
+  "existing_ngrok_tunnel_verified": true,
+  "public_https_verified": true,
+  "original_running_schema": "0012",
+  "pinned_local_https_verified": true
+}

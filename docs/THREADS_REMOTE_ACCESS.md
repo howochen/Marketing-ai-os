@@ -7,7 +7,7 @@
 1. iPhone 開啟原有 TeamViewer，登入原本授權這台電腦的帳戶。自行完成帳戶驗證；不把密碼／驗證碼交給 Codex。
 2. 在「裝置／電腦與聯絡人」找原 Windows 電腦，選擇遠端控制（實際裝置別名只於本次交接提供，不提交 Git）。若此前有帳戶指派與無人值守授權，可由既有帳戶權限連線；不能用「服務在線」當作已配置無人值守的證據。
 3. 若要求未知密碼、本機同意或帳戶不符，就停止並回報狀態，不要傳送密碼。沒有讀取 TeamViewer 密碼、PIN、Token 或包含它們的畫面。
-4. 本人確認已看見 Windows 桌面後，由 Codex 開啟既有 `Setup-Threads.cmd` 的可見獨立終端，無輸出重導向／錄製。本人在 `getpass` 隱藏提示輸入 Threads Secret；Codex 不截圖、不讀該終端、不擷取輸入。繼續沿用 DPAPI 與既有安裝器。
+4. 本人確認已看見 Windows 桌面後，由 Codex 開啟既有 `Setup-Threads.cmd` 的可見獨立終端，無輸出重導向／錄製。本人在新版精靈的本機隱藏欄位輸入 Threads Secret；Codex 不截圖、不讀該終端、不擷取輸入。繼續沿用 DPAPI 與既有安裝器。
 5. 輸入完成、離開敏感畫面後，本人通知 Codex。只執行既有 `--diagnose`，取得配置狀態及官方帳號驗證結果。然後由本人在 iPhone Safari 使用既有 `/app/threads` 完成 OAuth；發布與模型開關一直保持 false。
 
 Google 的 Chrome Remote Desktop 首次設定需要本人 Google 授權、設定 PIN，可能需要 Windows 系統授權。沒有已驗證的遠端通道時，不能承諾本人不在場仍可完成這些步驟，也不能替本人繞過驗證。本次沒有新安裝常駐遠端工具。

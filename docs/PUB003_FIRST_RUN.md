@@ -13,18 +13,12 @@
    ```
 
    若尚無 `.venv`，啟動器建立 venv 並安裝既有鎖定的 requirements.txt。既有 venv 直接重用；不新增框架。
-3. 輸入 Threads 專用 App ID。App Secret 使用隱藏輸入，僅存 Windows 當前使用者 DPAPI 加密資料；**不要貼到聊天、Git 或一般 UI API**。尚未建立 Meta App 可 Enter 略過，先取得 Redirect URI，完成後重跑即可。ngrok 已配置則沿用；需要新 authtoken 時可在同一精靈隱藏輸入並加密儲存。
-4. 精靈自動產生獨立資料庫密碼、後端金鑰、Fernet key、TLS 憑證，啟動專用 Docker project `mos-threads-local`，取得 ngrok HTTPS。完整 Redirect URI 自動配置到後端並顯示，不用編輯環境變數、Compose 或 Callback 字串。
-5. 依下節完成 Meta 後台。若精靈詢問「已保存這個 URI？」只有真正保存後才回答 y。這是使用者聲明，**不是官方驗證**；URL 變動時舊聲明失效。
-6. 啟動器現在預設手機交接：顯示 iPhone 可開啟的 `/app/threads` 網址與十分鐘一次性工作區登入碼，不開 Windows Chrome。登入碼不寫到檔案或終端輸出；一般使用者不需要 Swagger、Bearer 或手動交換 Threads Token。詳見 [手機首次初始化](THREADS_MOBILE_FIRST.md)。
-7. 到「Threads 連接」點官方 OAuth 按鈕；本人在官方頁面登入、核對帳號及同意授權。ngrok 免費網址可能先顯示 Visit Site 提示；持有人確認網域後繼續，這不等於 Threads 同意。
-8. 回到 UI 核對真實官方帳號 ID、username、權限、到期時間。再執行：
-
-   ```powershell
-   .\Setup-Threads.cmd --diagnose
-   ```
-
-   診斷會重用既有 `/check` 向官方重新驗證已連接帳號；只有 OFFICIAL_API、有效權限、未過期且新驗證成功才 OAUTH_VERIFIED。Mock 不計入。沒有帳號時不會假裝查到 ID。
+3. 精靈先檢查 Docker／ngrok、啟動專用 HTTPS 後端並顯示 Callback，不需要先輸入 App ID 或 Secret。按「複製 Callback URL」及「開啟 Meta 開發者後台」。
+4. 沿用或建立支援 Threads API 的 Meta App，把完整網址加入 Threads 的 Redirect Callback URLs，保存並核對。勾選「我已在這次使用的 Meta Threads App 保存上述完整 Callback」，再按「已保存 Callback，繼續輸入 Threads 憑證」。網址改變時會警告並清除舊確認。
+5. 第三階段才顯示 Threads App ID／Secret。本機 Secret 欄位隱藏輸入，不顯示舊值、不寫Log、不傳至網頁；仍使用既有 DPAPI。已有憑證可按「沿用既有憑證，驗證後端設定」，不旋轉金鑰或清除資料。首次需要 ngrok authtoken 時，失敗提示提供安全本機輸入。
+6. 後端 HTTPS、Callback、設定與安全開關檢查通過後，才出現「開啟 MOS 登入與 Threads 連接」。預設開 Windows 原有瀏覽器的 `/app/threads`，以視窗顯示的十分鐘一次性碼登入，再按「連接 Threads 帳號」。不操作或猜測 Chrome 設定檔。
+7. 本人在同一瀏覽器完成官方登入及同意，回到 MOS。精靈按「驗證官方 Threads 帳號」，只有新官方 API 檢查的 ID、username、必要 scopes、未到期 expiry 均有效，才顯示 OAUTH_VERIFIED；Mock 不計入。發布保持關閉。
+8. 中途可關閉並重跑；只在本機操作進行中要求等候完成，避免半途寫入。若確實需要手機交接，明確選用 `Setup-Threads.cmd --mobile`，這不是預設模式。更多精靈按鈕與驗收見 [Callback 優先的新流程](THREADS_SETUP_FLOW.md)。
 
 重新開啟登入視窗：` .\Setup-Threads.cmd --login `。停止專用服務與本安裝器建立的 ngrok：` .\Setup-Threads.cmd --stop `。資料卷、加密 key 保留，重跑會重用。不要刪除 `.threads-local/vault.dpapi` 來「重設」：它包含舊資料解密所需金鑰，且只可由同一 Windows 使用者解密；需連同 Windows 憑證保護規劃離線備份與復原。
 

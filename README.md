@@ -4,7 +4,7 @@
 
 Browser account management is available at `/app`, with the administrator wizard at `/app/admin`. See the [Traditional Chinese UI guide](docs/PUB002_UI_GUIDE.md) for safe local preview, deployment, official OAuth and troubleshooting. This supersedes the older manual Swagger instructions below. Real HTTP and publishing remain off by default; connecting an account does not authorize a post.
 
-Windows guided setup: run `Setup-Threads.cmd`. It creates an isolated encrypted local configuration, Docker workspace and verified ngrok HTTPS callback. See [首次安裝與 Meta 交接](docs/PUB003_FIRST_RUN.md). It never enables publication or model calls; official login and consent remain with the account owner.
+Windows guided setup: double-click `Setup-Threads.cmd` for the Callback-first desktop wizard (HTTPS → Meta confirmation → local hidden credentials → backend checks → same-browser OAuth). See [new flow and screenshots](docs/THREADS_SETUP_FLOW.md). It creates an isolated encrypted local configuration, Docker workspace and verified ngrok HTTPS callback. See [首次安裝與 Meta 交接](docs/PUB003_FIRST_RUN.md). It never enables publication or model calls; official login and consent remain with the account owner.
 
 iPhone-first setup: `Setup-Threads.cmd --mobile`; later login handoff: `Setup-Threads.cmd --login --mobile`. See [手機首次初始化與連接](docs/THREADS_MOBILE_FIRST.md). This reuses `/app/threads`; no Chrome profile selection or new login/adapter is involved.
 

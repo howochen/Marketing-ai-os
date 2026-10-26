@@ -5,7 +5,6 @@ import ctypes
 from ctypes import wintypes
 import csv
 from datetime import datetime,timedelta,timezone
-import getpass
 import ipaddress
 import json
 import os
@@ -133,8 +132,8 @@ def environment(vault):
             'MOS_THREADS_TOKEN_KEY':vault['token_key'],'MOS_THREADS_APP_ID':vault.get('app_id',''),
             'MOS_THREADS_APP_SECRET':vault.get('app_secret',''),'MOS_ENV':'test','MOS_PUBLIC_URL':public,
             'MOS_THREADS_REDIRECT_URI':public+'/threads/oauth/callback' if public else '',
-            'MOS_TRUSTED_PROXIES':'','MOS_THREADS_HTTP_ENABLED':'true' if vault.get('app_id') and vault.get('app_secret') and public else 'false',
-            'MOS_MODEL_CALLS_ENABLED':'false','MOS_LIVE_TESTS':'false','MOS_THREADS_PUBLISH_ENABLED':'false',
+            'MOS_TRUSTED_PROXIES':'','MOS_THREADS_HTTP_ENABLED':'true' if vault.get('app_id') and vault.get('app_secret') and public and vault.get('meta_redirect_confirmed_for')==public+'/threads/oauth/callback' else 'false',
+            'MOS_MODEL_CALLS_ENABLED':'false','MOS_LIVE_TESTS':'false','MOS_THREADS_PUBLISH_ENABLED':'false','MOS_PHONE_SETUP_ENABLED':'false',
             'MOS_THREADS_MAINTENANCE_ENABLED':'false','MOS_PHONE_SETUP_AUTHORITY':authority}
 
 
@@ -277,8 +276,16 @@ def diagnose(vault):
             # Revoke the temporary diagnostic credential even when validation fails.
             req=urllib.request.Request(LOCAL+'/ui/session',headers=headers,method='DELETE')
             opener.open(req,timeout=10).close()
-    official=[c for c in connections if c['evidence_source']=='OFFICIAL_API' and c['connection_status']=='ACTIVE'
-              and datetime.fromisoformat(c['token_expires_at'].replace('Z','+00:00'))>datetime.now(timezone.utc)]
+    from app.threads_api import SCOPES
+    official=[]
+    for c in connections:
+        try:
+            valid=(c['evidence_source']=='OFFICIAL_API' and c['connection_status']=='ACTIVE'
+                and isinstance(c['threads_user_id'],str) and c['threads_user_id'].isascii() and c['threads_user_id'].isdigit()
+                and bool(c['username']) and SCOPES.issubset(c['granted_scopes'])
+                and datetime.fromisoformat(c['token_expires_at'].replace('Z','+00:00'))>datetime.now(timezone.utc))
+            if valid:official.append(c)
+        except (KeyError,TypeError,ValueError):continue
     confirmed=vault.get('meta_redirect_confirmed_for')==status['redirect_uri'] and bool(status['redirect_uri'])
     return {'SETUP_READY':bool(probe and not status['missing'] and status['http_enabled'] and confirmed),
             'LOCAL_SETUP_READY':bool(probe),'meta_redirect_confirmation':'USER_CONFIRMED_NOT_PROVIDER_VERIFIED' if confirmed else 'MANUAL_HANDOFF_REQUIRED',
@@ -292,13 +299,14 @@ def diagnose(vault):
             'production_ready':False}
 
 
-def login_window(vault,*,mobile=False):
+def login_window(vault,*,mobile=False,parent=None):
     if not vault.get('tenant_id') or not vault.get('public_url'):raise SetupError('RUN_SETUP_BEFORE_LOGIN')
     try:import tkinter as tk
     except ImportError:raise SetupError('PYTHON_TKINTER_REQUIRED') from None
     import webbrowser
     code=request(LOCAL,vault=vault,path='/admin/login-challenges',admin=True,payload={'tenant_id':vault['tenant_id'],'subject':'local-install-owner'})['token']
-    window=tk.Tk();window.title('Marketing AI OS — 手機登入' if mobile else 'Marketing AI OS — 本機登入')
+    window=tk.Toplevel(parent) if parent is not None else tk.Tk()
+    window.title('Marketing AI OS — 手機登入' if mobile else 'Marketing AI OS — 本機登入')
     if mobile:
         tk.Label(window,text='請用 iPhone Safari 開啟下方網址；勿在不同瀏覽器間切換。',padx=20,pady=12).pack()
         address=tk.Entry(window,width=85);address.insert(0,vault['public_url']+'/app/threads');address.configure(state='readonly');address.pack(padx=20,pady=10)
@@ -308,15 +316,68 @@ def login_window(vault,*,mobile=False):
     entry=tk.Entry(window,width=65);entry.insert(0,code);entry.configure(state='readonly');entry.pack(padx=20,pady=10)
     def copy():window.clipboard_clear();window.clipboard_append(code);window.update()
     tk.Button(window,text='複製登入碼',command=copy).pack(pady=10)
-    if not mobile:webbrowser.open(vault['public_url']+'/app')
-    window.mainloop()
+    tk.Button(window,text='已複製，關閉登入碼視窗並返回驗證',command=lambda:window.destroy()).pack(padx=20,pady=10)
+    if not mobile:webbrowser.open(vault['public_url']+'/app/threads')
+    if parent is not None:
+        window.transient(parent);window.grab_set();parent.wait_window(window)
+    else:window.mainloop()
+
+
+def initialize():
+    if not shutil.which('docker') or not shutil.which('ngrok'):raise SetupError('INSTALL_DOCKER_AND_NGROK_FIRST')
+    command(['docker','info','--format','{{.ServerVersion}}'])
+    for name in ('runtime.env','ngrok-runtime.yml'):(PRIVATE/name).unlink(missing_ok=True)
+    vault=load()
+    cert=x509.load_pem_x509_certificate(vault['tls_cert'].encode())
+    if cert.not_valid_after_utc<=datetime.now(timezone.utc)+timedelta(days=1):
+        stop_agent(vault);vault.update(certificate());save(vault)
+    (PRIVATE/'upstream.crt').write_text(vault['tls_cert'],encoding='utf-8')
+    return vault
+
+
+def prepare_install(vault,progress=lambda message:None):
+    progress('正在檢查 Docker 並啟動專用 HTTPS 後端；第一次建置可能需要數分鐘。')
+    compose(vault,'up','--build','-d','db','migrate','api');wait_ready(vault)
+    if not vault.get('tenant_id'):
+        tenant=request(LOCAL,vault=vault,path='/admin/tenants',admin=True,payload={'name':'Threads 受控連線工作區','budget_usd':'0.000001'})
+        vault['tenant_id']=tenant['id'];save(vault)
+    progress('正在取得／重用 ngrok HTTPS 網址；不需要 App ID 或 Secret。')
+    public=tunnel(vault);previous=vault.get('public_url')
+    changed=bool(previous and public!=previous)
+    if public!=previous:
+        vault['public_url']=public;vault.pop('meta_redirect_confirmed_for',None);save(vault)
+        compose(vault,'up','-d','api');wait_ready(vault)
+    checks=probe_public(public)
+    if not checks.get('ui_available') or not checks.get('callback_reachable') or checks.get('schema')!='0012':
+        raise SetupError('HTTPS_CALLBACK_NOT_READY')
+    return {'vault':vault,'callback':public+'/threads/oauth/callback','changed':changed}
+
+
+def confirm_callback(vault,uri):
+    if uri!=vault.get('public_url','')+'/threads/oauth/callback' or tunnel(vault)!=vault.get('public_url'):
+        vault.pop('meta_redirect_confirmed_for',None);save(vault);raise SetupError('CALLBACK_CHANGED_RECHECK')
+    vault['meta_redirect_confirmed_for']=uri;save(vault)
+
+
+def credentials(vault,app_id,secret):
+    if not re.fullmatch(r'[0-9]{3,40}',app_id) or not re.fullmatch(r'[A-Za-z0-9_-]{8,256}',secret):raise SetupError('INVALID_THREADS_CREDENTIALS')
+    if vault.get('meta_redirect_confirmed_for')!=vault.get('public_url','')+'/threads/oauth/callback':raise SetupError('CONFIRM_META_CALLBACK_FIRST')
+    # Existing database, token encryption, authority and certificate keys remain untouched.
+    updated={**vault,'app_id':app_id,'app_secret':secret};save(updated);vault.update(updated)
+
+
+def finish_install(vault):
+    if not vault.get('app_id') or not vault.get('app_secret'):raise SetupError('THREADS_CREDENTIALS_REQUIRED')
+    confirm_callback(vault,vault.get('meta_redirect_confirmed_for',''))
+    compose(vault,'up','-d','api');wait_ready(vault)
+    report=diagnose(vault)
+    if not report['SETUP_READY'] or report['publishing_enabled']:raise SetupError('BACKEND_CONFIGURATION_NOT_READY')
+    return report
 
 
 def run(args):
     if os.name!='nt':raise SetupError('WINDOWS_ONLY')
     if os.getenv('CI') or os.getenv('PYTEST_CURRENT_TEST'):raise SetupError('INTERACTIVE_SETUP_NOT_ALLOWED_IN_CI')
-    if not shutil.which('docker') or not shutil.which('ngrok'):raise SetupError('INSTALL_DOCKER_AND_NGROK_FIRST')
-    command(['docker','info','--format','{{.ServerVersion}}'])
     protect_directory()
     import msvcrt
     with (PRIVATE/'setup.lock').open('a+b') as lock:
@@ -324,55 +385,24 @@ def run(args):
         try:msvcrt.locking(lock.fileno(),msvcrt.LK_NBLCK,1)
         except OSError:raise SetupError('SETUP_ALREADY_RUNNING') from None
         locked=True
+        def release():
+            nonlocal locked
+            if locked:lock.seek(0);msvcrt.locking(lock.fileno(),msvcrt.LK_UNLCK,1);locked=False
         try:
-            for name in ('runtime.env','ngrok-runtime.yml'):(PRIVATE/name).unlink(missing_ok=True)
-            vault=load()
-            cert=x509.load_pem_x509_certificate(vault['tls_cert'].encode())
-            if cert.not_valid_after_utc<=datetime.now(timezone.utc)+timedelta(days=1):
-                stop_agent(vault);vault.update(certificate());save(vault)
-            (PRIVATE/'upstream.crt').write_text(vault['tls_cert'],encoding='utf-8')
+            if not any((args.stop,args.non_interactive,args.diagnose,args.login)):
+                from scripts.threads_setup_ui import Wizard
+                Wizard(initialize,release,mobile=args.mobile).run();return
+            vault=initialize()
             if args.stop:
                 compose(vault,'stop');stop_agent(vault);print('已停止專用 Docker 與本安裝器的 ngrok，資料卷及加密金鑰保留。');return
-            if not args.non_interactive and not args.diagnose and not args.login:
-                if not sys.stdin.isatty():raise SetupError('INTERACTIVE_TERMINAL_REQUIRED_FOR_SECRET_INPUT')
-                value=input('Threads App ID（尚未建立可直接 Enter）：').strip()
-                if value:
-                    if not value.isascii() or not value.isdigit():raise SetupError('INVALID_APP_ID')
-                    secret=getpass.getpass('Threads App Secret（隱藏輸入）：')
-                    if not re.fullmatch(r'[A-Za-z0-9_-]{8,256}',secret):raise SetupError('INVALID_APP_SECRET')
-                    vault.update(app_id=value,app_secret=secret);vault.pop('meta_redirect_confirmed_for',None);save(vault)
-                if input('需要設定新的 ngrok authtoken？[y/N]：').lower()=='y':
-                    token=getpass.getpass('ngrok authtoken（隱藏輸入）：')
-                    if not re.fullmatch(r'[A-Za-z0-9_-]{10,256}',token):raise SetupError('INVALID_NGROK_TOKEN')
-                    vault['ngrok_token']=token;save(vault)
-            if args.diagnose:
-                report=diagnose(vault)
-                (PRIVATE/'status.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8')
-                print(json.dumps(report,ensure_ascii=False,indent=2));return
             if args.login:
-                lock.seek(0);msvcrt.locking(lock.fileno(),msvcrt.LK_UNLCK,1);locked=False
-                login_window(vault,mobile=args.mobile);return
-            print('正在啟動隔離的 PostgreSQL 與 HTTPS API…',flush=True)
-            compose(vault,'up','--build','-d','db','migrate','api');wait_ready(vault)
-            if not vault.get('tenant_id'):
-                tenant=request(LOCAL,vault=vault,path='/admin/tenants',admin=True,payload={'name':'Threads 受控連線工作區','budget_usd':'0.000001'})
-                vault['tenant_id']=tenant['id'];save(vault)
-            print('正在建立／重用 ngrok HTTPS（禁止 request inspection）…',flush=True)
-            public=tunnel(vault)
-            changed=public!=vault.get('public_url');vault['public_url']=public;save(vault)
-            if changed:compose(vault,'up','-d','api');wait_ready(vault)
-            if not args.non_interactive and vault.get('app_id') and vault.get('app_secret'):
-                uri=public+'/threads/oauth/callback';print('請在 Meta 後台保存完整 Redirect URI：'+uri)
-                if input('您已在 Meta 後台保存這個 URI？[y/N]：').lower()=='y':vault['meta_redirect_confirmed_for']=uri;save(vault)
+                if not diagnose(vault)['SETUP_READY']:raise SetupError('FINISH_SETUP_BEFORE_LOGIN')
+                release();login_window(vault,mobile=args.mobile);return
+            if not args.diagnose:prepare_install(vault)
             report=diagnose(vault)
             (PRIVATE/'status.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8')
             print(json.dumps(report,ensure_ascii=False,indent=2))
-            print('請在 Meta 後台登錄上方 Redirect URI，再透過 /app/threads 官方登入。發布保持關閉。')
-            if not args.non_interactive:
-                lock.seek(0);msvcrt.locking(lock.fileno(),msvcrt.LK_UNLCK,1);locked=False
-                login_window(vault,mobile=args.mobile)
-        finally:
-            if locked:lock.seek(0);msvcrt.locking(lock.fileno(),msvcrt.LK_UNLCK,1)
+        finally:release()
 
 
 if __name__=='__main__':

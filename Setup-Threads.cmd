@@ -1,5 +1,6 @@
 @echo off
 setlocal
+chcp 65001 >nul
 set PYTHONUTF8=1
 cd /d "%~dp0"
 if not exist ".venv\Scripts\python.exe" (
@@ -8,10 +9,10 @@ if not exist ".venv\Scripts\python.exe" (
   .venv\Scripts\python.exe -m pip install -r requirements.txt
   if errorlevel 1 goto failed
 )
-.venv\Scripts\python.exe scripts\threads_setup.py --mobile %*
+.venv\Scripts\python.exe -m scripts.threads_setup %*
 if errorlevel 1 goto failed
 exit /b 0
 :failed
-echo Setup stopped. Read the message above; no publishing is enabled.
+echo 設定已安全停止。請查看上方提示；既有資料保留，發文維持關閉。
 pause
 exit /b 1
