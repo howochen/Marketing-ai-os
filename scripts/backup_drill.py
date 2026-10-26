@@ -6,7 +6,7 @@ import time
 from pathlib import Path
 
 PROJECT = os.getenv('MOS_DRILL_PROJECT', 'mos-p05-test')
-if PROJECT not in {'mos-p05-test','mos-p11-test','mos-p13-test','mos-p14-test','mos-pub-test'}:
+if PROJECT not in {'mos-p05-test','mos-p11-test','mos-p13-test','mos-p14-test','mos-pub-test','mos-pub002-test'}:
     raise RuntimeError('Only dedicated synthetic test projects are allowed')
 CONTAINER = PROJECT + '-db-1'
 SOURCE = 'mos_p05_dr_source_001'
@@ -72,7 +72,7 @@ def main():
               'fingerprints_before_and_restored': before,
               'permission_mode': '0600 file / 0700 directory', 'negative_checks': 4,
               'scope': 'isolated synthetic data only; credentials deleted in source and restored to independent target'}
-    output=Path({'mos-p05-test':'docs/p05','mos-p11-test':'docs/p11','mos-p13-test':'docs/p13','mos-p14-test':'docs/p14','mos-pub-test':'docs/threads'}[PROJECT])/'backup-restore.json'
+    output=Path({'mos-p05-test':'docs/p05','mos-p11-test':'docs/p11','mos-p13-test':'docs/p13','mos-p14-test':'docs/p14','mos-pub-test':'docs/threads','mos-pub002-test':'docs/pub002'}[PROJECT])/'backup-restore.json'
     output.parent.mkdir(parents=True,exist_ok=True)
     output.write_text(json.dumps(report, indent=2), encoding='utf-8')
     print(json.dumps({k: v for k, v in report.items() if k != 'fingerprints_before_and_restored'}))

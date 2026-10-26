@@ -148,6 +148,9 @@ class ThreadsConnection(Base):
     last_verified_at: Mapped[datetime]=mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime]=mapped_column(DateTime(timezone=True),default=now)
     revoked_at: Mapped[datetime | None]=mapped_column(DateTime(timezone=True))
+    next_maintenance_at: Mapped[datetime | None]=mapped_column(DateTime(timezone=True))
+    maintenance_error: Mapped[str | None]=mapped_column(String(60))
+    refresh_failures: Mapped[int]=mapped_column(BigInteger,default=0)
 
 
 class ThreadsOAuthState(Base):

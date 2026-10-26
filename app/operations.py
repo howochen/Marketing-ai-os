@@ -103,7 +103,7 @@ class Boundary:
             if not trusted_proxy(host) or headers.get(b'x-forwarded-proto') != b'https':
                 return await JSONResponse({'detail': 'HTTPS required'}, 403)(scope, receive, send)
         if scope['method'] in {'POST', 'PUT', 'DELETE', 'PATCH'}:
-            login = scope['path'] == '/auth/login' or scope['path'].startswith('/admin/')
+            login = scope['path'] in {'/auth/login','/ui/session','/ui/admin/login'} or scope['path'].startswith('/admin/')
             def limited() -> bool:
                 with SessionLocal() as session:
                     return consume(session, f'{host}:{"login" if login else "write"}', 10 if login else 120)
@@ -140,6 +140,9 @@ class Boundary:
         async def safe_send(message: Message) -> None:
             if message['type'] == 'http.response.start' and message['status'] in (401, 403):
                 emit('security.denied', status=message['status'])
+            if message['type']=='http.response.start' and (scope['path'].startswith('/ui/') or scope['path'].startswith('/threads/oauth/')):
+                message['headers']=[(k,v) for k,v in message.get('headers',[]) if k.lower() not in {b'cache-control',b'referrer-policy'}]
+                message['headers'] += [(b'cache-control',b'no-store'),(b'referrer-policy',b'no-referrer')]
             await send(message)
         # Application execution is bounded by DB/provider deadlines; no cancellation-based retry.
         await self.app(scope, replay, safe_send)

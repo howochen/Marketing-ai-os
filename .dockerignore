@@ -5,3 +5,5 @@
 *.zip
 __pycache__
 .pytest_cache
+.ui-preview
+.taste-skill

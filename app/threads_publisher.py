@@ -99,7 +99,7 @@ def preflight(s: Session,c: Credential,p: Publication,client: ThreadsAPI) -> tup
     if not grant or grant.revoked or grant.role!='owner' or utc(grant.expires_at)<=now() or grant.environment!=os.getenv('MOS_ENV') or 'publish' not in grant.scopes:
         raise HTTPException(403,'Public-post consent no longer valid')
     conn=connection(s,c.tenant_id,p.platform_account_id or '')
-    if not conn.publishing_enabled or conn.evidence_source!=client.source:
+    if not conn.publishing_enabled or conn.evidence_source!=client.source or conn.maintenance_error=='MAINTENANCE_IN_PROGRESS':
         raise HTTPException(403,'Specified tenant/account not enabled or evidence source mismatch')
     unresolved=s.scalar(select(Publication.id).where(Publication.tenant_id==c.tenant_id,
         Publication.platform_account_id==conn.id,Publication.id!=p.id,

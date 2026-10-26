@@ -1,6 +1,8 @@
 # Marketing AI OS — P0 hardening
 
-**Development prototype; not production-ready.** No real social publishing, payments, or revenue claims. P1 remains blocked. The 24 agents are capability profiles, not an autonomous workforce.
+**Development prototype; not production-ready.** Live Threads OAuth and publication remain unverified. No payments or revenue claims. The 24 agents are capability profiles, not an autonomous workforce.
+
+Browser account management is available at `/app`, with the administrator wizard at `/app/admin`. See the [Traditional Chinese UI guide](docs/PUB002_UI_GUIDE.md) for safe local preview, deployment, official OAuth and troubleshooting. This supersedes the older manual Swagger instructions below. Real HTTP and publishing remain off by default; connecting an account does not authorize a post.
 
 P0 provides passwordless owner sessions, role/scoped credentials, forced PostgreSQL row security, append-only audit/cost events, integer micro-USD reserve/settle/release, receipt deduplication, timeout recovery, token limits, a budget kill switch, and manual-only platform adapters. Model calls default to **false** and the actual HTTP provider also requires explicit integration-test opt-in.
 
@@ -85,7 +87,7 @@ Owner approval is mandatory; reviewer cannot approve. Owners cannot mint worker 
 
 Every accounting/publication mutation serializes on the tenant row before reading state, with one transaction for balance, task, ledger and audit. Retries with identical keys/payloads reuse the result; changed payloads conflict. A unique provider receipt per tenant prevents use on two tasks. No floating-point arithmetic is used in the ledger. Actual receipts above reservation are still recorded and automatically pause the budget instead of hiding incurred costs.
 
-`POST /tasks/{id}/release` needs `idempotency_key` and can release only undispatched `RESERVED` tasks. A worker calls `POST /maintenance/recover` periodically: expired reservations are released; expired `RUNNING` tasks become `RECONCILIATION_REQUIRED` with funds held. A worker must settle an authenticated receipt to reconcile; no blind retry or automatic release of uncertain bills exists. The endpoint is provided, but no scheduler is installed. `PUT /budget/kill-switch` with `{"paused":true}` stops new reservations/claims and checks again before generation. Already submitted external requests cannot be canceled by this switch.
+`POST /tasks/{id}/release` needs `idempotency_key` and can release only undispatched `RESERVED` tasks. A worker calls `POST /maintenance/recover` periodically: expired reservations are released; expired `RUNNING` tasks become `RECONCILIATION_REQUIRED` with funds held. A worker must settle an authenticated receipt to reconcile; no blind retry or automatic release of uncertain bills exists. An opt-in single worker scheduler is available via the Compose recovery profile; see the UI guide. `PUT /budget/kill-switch` with `{"paused":true}` stops new reservations/claims and checks again before generation. Already submitted external requests cannot be canceled by this switch.
 
 ## Model configuration and live tests
 
@@ -105,7 +107,7 @@ Final P0 closeout: [acceptance](docs/P0_FINAL_ACCEPTANCE.md), [cost report](docs
 
 Current implementation and evidence: [implementation log](docs/P05_IMPLEMENTATION_LOG.md), [tests](docs/P05_TEST_EVIDENCE.md), [backup/restore](docs/P05_BACKUP_RESTORE.md), [security](docs/P05_SECURITY_REVIEW.md), [model costs](docs/P05_MODEL_COST_DESIGN.md), [open-source review](docs/P05_OPEN_SOURCE_REVIEW.md), [offline P1 gate](docs/P1_GO_NO_GO.md).
 
-Install exact pins with `pip install -r requirements-dev.txt`; run `mypy`, `python -m compileall -q app tests migrations scripts`, and `pytest -q`. Schema head is now 0003. Read the log before upgrading: old credentials become legacy and need reissue; old tasks have no fabricated historical price snapshot. `/health` is liveness; `/ready` checks DB/schema/rate-card readiness. Production mode refuses unsafe configuration and requires actual HTTPS or an explicitly trusted TLS-terminating proxy. Public production validation remains a separate gate.
+Install exact pins with `pip install -r requirements-dev.txt`; run `mypy`, `python -m compileall -q app tests migrations scripts`, and `pytest -q`. Schema head is now 0010. Read the log before upgrading: old credentials become legacy and need reissue; old tasks have no fabricated historical price snapshot. `/health` is liveness; `/ready` checks DB/schema/rate-card readiness. Production mode refuses unsafe configuration and requires actual HTTPS or an explicitly trusted TLS-terminating proxy. Public production validation remains a separate gate.
 
 ## MOS-P1-001 offline A09 runtime
 

@@ -1,0 +1,79 @@
+{
+  "mode": "SYNTHETIC_ONLY",
+  "results": [
+    {
+      "route": "home",
+      "width": 1440,
+      "title": "社群帳號",
+      "overflow": false
+    },
+    {
+      "route": "home",
+      "width": 768,
+      "title": "社群帳號",
+      "overflow": false
+    },
+    {
+      "route": "home",
+      "width": 390,
+      "title": "社群帳號",
+      "overflow": false
+    },
+    {
+      "route": "threads",
+      "width": 1440,
+      "title": "Threads 連接",
+      "overflow": false
+    },
+    {
+      "route": "threads",
+      "width": 768,
+      "title": "Threads 連接",
+      "overflow": false
+    },
+    {
+      "route": "threads",
+      "width": 390,
+      "title": "Threads 連接",
+      "overflow": false
+    },
+    {
+      "route": "publications",
+      "width": 1440,
+      "title": "發布確認與紀錄",
+      "overflow": false
+    },
+    {
+      "route": "publications",
+      "width": 768,
+      "title": "發布確認與紀錄",
+      "overflow": false
+    },
+    {
+      "route": "publications",
+      "width": 390,
+      "title": "發布確認與紀錄",
+      "overflow": false
+    },
+    {
+      "route": "admin",
+      "width": 1440,
+      "title": "Threads 初次設定",
+      "overflow": false
+    },
+    {
+      "route": "admin",
+      "width": 768,
+      "title": "Threads 初次設定",
+      "overflow": false
+    },
+    {
+      "route": "admin",
+      "width": 390,
+      "title": "Threads 初次設定",
+      "overflow": false
+    }
+  ],
+  "previewVerified": true,
+  "realProviderCalls": 0
+}

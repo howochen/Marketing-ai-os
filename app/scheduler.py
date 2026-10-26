@@ -13,6 +13,9 @@ def run_once(client: httpx.Client) -> dict:
     if not isinstance(data, dict):
         raise ValueError('Invalid recovery response')
     emit('scheduler.completed', count=data['released'] + data['held_for_reconciliation'])
+    if os.getenv('MOS_THREADS_MAINTENANCE_ENABLED','false')=='true':
+        maintenance=client.post('/maintenance/threads')
+        maintenance.raise_for_status()
     return data
 
 

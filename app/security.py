@@ -5,7 +5,7 @@ import secrets
 import uuid
 from collections.abc import Callable, Iterable
 from datetime import timedelta
-from fastapi import Depends, Header, HTTPException
+from fastapi import Depends, Header, HTTPException,Request
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from .database import db, scope
@@ -31,7 +31,11 @@ def audit(session: Session, tid: str, action: str, rid: str, actor: str = 'admin
     session.add(Audit(id=uid(), tenant_id=tid, action=action, resource_id=rid, actor_id=actor))
 
 
-def admin(x_admin_key: str | None = Header(default=None)) -> None:
+def admin(request: Request,x_admin_key: str | None = Header(default=None)) -> None:
+    if not x_admin_key:
+        from .browser_session import verify_admin
+        verify_admin(request)
+        return
     secret = os.getenv('MOS_ADMIN_KEY', '')
     if len(secret) < 30 or not x_admin_key or not hmac.compare_digest(secret, x_admin_key):
         raise HTTPException(403, 'Admin access denied')
@@ -47,7 +51,14 @@ def issue(session: Session, tid: str, subject: str, role: str, scopes: Iterable[
     return token, credential
 
 
-def authenticate(authorization: str | None = Header(default=None), session: Session = Depends(db)) -> Credential:
+def authenticate(request: Request,authorization: str | None = Header(default=None), session: Session = Depends(db)) -> Credential:
+    if not authorization:
+        from .browser_session import USER_COOKIE,check_csrf,transport_allowed
+        cookie=request.cookies.get(USER_COOKIE,'')
+        if cookie:
+            transport_allowed(request)
+            if request.method not in {'GET','HEAD','OPTIONS'}:check_csrf(request,cookie)
+            authorization='Bearer '+cookie
     if not authorization or not authorization.startswith('Bearer ') or len(authorization) < 37:
         raise HTTPException(401, 'Bearer token required')
     hashed = digest(authorization[7:])

@@ -4,7 +4,7 @@ import os
 import secrets
 from datetime import datetime,timedelta,timezone
 from urllib.parse import urlencode,urlsplit
-from fastapi import APIRouter,Depends,HTTPException,Response,Cookie
+from fastapi import APIRouter,Depends,HTTPException,Response,Cookie,Request
 from starlette.responses import JSONResponse
 from starlette.requests import Request
 from pydantic import BaseModel,ConfigDict
@@ -47,7 +47,8 @@ def connection(s: Session,tid: str,cid: str) -> ThreadsConnection:
 
 def view(item: ThreadsConnection) -> dict:
     return {f:getattr(item,f) for f in ('id','tenant_id','threads_user_id','username','granted_scopes','token_expires_at',
-        'connection_status','evidence_source','publishing_enabled','last_verified_at','created_at','revoked_at')}
+        'connection_status','evidence_source','publishing_enabled','last_verified_at','created_at','revoked_at',
+        'next_maintenance_at','maintenance_error','refresh_failures')}
 
 
 def token_for(item: ThreadsConnection) -> str:
@@ -77,9 +78,9 @@ def oauth_start(response: Response,c: Credential=Depends(require('credentials'))
         'scope':','.join(sorted(SCOPES)),'response_type':'code','state':state}),'expires_in':600}
 
 
-@router.get('/threads/oauth/callback')
-def oauth_callback(response: Response,state: str='',code: str='',error: str='',mos_threads_browser: str | None=Cookie(default=None),
-                   s: Session=Depends(db),client: ThreadsAPI=Depends(api)) -> dict:
+@router.get('/threads/oauth/callback',response_model=None)
+def oauth_callback(response: Response,request: Request,state: str='',code: str='',error: str='',mos_threads_browser: str | None=Cookie(default=None),
+                   s: Session=Depends(db),client: ThreadsAPI=Depends(api)) -> dict | Response:
     from .main import lock_tenant
     response.headers['Cache-Control']='no-store';response.headers['Referrer-Policy']='no-referrer'
     if not 32<=len(state)<=128 or not mos_threads_browser:raise HTTPException(400,'Invalid OAuth state/browser binding')
@@ -120,7 +121,13 @@ def oauth_callback(response: Response,state: str='',code: str='',error: str='',m
         record.token_ciphertext=seal(token,record.tenant_id,record.id);record.token_expires_at=expires;record.token_issued_at=now()
         record.username=profile['username'];record.granted_scopes=debug['scopes'];record.connection_status='ACTIVE'
         record.evidence_source=client.source;record.last_verified_at=now();record.revoked_at=None;record.publishing_enabled=False
+        record.maintenance_error=None;record.refresh_failures=0;record.next_maintenance_at=now()+timedelta(hours=24)
         audit(s,record.tenant_id,'threads.connected',record.id,actor.id);s.commit()
+        if request.cookies.get('mos_ui_session'):
+            from starlette.responses import RedirectResponse
+            result=RedirectResponse('/app/threads?connected=1',303,headers={'Cache-Control':'no-store','Referrer-Policy':'no-referrer'})
+            result.delete_cookie('mos_threads_browser',path='/threads/oauth/callback',secure=True,httponly=True,samesite='lax')
+            return result
         return view(record)
     except ThreadsFailure as exc:
         s.rollback();raise HTTPException(502,'OAuth '+exc.category+'; reauthorize, no automatic exchange retry') from None
@@ -154,17 +161,75 @@ def enable(cid: str,payload: Enable,c: Credential=Depends(require('publish')),s:
 def refresh(cid: str,c: Credential=Depends(require('credentials')),s: Session=Depends(db),client: ThreadsAPI=Depends(api)) -> dict:
     from .main import lock_tenant
     owner(c);lock_tenant(s,c.tenant_id);item=connection(s,c.tenant_id,cid)
-    if now()-utc(item.token_issued_at)<timedelta(hours=24):raise HTTPException(409,'Long-lived token must be at least24 hours old and unexpired')
     try:
-        result=client.request('GET','refresh_access_token',token_for(item),params={'grant_type':'th_refresh_token'})
-        token=result.get('access_token')
-        if not isinstance(token,str) or not token:raise ThreadsFailure('INVALID_PROVIDER_RESPONSE')
-        profile,debug,expires=verified_identity(client,token)
-        if profile['id']!=item.threads_user_id or client.source!=item.evidence_source:raise ThreadsFailure('ACCOUNT_MISMATCH')
-        item.token_ciphertext=seal(token,item.tenant_id,item.id);item.token_expires_at=expires;item.token_issued_at=now()
-        item.granted_scopes=debug['scopes'];item.username=profile['username'];item.last_verified_at=now();audit(s,c.tenant_id,'threads.refreshed',item.id,c.id);s.commit()
+        refresh_connection(item,client)
+        audit(s,c.tenant_id,'threads.refreshed',item.id,c.id);s.commit()
         return view(item)
-    except ThreadsFailure as exc:s.rollback();raise HTTPException(502,exc.category) from None
+    except ThreadsFailure as exc:
+        connection_failure(s,c,item,exc.category);s.commit();raise HTTPException(502,exc.category) from None
+
+
+def refresh_connection(item: ThreadsConnection,client: ThreadsAPI) -> None:
+    if item.evidence_source!=client.source:raise ThreadsFailure('EVIDENCE_SOURCE_MISMATCH')
+    if now()-utc(item.token_issued_at)<timedelta(hours=24):raise HTTPException(409,'Long-lived token must be at least24 hours old and unexpired')
+    result=client.request('GET','refresh_access_token',token_for(item),params={'grant_type':'th_refresh_token'})
+    token=result.get('access_token')
+    if not isinstance(token,str) or not token:raise ThreadsFailure('INVALID_PROVIDER_RESPONSE')
+    profile,debug,expires=verified_identity(client,token)
+    if profile['id']!=item.threads_user_id or client.source!=item.evidence_source:raise ThreadsFailure('ACCOUNT_MISMATCH')
+    item.token_ciphertext=seal(token,item.tenant_id,item.id);item.token_expires_at=expires;item.token_issued_at=now()
+    item.granted_scopes=debug['scopes'];item.username=profile['username'];item.last_verified_at=now()
+    item.maintenance_error=None;item.refresh_failures=0;item.next_maintenance_at=now()+timedelta(hours=24)
+
+
+def connection_failure(s: Session,c: Credential,item: ThreadsConnection,category: str) -> None:
+    item.publishing_enabled=False;item.maintenance_error=category;item.refresh_failures+=1
+    item.connection_status='REAUTH_REQUIRED';item.next_maintenance_at=None
+    audit(s,c.tenant_id,'threads.maintenance_failed',item.id,c.id)
+
+
+@router.post('/threads/connections/{cid}/check')
+def check_connection(cid: str,c: Credential=Depends(require('credentials')),s: Session=Depends(db),client: ThreadsAPI=Depends(api)) -> dict:
+    from .main import lock_tenant
+    owner(c);lock_tenant(s,c.tenant_id);item=connection(s,c.tenant_id,cid)
+    try:
+        if item.evidence_source!=client.source:raise ThreadsFailure('EVIDENCE_SOURCE_MISMATCH')
+        profile,debug,expires=verified_identity(client,token_for(item))
+        if profile['id']!=item.threads_user_id or item.evidence_source!=client.source:raise ThreadsFailure('ACCOUNT_MISMATCH')
+        item.username=profile['username'];item.granted_scopes=debug['scopes'];item.token_expires_at=expires;item.last_verified_at=now()
+        item.maintenance_error=None;audit(s,c.tenant_id,'threads.connection_checked',item.id,c.id);s.commit()
+        return view(item)
+    except ThreadsFailure as exc:
+        connection_failure(s,c,item,exc.category);s.commit();raise HTTPException(409,exc.category) from None
+
+
+@router.post('/maintenance/threads')
+def maintain(c: Credential=Depends(require('recover')),s: Session=Depends(db),client: ThreadsAPI=Depends(api)) -> dict:
+    from .main import lock_tenant
+    if c.role!='worker' or os.getenv('MOS_THREADS_MAINTENANCE_ENABLED','false')!='true':raise HTTPException(403,'Credential maintenance disabled')
+    lock_tenant(s,c.tenant_id);result={'refreshed':0,'failed':0,'expiring':0}
+    items=s.scalars(select(ThreadsConnection).where(ThreadsConnection.tenant_id==c.tenant_id,ThreadsConnection.connection_status=='ACTIVE')).all()
+    for item in items:
+        tenant=lock_tenant(s,c.tenant_id);item=connection(s,c.tenant_id,item.id)
+        if tenant.disabled or item.connection_status!='ACTIVE':continue
+        if utc(item.token_expires_at)>now()+timedelta(days=7):continue
+        result['expiring']+=1
+        if item.next_maintenance_at and utc(item.next_maintenance_at)>now():continue
+        if item.maintenance_error=='MAINTENANCE_IN_PROGRESS':
+            connection_failure(s,c,item,'MAINTENANCE_INTERRUPTED');s.commit();result['failed']+=1;continue
+        if now()-utc(item.token_issued_at)<timedelta(hours=24):continue
+        # Persist admission before refresh: interrupted maintenance is never blindly replayed.
+        item.next_maintenance_at=now()+timedelta(days=1);item.maintenance_error='MAINTENANCE_IN_PROGRESS';s.commit()
+        tenant=lock_tenant(s,c.tenant_id);item=connection(s,c.tenant_id,item.id)
+        s.refresh(c)
+        if tenant.disabled or c.revoked or c.role!='worker' or 'recover' not in c.scopes or c.environment!=os.getenv('MOS_ENV') or utc(c.expires_at)<=now():raise HTTPException(403,'Worker no longer valid')
+        try:
+            refresh_connection(item,client);result['refreshed']+=1
+            audit(s,c.tenant_id,'threads.auto_refreshed',item.id,c.id)
+        except ThreadsFailure as exc:
+            connection_failure(s,c,item,exc.category);result['failed']+=1
+        s.commit()
+    return result
 
 
 @router.delete('/threads/connections/{cid}')

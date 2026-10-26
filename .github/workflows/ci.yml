@@ -1,8 +1,9 @@
-name: Threads offline contract checks
+name: Threads browser UI offline checks
 on: [push, pull_request]
 env:
   MOS_THREADS_HTTP_ENABLED: "false"
   MOS_THREADS_PUBLISH_ENABLED: "false"
+  MOS_THREADS_MAINTENANCE_ENABLED: "false"
 permissions:
   contents: read
 jobs:

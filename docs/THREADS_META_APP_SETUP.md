@@ -1,5 +1,7 @@
 # Meta Threads App 設定教學（繁體中文）
 
+MOS-PUB-002 已新增瀏覽器介面：一般使用者請改用 [UI 操作教學](PUB002_UI_GUIDE.md)，不需執行下列舊版 Swagger／手動 Token 步驟。此文件保留管理員平台設定與底層 API 操作參考。
+
 目前狀態：使用者回覆「尚未設定；先完成程式與操作教學」。因此 **BLOCKED_BY_PLATFORM_SETUP**，本文件不是公開發文授權。Meta後台標籤可能調整；本次主站429，請以帳號當日實際後台及官方提示為準，不假設App Review或任意測試帳號已獲准。
 
 1. 以帳號持有人自己的Meta開發者帳號登入 developers.facebook.com，完成後台要求的註冊／身分或安全步驟。到「我的應用程式」建立App，選擇提供Threads API存取的use case。若沒有Threads選項或帳號資格不足，先停止並處理Meta資格，不改用Instagram/Facebook或非官方登入。

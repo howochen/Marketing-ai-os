@@ -6,3 +6,6 @@ __pycache__/
 *.pyc
 *.dump
 .mypy_cache/
+
+.ui-preview/
+.taste-skill/
