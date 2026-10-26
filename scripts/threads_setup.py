@@ -289,18 +289,24 @@ def diagnose(vault):
             'production_ready':False}
 
 
-def login_window(vault):
+def login_window(vault,*,mobile=False):
     if not vault.get('tenant_id') or not vault.get('public_url'):raise SetupError('RUN_SETUP_BEFORE_LOGIN')
     try:import tkinter as tk
     except ImportError:raise SetupError('PYTHON_TKINTER_REQUIRED') from None
     import webbrowser
     code=request(LOCAL,vault=vault,path='/admin/login-challenges',admin=True,payload={'tenant_id':vault['tenant_id'],'subject':'local-install-owner'})['token']
-    window=tk.Tk();window.title('Marketing AI OS — 本機登入')
+    window=tk.Tk();window.title('Marketing AI OS — 手機登入' if mobile else 'Marketing AI OS — 本機登入')
+    if mobile:
+        tk.Label(window,text='請用 iPhone Safari 開啟下方網址；勿在不同瀏覽器間切換。',padx=20,pady=12).pack()
+        address=tk.Entry(window,width=85);address.insert(0,vault['public_url']+'/app/threads');address.configure(state='readonly');address.pack(padx=20,pady=10)
+        if not vault.get('app_id') or not vault.get('app_secret'):
+            tk.Label(window,text='目前可登入 MOS；Threads 尚缺管理員配置 App ID／Secret，還不能完成官方授權。',padx=20,pady=10).pack()
     tk.Label(window,text='十分鐘內有效的一次性工作區登入碼；不會記錄至檔案。',padx=20,pady=12).pack()
     entry=tk.Entry(window,width=65);entry.insert(0,code);entry.configure(state='readonly');entry.pack(padx=20,pady=10)
     def copy():window.clipboard_clear();window.clipboard_append(code);window.update()
     tk.Button(window,text='複製登入碼',command=copy).pack(pady=10)
-    webbrowser.open(vault['public_url']+'/app');window.mainloop()
+    if not mobile:webbrowser.open(vault['public_url']+'/app')
+    window.mainloop()
 
 
 def run(args):
@@ -339,7 +345,7 @@ def run(args):
                 (PRIVATE/'status.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8')
                 print(json.dumps(report,ensure_ascii=False,indent=2));return
             if args.login:
-                login_window(vault);return
+                login_window(vault,mobile=args.mobile);return
             print('正在啟動隔離的 PostgreSQL 與 HTTPS API…',flush=True)
             compose(vault,'up','--build','-d','db','migrate','api');wait_ready(vault)
             if not vault.get('tenant_id'):
@@ -356,12 +362,13 @@ def run(args):
             (PRIVATE/'status.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8')
             print(json.dumps(report,ensure_ascii=False,indent=2))
             print('請在 Meta 後台登錄上方 Redirect URI，再透過 /app/threads 官方登入。發布保持關閉。')
-            if not args.non_interactive:login_window(vault)
+            if not args.non_interactive:login_window(vault,mobile=args.mobile)
         finally:lock.seek(0);msvcrt.locking(lock.fileno(),msvcrt.LK_UNLCK,1)
 
 
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description='Threads Windows 首次安裝：DPAPI + 獨立 Docker + ngrok HTTPS；永不發布')
+    parser.add_argument('--mobile',action='store_true',help='使用既有登入碼與 /app/threads，交接至 iPhone；不開 Windows 瀏覽器')
     modes=parser.add_mutually_exclusive_group()
     for mode in ('non-interactive','diagnose','login','stop'):modes.add_argument('--'+mode,action='store_true')
     try:run(parser.parse_args())

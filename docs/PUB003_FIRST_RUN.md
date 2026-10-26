@@ -16,7 +16,7 @@
 3. 輸入 Threads 專用 App ID。App Secret 使用隱藏輸入，僅存 Windows 當前使用者 DPAPI 加密資料；**不要貼到聊天、Git 或一般 UI API**。尚未建立 Meta App 可 Enter 略過，先取得 Redirect URI，完成後重跑即可。ngrok 已配置則沿用；需要新 authtoken 時可在同一精靈隱藏輸入並加密儲存。
 4. 精靈自動產生獨立資料庫密碼、後端金鑰、Fernet key、TLS 憑證，啟動專用 Docker project `mos-threads-local`，取得 ngrok HTTPS。完整 Redirect URI 自動配置到後端並顯示，不用編輯環境變數、Compose 或 Callback 字串。
 5. 依下節完成 Meta 後台。若精靈詢問「已保存這個 URI？」只有真正保存後才回答 y。這是使用者聲明，**不是官方驗證**；URL 變動時舊聲明失效。
-6. 精靈開啟 `/app`，並以本機小視窗提供十分鐘、一次性工作區登入碼；按「複製登入碼」貼到 UI。登入碼不寫到檔案或終端輸出；複製後可自行清空剪貼簿。一般使用者不需要 Swagger、Bearer 或手動交換 Threads Token。
+6. 啟動器現在預設手機交接：顯示 iPhone 可開啟的 `/app/threads` 網址與十分鐘一次性工作區登入碼，不開 Windows Chrome。登入碼不寫到檔案或終端輸出；一般使用者不需要 Swagger、Bearer 或手動交換 Threads Token。詳見 [手機首次初始化](THREADS_MOBILE_FIRST.md)。
 7. 到「Threads 連接」點官方 OAuth 按鈕；本人在官方頁面登入、核對帳號及同意授權。ngrok 免費網址可能先顯示 Visit Site 提示；持有人確認網域後繼續，這不等於 Threads 同意。
 8. 回到 UI 核對真實官方帳號 ID、username、權限、到期時間。再執行：
 

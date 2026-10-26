@@ -5,6 +5,8 @@ import json
 import os
 import io
 import urllib.error
+import sys
+import types
 from pathlib import Path
 import pytest
 from cryptography import x509
@@ -128,6 +130,28 @@ def test_existing_volume_without_vault_is_never_adopted(monkeypatch,tmp_path):
 
 def test_login_requires_a_prepared_workspace():
     with pytest.raises(setup.SetupError,match='RUN_SETUP_BEFORE_LOGIN'):setup.login_window({})
+
+
+@pytest.mark.parametrize('mobile',[True,False])
+def test_phone_handoff_reuses_login_without_browser_or_secret_url(monkeypatch,mobile):
+    texts=[];opened=[];calls=[]
+    class Widget:
+        def __init__(self,*args,**kwargs):texts.append(kwargs.get('text',''))
+        def pack(self,**kwargs):pass
+        def insert(self,index,value):texts.append(value)
+        def configure(self,**kwargs):pass
+        def title(self,value):texts.append(value)
+        def mainloop(self):pass
+    monkeypatch.setitem(sys.modules,'tkinter',types.SimpleNamespace(Tk=Widget,Label=Widget,Entry=Widget,Button=Widget))
+    import webbrowser
+    monkeypatch.setattr(webbrowser,'open',opened.append)
+    def request(*args,**kwargs):calls.append(kwargs['path']);return {'token':'synthetic-one-time-code'}
+    monkeypatch.setattr(setup,'request',request)
+    setup.login_window({'tenant_id':'synthetic','public_url':'https://test.ngrok-free.app'},mobile=mobile)
+    assert calls==['/admin/login-challenges']
+    assert opened==([] if mobile else ['https://test.ngrok-free.app/app'])
+    if mobile:assert 'https://test.ngrok-free.app/app/threads' in texts
+    assert all('synthetic-one-time-code' not in value for value in texts if value.startswith('https://'))
 
 
 def test_public_tls_failure_is_reported_without_disabling_verification(monkeypatch):

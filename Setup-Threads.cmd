@@ -8,7 +8,7 @@ if not exist ".venv\Scripts\python.exe" (
   .venv\Scripts\python.exe -m pip install -r requirements.txt
   if errorlevel 1 goto failed
 )
-.venv\Scripts\python.exe scripts\threads_setup.py %*
+.venv\Scripts\python.exe scripts\threads_setup.py --mobile %*
 if errorlevel 1 goto failed
 exit /b 0
 :failed
