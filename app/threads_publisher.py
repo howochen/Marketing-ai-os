@@ -159,7 +159,7 @@ def execute(pid: str,c: Credential=Depends(require('execute')),s: Session=Depend
     if p.publish_status not in {'READY_TO_PUBLISH','CONTAINER_CREATED'}:raise HTTPException(409,'Already dispatched or unresolved; do not retry POST')
     try:
         conn,token=preflight(s,c,p,client)
-        profile,debug,expires=verified_identity(client,token)
+        profile,debug,expires=verified_identity(client,token,bound_app_id=conn.meta_app_id)
         if profile['id']!=conn.threads_user_id:raise ThreadsFailure('ACCOUNT_MISMATCH')
         conn.granted_scopes=debug['scopes'];conn.username=profile['username'];conn.last_verified_at=now();conn.token_expires_at=expires
         quota=client.request('GET',conn.threads_user_id+'/threads_publishing_limit',token,params={'fields':'quota_usage,config'})

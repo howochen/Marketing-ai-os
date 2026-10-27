@@ -99,15 +99,16 @@ class ThreadsAPI:
         except (httpx.HTTPError,ValueError,TypeError):
             raise ThreadsFailure('RESULT_UNKNOWN' if method=='POST' else 'READ_UNAVAILABLE',method=='POST') from None
 
-    def inspect(self,token: str) -> tuple[dict,dict]:
+    def inspect(self,token: str,*,bound_app_id: str | None=None) -> tuple[dict,dict]:
         profile=self.request('GET','me',token,params={'fields':'id,username'})
         identifier(profile.get('id'))
         debug=self.request('GET','debug_token',params={'input_token':token,'access_token':token}).get('data',{})
         reason=None
         if not isinstance(debug,dict):reason='DEBUG_SCHEMA_INVALID'
         elif debug.get('is_valid') is not True:reason='TOKEN_NOT_VALID'
-        elif 'app_id' not in debug:reason='DEBUG_APP_ID_MISSING'
-        elif debug['app_id']!=os.getenv('MOS_THREADS_APP_ID'):reason='APP_ID_MISMATCH'
+        # Threads may omit app_id; only server exchange or an already bound vault record can supply provenance.
+        elif 'app_id' not in debug and (not bound_app_id or bound_app_id!=os.getenv('MOS_THREADS_APP_ID')):reason='DEBUG_APP_ID_MISSING'
+        elif 'app_id' in debug and debug['app_id']!=os.getenv('MOS_THREADS_APP_ID'):reason='APP_ID_MISMATCH'
         elif str(debug.get('user_id'))!=profile['id']:reason='USER_ID_MISMATCH'
         elif not isinstance(debug.get('scopes'),list) or not all(isinstance(x,str) for x in debug['scopes']):reason='SCOPES_SCHEMA_INVALID'
         elif not SCOPES<=set(debug['scopes']):reason='REQUIRED_SCOPES_MISSING'

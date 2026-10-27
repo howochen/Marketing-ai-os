@@ -58,7 +58,8 @@ def test_only_bounded_integer_provider_code_is_exposed(code):
     assert ThreadsFailure('CONTENT_REJECTED',provider_code=code).provider_code is None
 
 
-def test_long_exchange_uses_official_query_token_and_keeps_encrypted_connection(client,mock_threads,caplog):
+@pytest.mark.parametrize('missing_app_id',[False,True])
+def test_long_exchange_uses_official_query_token_and_keeps_encrypted_connection(client,mock_threads,caplog,missing_app_id):
     tid,owner,_,_=tenant(client)
     original=app.dependency_overrides[routes.api]();exchanges=[]
     def respond(req):
@@ -69,7 +70,11 @@ def test_long_exchange_uses_official_query_token_and_keeps_encrypted_connection(
             assert req.url.params['access_token']=='synthetic-short-token'
             assert 'authorization' not in req.headers
             exchanges.append(True)
-        return original.transport.handle_request(req)
+        response=original.transport.handle_request(req)
+        if req.url.path=='/debug_token' and missing_app_id:
+            body=response.json();body['data'].pop('app_id')
+            return httpx.Response(200,json=body)
+        return response
     app.dependency_overrides[routes.api]=lambda:ThreadsAPI(httpx.MockTransport(respond))
     record,_,_=connect(client,owner)
     assert record['threads_user_id']=='10001' and len(exchanges)==1
@@ -78,6 +83,9 @@ def test_long_exchange_uses_official_query_token_and_keeps_encrypted_connection(
         row=s.scalar(select(ThreadsConnection).where(ThreadsConnection.tenant_id==tid))
         assert row.token_ciphertext and 'synthetic' not in row.token_ciphertext
         assert row.publishing_enabled is False
+        assert row.meta_app_id=='12345'
+    assert client.get('/threads/connections',headers=owner).json()[0]['id']==record['id']
+    assert client.post('/threads/connections/'+record['id']+'/check',headers=owner).status_code==200
     assert 'synthetic-short-token' not in caplog.text and 'synthetic-app-secret' not in caplog.text
 
 
@@ -108,4 +116,37 @@ def test_debug_validation_reason_is_exact_without_weakening_checks(client,mock_t
     api=ThreadsAPI(httpx.MockTransport(respond))
     with pytest.raises(ThreadsFailure) as failure:api.inspect('synthetic-long-token')
     assert failure.value.category=='PERMISSION_DENIED'
+    assert failure.value.provider_details=={'type':reason}
+
+
+@pytest.mark.parametrize('bound_app_id',[None,'wrong-app'])
+def test_missing_debug_app_id_requires_server_provenance(client,mock_threads,bound_app_id):
+    original=app.dependency_overrides[routes.api]()
+    def respond(req):
+        response=original.transport.handle_request(req)
+        if req.url.path=='/debug_token':
+            body=response.json();body['data'].pop('app_id')
+            return httpx.Response(200,json=body)
+        return response
+    with pytest.raises(ThreadsFailure) as failure:
+        ThreadsAPI(httpx.MockTransport(respond)).inspect('synthetic-long-token',bound_app_id=bound_app_id)
+    assert failure.value.provider_details=={'type':'DEBUG_APP_ID_MISSING'}
+
+
+@pytest.mark.parametrize('change,reason',[
+    ({'is_valid':False},'TOKEN_NOT_VALID'),
+    ({'app_id':'wrong-app'},'APP_ID_MISMATCH'),
+    ({'user_id':'other-user'},'USER_ID_MISMATCH'),
+    ({'scopes':['threads_basic']},'REQUIRED_SCOPES_MISSING'),
+])
+def test_bound_token_still_requires_valid_identity_and_permissions(client,mock_threads,change,reason):
+    original=app.dependency_overrides[routes.api]()
+    def respond(req):
+        response=original.transport.handle_request(req)
+        if req.url.path=='/debug_token':
+            body=response.json();body['data'].pop('app_id');body['data'].update(change)
+            return httpx.Response(200,json=body)
+        return response
+    with pytest.raises(ThreadsFailure) as failure:
+        ThreadsAPI(httpx.MockTransport(respond)).inspect('synthetic-long-token',bound_app_id='12345')
     assert failure.value.provider_details=={'type':reason}

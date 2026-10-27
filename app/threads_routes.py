@@ -60,8 +60,8 @@ def token_for(item: ThreadsConnection,*,allow_unbound: bool=False) -> str:
     return unseal(item.token_ciphertext,item.tenant_id,item.id)
 
 
-def verified_identity(client: ThreadsAPI,token: str) -> tuple[dict,dict,datetime]:
-    profile,debug=client.inspect(token)
+def verified_identity(client: ThreadsAPI,token: str,*,bound_app_id: str | None=None) -> tuple[dict,dict,datetime]:
+    profile,debug=client.inspect(token,bound_app_id=bound_app_id)
     expires=debug.get('expires_at')
     if type(expires) is not int or expires<=now().timestamp():raise ThreadsFailure('TOKEN_EXPIRED')
     return profile,debug,datetime.fromtimestamp(expires,timezone.utc)
@@ -112,7 +112,7 @@ def oauth_callback(response: Response,request: Request,state: str='',code: str='
         token=long.get('access_token')
         if not isinstance(token,str) or not token:raise ThreadsFailure('AUTH_REQUIRED')
         stage='IDENTITY'
-        profile,debug,expires=verified_identity(client,token)
+        profile,debug,expires=verified_identity(client,token,bound_app_id=app_id)
         stage='ACCOUNT_BINDING'
         if str(short.get('user_id'))!=profile['id']:raise ThreadsFailure('ACCOUNT_MISMATCH')
         lock_tenant(s,item.tenant_id)
@@ -168,7 +168,7 @@ def enable(cid: str,payload: Enable,c: Credential=Depends(require('publish')),s:
     owner(c);lock_tenant(s,c.tenant_id);item=connection(s,c.tenant_id,cid)
     if payload.enabled:
         try:
-            profile,debug,expires=verified_identity(client,token_for(item))
+            profile,debug,expires=verified_identity(client,token_for(item),bound_app_id=item.meta_app_id)
             if profile['id']!=item.threads_user_id or client.source!=item.evidence_source:raise ThreadsFailure('ACCOUNT_MISMATCH')
             item.granted_scopes=debug['scopes'];item.username=profile['username'];item.token_expires_at=expires;item.last_verified_at=now()
         except ThreadsFailure as exc:raise HTTPException(409,exc.category) from None
@@ -194,7 +194,7 @@ def refresh_connection(item: ThreadsConnection,client: ThreadsAPI) -> None:
     result=client.request('GET','refresh_access_token',token_for(item),params={'grant_type':'th_refresh_token'})
     token=result.get('access_token')
     if not isinstance(token,str) or not token:raise ThreadsFailure('INVALID_PROVIDER_RESPONSE')
-    profile,debug,expires=verified_identity(client,token)
+    profile,debug,expires=verified_identity(client,token,bound_app_id=item.meta_app_id)
     if profile['id']!=item.threads_user_id or client.source!=item.evidence_source:raise ThreadsFailure('ACCOUNT_MISMATCH')
     item.token_ciphertext=seal(token,item.tenant_id,item.id);item.token_expires_at=expires;item.token_issued_at=now()
     item.granted_scopes=debug['scopes'];item.username=profile['username'];item.last_verified_at=now()
@@ -213,10 +213,11 @@ def check_connection(cid: str,c: Credential=Depends(require('credentials')),s: S
     owner(c);lock_tenant(s,c.tenant_id);item=connection(s,c.tenant_id,cid)
     try:
         if item.evidence_source!=client.source:raise ThreadsFailure('EVIDENCE_SOURCE_MISMATCH')
-        profile,debug,expires=verified_identity(client,token_for(item,allow_unbound=True))
+        from .threads_privacy import bind,lookup
+        bound_app=item.meta_app_id if item.callback_lookup==lookup(item.meta_app_id or '',item.threads_user_id) else None
+        profile,debug,expires=verified_identity(client,token_for(item,allow_unbound=True),bound_app_id=bound_app)
         if profile['id']!=item.threads_user_id or item.evidence_source!=client.source:raise ThreadsFailure('ACCOUNT_MISMATCH')
         item.username=profile['username'];item.granted_scopes=debug['scopes'];item.token_expires_at=expires;item.last_verified_at=now()
-        from .threads_privacy import bind
         bind(item)
         item.maintenance_error=None;audit(s,c.tenant_id,'threads.connection_checked',item.id,c.id);s.commit()
         return view(item)
