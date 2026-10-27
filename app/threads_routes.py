@@ -108,7 +108,7 @@ def oauth_callback(response: Response,request: Request,state: str='',code: str='
         short_token=short.get('access_token')
         if not isinstance(short_token,str) or not short_token:raise ThreadsFailure('AUTH_REQUIRED')
         stage='LONG_TOKEN'
-        long=client.request('GET','access_token',short_token,params={'grant_type':'th_exchange_token','client_secret':secret})
+        long=client.request('GET','access_token',params={'grant_type':'th_exchange_token','client_secret':secret,'access_token':short_token})
         token=long.get('access_token')
         if not isinstance(token,str) or not token:raise ThreadsFailure('AUTH_REQUIRED')
         stage='IDENTITY'
@@ -143,7 +143,10 @@ def oauth_callback(response: Response,request: Request,state: str='',code: str='
         s.rollback()
         if stage=='IDENTITY':stage={'me':'PROFILE','debug_token':'PERMISSIONS'}.get(client.last_path or '','IDENTITY')
         suffix='.'+str(exc.provider_code) if exc.provider_code is not None else ''
-        audit(s,item.tenant_id,'threads.oauth_failed.'+stage+'.'+exc.category+suffix,item.id,item.actor_id);s.commit()
+        audit(s,item.tenant_id,'threads.oauth_failed.'+stage+'.'+exc.category+suffix,item.id,item.actor_id)
+        for field,value in exc.provider_details.items():
+            audit(s,item.tenant_id,'threads.oauth_'+field+'.'+str(value),item.id,item.actor_id)
+        s.commit()
         headers={'X-MOS-OAuth-Reason':stage}
         if exc.provider_code is not None:headers['X-MOS-Meta-Error']=str(exc.provider_code)
         raise HTTPException(502,'OAuth '+exc.category+'; reauthorize, no automatic exchange retry',headers=headers) from None

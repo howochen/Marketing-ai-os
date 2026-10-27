@@ -2,6 +2,7 @@
 import json
 import logging
 import os
+import re
 from urllib.parse import urlsplit
 import httpx
 from cryptography.fernet import Fernet,InvalidToken
@@ -21,9 +22,16 @@ def callback_urls(origin: str) -> dict:
 
 
 class ThreadsFailure(RuntimeError):
-    def __init__(self,category: str,unknown: bool=False,*,provider_code: object=None) -> None:
+    def __init__(self,category: str,unknown: bool=False,*,provider_code: object=None,provider_error: dict | None=None) -> None:
         self.category=category;self.unknown=unknown
         self.provider_code=provider_code if type(provider_code) is int and 0<=provider_code<=9999999999 else None
+        self.provider_details: dict[str,int | str]={}
+        error=provider_error or {}
+        subcode=error.get('error_subcode')
+        if type(subcode) is int and 0<=subcode<=9999999999:self.provider_details['subcode']=subcode
+        for field,source in (('type','type'),('trace','fbtrace_id')):
+            value=error.get(source)
+            if isinstance(value,str) and re.fullmatch(r'[A-Za-z0-9_-]{1,48}',value):self.provider_details[field]=value
         super().__init__('Threads '+category+'; no automatic retry')
 
 
@@ -84,8 +92,8 @@ class ThreadsAPI:
                 error=body.get('error') or {};code=error.get('code') if isinstance(error,dict) else None
                 category='TOKEN_EXPIRED' if code==190 else 'PERMISSION_DENIED' if code in {10,200} or response.status_code==403 else 'RATE_LIMITED' if response.status_code==429 or code in {4,32,613} else 'CONTENT_REJECTED'
                 if response.status_code>=500 or code in {1,2} or (isinstance(error,dict) and error.get('is_transient') is True):
-                    raise ThreadsFailure('RESULT_UNKNOWN',method=='POST',provider_code=code)
-                raise ThreadsFailure(category,provider_code=code)
+                    raise ThreadsFailure('RESULT_UNKNOWN',method=='POST',provider_code=code,provider_error=error if isinstance(error,dict) else None)
+                raise ThreadsFailure(category,provider_code=code,provider_error=error if isinstance(error,dict) else None)
             return body
         except ThreadsFailure:raise
         except (httpx.HTTPError,ValueError,TypeError):
