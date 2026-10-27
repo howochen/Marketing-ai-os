@@ -114,7 +114,9 @@ def process(s: Session,record: ThreadsPrivacyRequest) -> None:
             details={'complete_erasure':False,'scope':'binding review; no deletion performed'}
             state='APP_BINDING_REVIEW_REQUIRED'
             if item and item.tenant_id==tid and item.meta_app_id==app_id and item.callback_lookup==subject:
-                if int(utc(item.token_issued_at).timestamp())>issued:
+                if item.authorized_at is None:
+                    state='AUTHORIZATION_TIME_REVIEW_REQUIRED';details={'complete_erasure':False,'scope':'unknown consent time; retained for review'}
+                elif int(utc(item.authorized_at).timestamp())>issued:
                     state='NEW_AUTHORIZATION_PRESERVED';details={'complete_erasure':False,'scope':'newer authorization; old callback not applied'}
                 else:
                     details=disable(s,item,deletion=kind=='deletion');state='LOCAL_DATA_REMOVED_REVIEW_REQUIRED' if kind=='deletion' else 'REVOKED_REVIEW_REQUIRED'

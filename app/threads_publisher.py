@@ -36,6 +36,8 @@ def view(p: Publication) -> dict:
 
 
 def approved(s: Session,p: Publication) -> None:
+    if p.automation_policy_id:
+        raise HTTPException(403,'Automation publications require the dedicated policy executor')
     task=s.get(Task,p.task_id,populate_existing=True)
     if not task or task.tenant_id!=p.tenant_id or task.status!='APPROVED' or not p.revision_id or task.latest_revision_id!=p.revision_id or task.approved_revision_id!=p.revision_id:
         raise HTTPException(409,'Latest exact owner-approved revision required')
@@ -90,13 +92,17 @@ def preflight(s: Session,c: Credential,p: Publication,client: ThreadsAPI) -> tup
     from .main import lock_tenant
     tenant=lock_tenant(s,c.tenant_id)
     s.refresh(c)
-    if c.role!='worker' or 'execute' not in c.scopes or c.revoked or utc(c.expires_at)<=now() or c.environment!=os.getenv('MOS_ENV'):
+    automated=bool(p.automation_policy_id)
+    if not automated and (c.role!='worker' or 'execute' not in c.scopes or c.revoked or utc(c.expires_at)<=now() or c.environment!=os.getenv('MOS_ENV')):
         raise HTTPException(403,'Tenant worker required')
     if os.getenv('MOS_THREADS_PUBLISH_ENABLED','false')!='true' or tenant.disabled or tenant.budget_paused:
         raise HTTPException(403,'Threads publishing kill switch is off or tenant paused')
-    approved(s,p)
+    if automated:
+        from .automation import publication_authority
+        publication_authority(s,c,p)
+    else:approved(s,p)
     grant=s.get(Credential,p.authorized_by,populate_existing=True) if p.authorized_by else None
-    if not grant or grant.revoked or grant.role!='owner' or utc(grant.expires_at)<=now() or grant.environment!=os.getenv('MOS_ENV') or 'publish' not in grant.scopes:
+    if not automated and (not grant or grant.revoked or grant.role!='owner' or utc(grant.expires_at)<=now() or grant.environment!=os.getenv('MOS_ENV') or 'publish' not in grant.scopes):
         raise HTTPException(403,'Public-post consent no longer valid')
     conn=connection(s,c.tenant_id,p.platform_account_id or '')
     if not conn.publishing_enabled or conn.evidence_source!=client.source or conn.maintenance_error=='MAINTENANCE_IN_PROGRESS':

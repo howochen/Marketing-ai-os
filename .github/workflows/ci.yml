@@ -5,6 +5,8 @@ env:
   MOS_THREADS_PUBLISH_ENABLED: "false"
   MOS_THREADS_MAINTENANCE_ENABLED: "false"
   MOS_PHONE_SETUP_ENABLED: "false"
+  MOS_AUTOMATION_ENABLED: "false"
+  MOS_MODEL_CALLS_ENABLED: "false"
 permissions:
   contents: read
 jobs:
@@ -29,6 +31,7 @@ jobs:
           python-version: '3.12'
       - run: pip install -r requirements-dev.txt
       - run: python -m compileall -q app tests migrations scripts
+      - run: node --check app/web/automation.js
       - run: mypy
       - run: git diff --check
       - run: git show --format= --check HEAD

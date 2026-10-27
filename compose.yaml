@@ -36,6 +36,7 @@ services:
       DATABASE_URL: postgresql+psycopg://mos_app:${MOS_APP_PASSWORD}@db:5432/mos
       MOS_MODEL_CALLS_ENABLED: "false"
       MOS_PHONE_SETUP_ENABLED: "false"
+      MOS_AUTOMATION_ENABLED: ${MOS_AUTOMATION_ENABLED:-false}
       MOS_PHONE_SETUP_AUTHORITY: ${MOS_PHONE_SETUP_AUTHORITY:-}
       MOS_THREADS_MAINTENANCE_ENABLED: ${MOS_THREADS_MAINTENANCE_ENABLED:-false}
       MOS_THREADS_HTTP_ENABLED: ${MOS_THREADS_HTTP_ENABLED:-false}
@@ -76,5 +77,28 @@ services:
       db:
         condition: service_healthy
     profiles: [test]
+  automation:
+    build:
+      context: .
+      target: runtime
+    command: ["python", "-m", "app.automation_worker"]
+    restart: unless-stopped
+    profiles: [automation]
+    environment:
+      DATABASE_URL: postgresql+psycopg://mos_app:${MOS_APP_PASSWORD}@db:5432/mos
+      MOS_AUTOMATION_ENABLED: ${MOS_AUTOMATION_ENABLED:-false}
+      MOS_AUTOMATION_TENANT_ID: ${MOS_AUTOMATION_TENANT_ID:-}
+      MOS_ENV: ${MOS_ENV:-development}
+      MOS_THREADS_TOKEN_KEY: ${MOS_THREADS_TOKEN_KEY:-}
+      MOS_THREADS_APP_ID: ${MOS_THREADS_APP_ID:-}
+      MOS_THREADS_APP_SECRET: ${MOS_THREADS_APP_SECRET:-}
+      MOS_MODEL_CALLS_ENABLED: "false"
+      MOS_THREADS_HTTP_ENABLED: "false"
+      MOS_THREADS_PUBLISH_ENABLED: "false"
+      MOS_PHONE_SETUP_ENABLED: "false"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
 volumes:
   pgdata:

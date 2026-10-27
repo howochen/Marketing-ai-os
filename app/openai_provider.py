@@ -106,6 +106,9 @@ class OpenAIProvider:
                 'tools':[],'store':False,'service_tier':'default','reasoning':{'effort':'low'},
                 'prompt_cache_options':{'mode':'explicit','ttl':'30m'}}
 
+    def authorization(self) -> str:
+        return 'synthetic-p13-no-account' if self.synthetic_only else os.environ['OPENAI_API_KEY']
+
     def request(self, path: str, payload: dict) -> tuple[dict,str | None]:
         self.check_offline()
         if path not in {'responses','responses/input_tokens'}: raise ValueError('Endpoint not allowed')
@@ -117,7 +120,7 @@ class OpenAIProvider:
             with httpx.Client(transport=self.transport,timeout=httpx.Timeout(20,connect=5),
                               follow_redirects=False,trust_env=False) as client:
                 response=client.post('https://api.openai.com/v1/'+path,json=payload,
-                    headers={'Authorization':'Bearer '+('synthetic-p13-no-account' if self.synthetic_only else os.environ['OPENAI_API_KEY']),'X-Client-Request-Id':self.last_client_request_id})
+                    headers={'Authorization':'Bearer '+self.authorization(),'X-Client-Request-Id':self.last_client_request_id})
         except httpx.TimeoutException:
             raise ProviderFailure('TIMEOUT') from None
         except httpx.HTTPError:

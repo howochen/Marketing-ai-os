@@ -148,6 +148,7 @@ class Publication(Base):
     permalink: Mapped[str | None] = mapped_column(Text)
     dispatch_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     authorized_by: Mapped[str | None] = mapped_column(String(36))
+    automation_policy_id: Mapped[str | None] = mapped_column(String(36))
 
 
 class ThreadsConnection(Base):
@@ -159,6 +160,7 @@ class ThreadsConnection(Base):
     username: Mapped[str]=mapped_column(String(100))
     granted_scopes: Mapped[list]=mapped_column(JSON)
     token_reference: Mapped[str]=mapped_column(String(36))
+    authorized_at: Mapped[datetime | None]=mapped_column(DateTime(timezone=True))
     meta_app_id: Mapped[str | None]=mapped_column(String(100))
     callback_lookup: Mapped[str | None]=mapped_column(String(64),index=True)
     token_ciphertext: Mapped[str | None]=mapped_column(Text)
@@ -445,4 +447,37 @@ class PhoneSetupGrant(Base):
     envelope_hash: Mapped[str | None]=mapped_column(String(64))
     device_proof: Mapped[dict | None]=mapped_column(JSON)
     expires_at: Mapped[datetime]=mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime]=mapped_column(DateTime(timezone=True),default=now)
+
+class AutomationPolicy(Base):
+    __tablename__='automation_policies'
+    __table_args__=(UniqueConstraint('tenant_id','id'),)
+    id: Mapped[str]=mapped_column(String(36),primary_key=True)
+    tenant_id: Mapped[str]=mapped_column(ForeignKey('tenants.id'),index=True)
+    terms: Mapped[dict]=mapped_column(JSON)
+    terms_hash: Mapped[str]=mapped_column(String(64))
+    owner_id: Mapped[str]=mapped_column(String(36))
+    supersedes: Mapped[str | None]=mapped_column(String(36))
+    state: Mapped[str]=mapped_column(String(20),default='DRAFT')
+    key_ciphertext: Mapped[str | None]=mapped_column(Text)
+    worker_ciphertext: Mapped[str | None]=mapped_column(Text)
+    created_at: Mapped[datetime]=mapped_column(DateTime(timezone=True),default=now)
+
+
+class AutomationSlot(Base):
+    __tablename__='automation_slots'
+    __table_args__=(UniqueConstraint('tenant_id','policy_id','scheduled_at'),
+        ForeignKeyConstraint(['tenant_id','policy_id'],['automation_policies.tenant_id','automation_policies.id']),
+        ForeignKeyConstraint(['tenant_id','task_id'],['tasks.tenant_id','tasks.id']))
+    id: Mapped[str]=mapped_column(String(36),primary_key=True)
+    tenant_id: Mapped[str]=mapped_column(ForeignKey('tenants.id'),index=True)
+    policy_id: Mapped[str]=mapped_column(String(36))
+    scheduled_at: Mapped[datetime]=mapped_column(DateTime(timezone=True))
+    state: Mapped[str]=mapped_column(String(40),default='CREATED')
+    task_id: Mapped[str | None]=mapped_column(String(36))
+    revision_id: Mapped[str | None]=mapped_column(String(36))
+    publication_id: Mapped[str | None]=mapped_column(String(36))
+    topic_hash: Mapped[str | None]=mapped_column(String(64))
+    error: Mapped[str | None]=mapped_column(String(80))
+    started_at: Mapped[datetime | None]=mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime]=mapped_column(DateTime(timezone=True),default=now)

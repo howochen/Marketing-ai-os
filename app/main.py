@@ -146,7 +146,7 @@ def health():
 def ready(s=Depends(db)):
     try:
         version = s.scalar(text('SELECT version_num FROM alembic_version'))
-        if version != '0013' or not s.get(RateVersion, rate_id(MODEL)):
+        if version != '0014' or not s.get(RateVersion, rate_id(MODEL)):
             raise ValueError('Schema or rate card not ready')
     except Exception:
         raise HTTPException(503, 'Database or schema unavailable') from None
@@ -368,7 +368,7 @@ def settle_receipt(s, c, task_id, key, receipt, source='TRUSTED_WORKER_ASSERTION
     if source in {'MOCK','MOCK_HTTP'}:
         from .revisions import ensure_original
         ensure_original(s, task, c)
-    if source=='MOCK_HTTP' and (receipt.get('unpriced_features') or receipt.get('usage_exceeds_limits')):
+    if source in {'MOCK_HTTP','PROVIDER_REPORTED_UNVERIFIED'} and (receipt.get('unpriced_features') or receipt.get('usage_exceeds_limits')):
         tenant.budget_paused=True
         task.status='RECONCILIATION_REQUIRED'
         task.receipt_status='RECONCILIATION_REQUIRED'
@@ -602,3 +602,6 @@ app.include_router(privacy_router)
 app.include_router(social_ui_router)
 app.mount('/assets',StaticFiles(directory=Path(__file__).parent/'web'),name='social_ui_assets')
 app.add_exception_handler(StarletteHTTPException,ui_http_error)
+
+from .automation import router as automation_router
+app.include_router(automation_router)

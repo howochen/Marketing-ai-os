@@ -124,6 +124,7 @@ def oauth_callback(response: Response,request: Request,state: str='',code: str='
         record.token_ciphertext=seal(token,record.tenant_id,record.id);record.token_expires_at=expires;record.token_issued_at=now()
         record.username=profile['username'];record.granted_scopes=debug['scopes'];record.connection_status='ACTIVE'
         record.evidence_source=client.source;record.last_verified_at=now();record.revoked_at=None;record.publishing_enabled=False
+        record.authorized_at=now()
         record.maintenance_error=None;record.refresh_failures=0;record.next_maintenance_at=now()+timedelta(hours=24)
         from .threads_privacy import bind
         bind(record)

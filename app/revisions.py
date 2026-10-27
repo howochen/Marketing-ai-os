@@ -57,7 +57,7 @@ def ensure_original(s: Session, task: Task, actor: Credential) -> DraftRevision:
     _, checked=qa(json.dumps(draft),payload)
     rid=uid()
     record=DraftRevision(id=rid,tenant_id=task.tenant_id,task_id=task.id,parent_id=None,original_id=rid,
-        source='MOCK' if task.receipt_source in {'MOCK','MOCK_HTTP'} else 'LEGACY_UNVERIFIED',before_text='',after_text=draft['draft_text'],draft=draft,
+        source='MOCK' if task.receipt_source in {'MOCK','MOCK_HTTP'} else 'PROVIDER_UNVERIFIED' if task.receipt_source=='PROVIDER_REPORTED_UNVERIFIED' else 'LEGACY_UNVERIFIED',before_text='',after_text=draft['draft_text'],draft=draft,
         reason='Original generated draft' if result else 'Legacy manual content snapshot; no inferred brand facts',
         brand_version=hashed(payload.brand_profile.model_dump()),prompt_version=run.get('prompt_version') or (task.receipt or {}).get('prompt_version','LEGACY_MANUAL'),
         qa_result=checked.model_dump(),quality=rule_scores(draft,checked),idempotency_key='original',request_hash=hashed(draft),created_by=actor.id)

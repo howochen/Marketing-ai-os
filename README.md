@@ -148,3 +148,7 @@ In controlled `MOS_ENV=test` with **no provider keys**, owner `POST /batches` su
 One-time phone credential initialization is development-only and disabled by default. See [安全設計與啟用前提](docs/PHONE_SETUP_SECURITY.md); no public rollout is authorized.
 
 Meta deauthorize/data-deletion callbacks: [繁體中文設定與安全範圍](docs/THREADS_PRIVACY_CALLBACKS.md). New endpoints require deployment approval; current evidence and unresolved real-Meta validation are in [acceptance evidence](docs/THREADS_PRIVACY_EVIDENCE.md). No complete-erasure claim or automatic posting.
+
+## Threads 自動化中心（離線開發完成，Live 未啟用）
+
+`/app/automation` 提供有期限的 Owner 政策、三種模式、背景排程與結果追蹤。沿用 Task／Revision／Ledger／Publisher，不建立假的 Owner 單篇批准。請讀 [操作說明](docs/AUTO001_GUIDE.md)、[驗收](docs/AUTO001_ACCEPTANCE.md)及[待批准部署計畫](docs/AUTO001_DEPLOYMENT.md)。模型、真實發文及一次性手機通道預設關閉，沒有更新現有公開部署。

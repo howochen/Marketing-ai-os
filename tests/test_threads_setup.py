@@ -58,14 +58,14 @@ def test_public_probe_uses_strict_tls_without_environment_proxy(monkeypatch):
     calls=[]
     def handler(req):
         calls.append(req)
-        return setup.httpx.Response(200,json={'schema':'0013'})
+        return setup.httpx.Response(200,json={'schema':'0014'})
     original=setup.httpx.Client
     def client(**kwargs):
         assert kwargs['trust_env'] is False and kwargs['follow_redirects'] is False
         assert kwargs.get('verify',True) is True
         return original(**kwargs,transport=setup.httpx.MockTransport(handler))
     monkeypatch.setattr(setup.httpx,'Client',client)
-    assert setup.request('https://test.ngrok-free.app',path='/ready')=={'schema':'0013'}
+    assert setup.request('https://test.ngrok-free.app',path='/ready')=={'schema':'0014'}
     assert 'X-Admin-Key' not in calls[0].headers
     with pytest.raises(setup.SetupError,match='MUST_NOT_SEND_CREDENTIALS'):
         setup.request('https://test.ngrok-free.app',vault={'admin':'synthetic'},admin=True)
@@ -80,7 +80,7 @@ def test_diagnosis_requires_fresh_official_identity_and_never_publishes(vault,mo
         if path=='/ui/admin/status':return {'missing':[],'http_enabled':True,'publishing_enabled':False,'redirect_uri':uri}
         if path=='/admin/login-challenges':return {'token':'synthetic-code'}
         if path=='/auth/login':return {'access_token':'synthetic-owner'}
-        return {'schema':'0013'}
+        return {'schema':'0014'}
     connection={'id':'synthetic-id','evidence_source':source,'connection_status':'ACTIVE','threads_user_id':'10001',
                 'username':'synthetic','granted_scopes':['threads_basic','threads_content_publish'],
                 'token_expires_at':'2099-01-01T00:00:00+00:00','last_verified_at':'synthetic-before'}
@@ -94,7 +94,7 @@ def test_diagnosis_requires_fresh_official_identity_and_never_publishes(vault,mo
                 return io.StringIO(json.dumps({**connection,'last_verified_at':'synthetic-fresh'}))
             return io.StringIO(json.dumps([connection] if req.full_url.endswith('/connections') else {}))
     monkeypatch.setattr(setup,'request',request)
-    monkeypatch.setattr(setup,'probe_public',lambda url:{'schema':'0013','ui_available':True,'callback_reachable':True})
+    monkeypatch.setattr(setup,'probe_public',lambda url:{'schema':'0014','ui_available':True,'callback_reachable':True})
     monkeypatch.setattr(setup.urllib.request,'build_opener',lambda *args:Opener())
     report=setup.diagnose(vault)
     assert report['SETUP_READY'] and not report['PUBLISH_VERIFIED']

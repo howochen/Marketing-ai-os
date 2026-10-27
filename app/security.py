@@ -12,6 +12,7 @@ from .database import db, scope
 from .models import Credential, Tenant, Audit, now
 
 ROLES = {
+    'automation_worker': {'automation'},
     'owner': {'read', 'tasks', 'reserve', 'release', 'approve', 'publish', 'credentials', 'budget'},
     'manager': {'read', 'tasks', 'reserve', 'release', 'publish'},
     'reviewer': {'read'},
