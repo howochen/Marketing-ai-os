@@ -1,0 +1,18 @@
+# Future approved single-generation trial, existing API only; never apply to mos-threads-local.
+services:
+  api:
+    ports: !override
+      - "127.0.0.1:18886:8000"
+    environment:
+      MOS_ENV: test
+      MOS_MODEL_CALLS_ENABLED: ${MOS_MODEL_CALLS_ENABLED:-false}
+      MOS_SINGLE_AI_TEST_ENABLED: ${MOS_SINGLE_AI_TEST_ENABLED:-false}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      MOS_OPENAI_ACCOUNT_ID: ${MOS_OPENAI_ACCOUNT_ID:-}
+      MOS_OPENAI_PROJECT_ID: ${MOS_OPENAI_PROJECT_ID:-}
+      MOS_THREADS_HTTP_ENABLED: "false"
+      MOS_THREADS_PUBLISH_ENABLED: "false"
+      MOS_THREADS_MAINTENANCE_ENABLED: "false"
+      MOS_AUTOMATION_ENABLED: "false"
+      MOS_PHONE_SETUP_ENABLED: "false"
+      MOS_PUBLIC_URL: http://127.0.0.1:18886

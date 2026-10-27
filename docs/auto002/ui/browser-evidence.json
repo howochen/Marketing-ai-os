@@ -1,0 +1,25 @@
+[
+  {
+    "width": 1440,
+    "overflow": false,
+    "title": "自動化中心",
+    "policyCount": 1
+  },
+  {
+    "width": 768,
+    "overflow": false,
+    "title": "自動化中心",
+    "policyCount": 1
+  },
+  {
+    "width": 390,
+    "overflow": false,
+    "title": "自動化中心",
+    "policyCount": 1
+  },
+  {
+    "mobileCreatePolicy": "PASS",
+    "source": "real browser form and isolated HTTP/database",
+    "liveCalls": 0
+  }
+]

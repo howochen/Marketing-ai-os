@@ -7,6 +7,7 @@ env:
   MOS_PHONE_SETUP_ENABLED: "false"
   MOS_AUTOMATION_ENABLED: "false"
   MOS_MODEL_CALLS_ENABLED: "false"
+  MOS_SINGLE_AI_TEST_ENABLED: "false"
 permissions:
   contents: read
 jobs:

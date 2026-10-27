@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 from cryptography.fernet import Fernet
 from .database import db
 from .models import Credential,Tenant,Publication,Task,Audit,now
-from .security import require,admin
+from .security import require,admin,audit
 from .browser_session import USER_COOKIE,ADMIN_COOKIE,csrf,admin_cookie,secure,transport_allowed,check_origin
 from .threads_routes import api,owner
 from .threads_api import ThreadsAPI
@@ -55,7 +55,11 @@ def session(request: Request,c: Credential=Depends(require('read')),s: Session=D
 
 @router.delete('/ui/session')
 def logout(request: Request,response: Response,c: Credential=Depends(require('read')),s: Session=Depends(db)) -> dict:
-    c.revoked=True;s.commit();response.delete_cookie(USER_COOKIE,path='/');response.delete_cookie(ADMIN_COOKIE,path='/')
+    from .main import lock_tenant
+    lock_tenant(s,c.tenant_id);s.refresh(c)
+    if not c.revoked:
+        c.revoked=True;c.logged_out_at=now();audit(s,c.tenant_id,'session.logged_out',c.id,c.id)
+    s.commit();response.delete_cookie(USER_COOKIE,path='/');response.delete_cookie(ADMIN_COOKIE,path='/')
     return {'signed_out':True}
 
 

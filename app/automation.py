@@ -10,7 +10,7 @@ from pydantic import BaseModel,ConfigDict,Field,AwareDatetime,SecretStr,model_va
 from sqlalchemy import select,func
 from sqlalchemy.orm import Session
 from .database import db
-from .models import AutomationPolicy,AutomationSlot,Credential,Task,DraftRevision,Publication,RateVersion,ReceiptStatus,now
+from .models import AutomationPolicy,AutomationSlot,Credential,Task,DraftRevision,Publication,RateVersion,ReceiptStatus,AutomationAttempt,now
 from .security import require,audit,uid,issue
 from .content_workbench import Brief
 from .durable_gate import utc
@@ -20,6 +20,7 @@ from .threads_routes import owner,connection,token_for,api,refresh_connection,co
 from .threads_api import ThreadsAPI,seal
 from .providers import MockLLMProvider,MODEL,usage_cost,rate_id,LLMProvider
 from .openai_provider import OpenAIProvider,CARDS,upper_bound,ProviderFailure
+from .semantic_review import BrandFact,evidence_check,SemanticProvider,review_prompt
 
 router=APIRouter(prefix='/automation')
 TAIPEI=ZoneInfo('Asia/Taipei')
@@ -32,6 +33,11 @@ class Terms(BaseModel):
     brief: Brief
     topics: list[str]=Field(min_length=1,max_length=60)
     approved_copy: list[str]=Field(default_factory=list,max_length=60)
+    creative_mode: str=Field(default='MATERIALS',pattern='^(MATERIALS|BRAND_GUIDED)$')
+    knowledge_facts: list[BrandFact]=Field(default_factory=list,max_length=30)
+    semantic_reviewer: str=Field(default='HUMAN_REQUIRED',pattern='^(HUMAN_REQUIRED|MODEL_REQUIRED)$')
+    semantic_model: str=Field(default='gpt-6-luna',pattern='^gpt-6-luna$')
+    max_rewrites: int=Field(default=0,ge=0,le=1,strict=True)
     sensitive_terms: list[str]=Field(default_factory=list,max_length=30)
     weekdays: list[int]=Field(min_length=1,max_length=7)
     times: list[str]=Field(min_length=1,max_length=10)
@@ -47,7 +53,8 @@ class Terms(BaseModel):
         if len(set(self.times))!=len(self.times) or any(not re.fullmatch(r'(?:[01][0-9]|2[0-3]):[0-5][0-9]',x) for x in self.times):raise ValueError('Unique HH:MM times required')
         if any(type(x) is not int or not 0<=x<=6 for x in self.weekdays) or len(set(self.weekdays))!=len(self.weekdays):raise ValueError('Weekdays are Monday=0..Sunday=6')
         if any(not 1<=len(x.strip())<=500 for x in self.topics+self.approved_copy+self.sensitive_terms):raise ValueError('Invalid policy text')
-        if self.mode=='FULL' and len(self.approved_copy)<3:raise ValueError('Full mode requires owner-approved copy blocks, including Hook and CTA')
+        if self.creative_mode=='BRAND_GUIDED' and (not self.knowledge_facts or len({f.id for f in self.knowledge_facts})!=len(self.knowledge_facts)):raise ValueError('Unique owner facts required')
+        if self.mode=='FULL' and self.creative_mode=='MATERIALS' and len(self.approved_copy)<3:raise ValueError('Full mode requires owner-approved copy blocks, including Hook and CTA')
         return self
 
 
@@ -170,7 +177,7 @@ def worker_policy(s: Session,c: Credential,pid: str) -> AutomationPolicy:
     if (os.getenv('MOS_AUTOMATION_ENABLED','false')!='true' or c.role!='automation_worker' or 'automation' not in c.scopes
             or 'policy:'+p.id not in c.scopes or c.revoked or utc(c.expires_at)<=now() or c.environment!=os.getenv('MOS_ENV')
             or p.state!='ACTIVE' or not t.starts_at<=now()<t.expires_at or tenant.disabled or tenant.budget_paused
-            or not actor or actor.tenant_id!=c.tenant_id or actor.role!='owner' or actor.revoked or actor.environment!=c.environment):
+            or not actor or actor.tenant_id!=c.tenant_id or actor.role!='owner' or (actor.revoked and actor.logged_out_at is None) or actor.environment!=c.environment):
         raise HTTPException(403,'AUTOMATION_POLICY_OR_WORKER_STOPPED')
     # Explicit, expiring policy survives login expiry; revocation of its trusted issuer still stops it.
     conn=connection(s,c.tenant_id,t.connection_id);token_for(conn)
@@ -182,7 +189,7 @@ def auto_qa(draft: dict,t: Terms) -> list[str]:
     text=str(draft.get('draft_text',''));reasons=[]
     if any(x.casefold() in text.casefold() for x in t.sensitive_terms):reasons.append('SENSITIVE_TOPIC_REQUIRES_HUMAN')
     if re.search(r'治療|療效|診斷|醫療|治癒|投資|保證|報酬|療程',text):reasons.append('PROFESSIONAL_REVIEW_REQUIRED')
-    if t.mode=='FULL' and any(line.strip() not in t.approved_copy for line in text.splitlines() if line.strip()):
+    if t.mode=='FULL' and t.creative_mode=='MATERIALS' and any(line.strip() not in t.approved_copy for line in text.splitlines() if line.strip()):
         reasons.append('FACTS_OR_SEMANTICS_UNEVALUATED_OWNER_REVIEW_REQUIRED')
     return reasons
 
@@ -199,20 +206,75 @@ def publication_authority(s: Session,c: Credential,p: Publication) -> None:
     if not checked.passed or p.content_snapshot!=record.after_text:raise HTTPException(409,'POLICY_QA_OR_SNAPSHOT_BLOCKED')
     if t.mode=='FULL':
         if auto_qa(record.draft,t):raise HTTPException(409,'AUTOMATION_REQUIRES_HUMAN_REVIEW')
+        if t.creative_mode=='BRAND_GUIDED' and semantic_issues(s,task,record.draft,policy,t):raise HTTPException(409,'SEMANTIC_EVIDENCE_REQUIRED')
     elif t.mode=='REVIEW':
         from .models import RevisionApproval
         approval=s.scalar(select(RevisionApproval).where(RevisionApproval.tenant_id==c.tenant_id,RevisionApproval.revision_id==record.id))
         reviewer=s.get(Credential,approval.reviewer_id,populate_existing=True) if approval else None
-        if task.approved_revision_id!=record.id or not reviewer or reviewer.role!='owner' or reviewer.revoked or reviewer.tenant_id!=c.tenant_id:raise HTTPException(403,'EXACT_OWNER_REVISION_APPROVAL_REQUIRED')
+        if task.approved_revision_id!=record.id or not reviewer or reviewer.role!='owner' or (reviewer.revoked and reviewer.logged_out_at is None) or reviewer.tenant_id!=c.tenant_id:raise HTTPException(403,'EXACT_OWNER_REVISION_APPROVAL_REQUIRED')
     else:raise HTTPException(403,'MANUAL_POLICY_CANNOT_DISPATCH')
 
 
 def monthly_total(s: Session,tid: str,when: datetime) -> int:
     start=when.astimezone(TAIPEI).replace(day=1,hour=0,minute=0,second=0,microsecond=0)
     end=(start.replace(day=28)+timedelta(days=4)).replace(day=1)
-    records=s.execute(select(Task.actual_micro,Task.reserved_micro,Task.settle_key,Task.status).join(AutomationSlot,AutomationSlot.task_id==Task.id).where(
-        AutomationSlot.tenant_id==tid,AutomationSlot.scheduled_at>=start,AutomationSlot.scheduled_at<end)).all()
+    slots=list(s.scalars(select(AutomationSlot).where(AutomationSlot.tenant_id==tid,AutomationSlot.scheduled_at>=start,AutomationSlot.scheduled_at<end)))
+    ids={a.task_id for a in slots if a.task_id}
+    ids.update(s.scalars(select(AutomationAttempt.task_id).where(AutomationAttempt.tenant_id==tid,AutomationAttempt.slot_id.in_([a.id for a in slots]))))
+    records=s.execute(select(Task.actual_micro,Task.reserved_micro,Task.settle_key,Task.status).where(Task.tenant_id==tid,Task.id.in_(ids))).all()
     return sum((actual or 0) if settled else reserved if state in {'RESERVED','RUNNING','RECONCILIATION_REQUIRED'} else 0 for actual,reserved,settled,state in records)
+
+
+def semantic_provider(p: AutomationPolicy) -> SemanticProvider:
+    return SemanticProvider(p)
+
+
+def semantic_issues(s: Session,task: Task,draft: dict,p: AutomationPolicy,t: Terms) -> list[str]:
+    if t.semantic_reviewer!='MODEL_REQUIRED':return ['HUMAN_SEMANTIC_REVIEW_REQUIRED']
+    run=task.agent_run or {};rid=run.get('semantic_task_id')
+    review=s.get(Task,rid,populate_existing=True) if rid else None
+    if not review or review.tenant_id!=task.tenant_id or review.status=='RECONCILIATION_REQUIRED' or not review.receipt or not review.settle_key:
+        return ['SEMANTIC_REVIEW_REQUIRED']
+    if run.get('draft_sha256')!=hashed(draft) or run.get('policy_hash')!=p.terms_hash:return ['STALE_SEMANTIC_EVIDENCE']
+    return evidence_check(draft,p.terms_hash,t.knowledge_facts,review.receipt.get('semantic_review'))
+
+
+def review_draft(s: Session,c: Credential,p: AutomationPolicy,a: AutomationSlot,task: Task,draft: dict,t: Terms,ordinal: int) -> list[str]:
+    from .main import reserve_funds,ReserveRequest,dollars,claim,settle_receipt,lock_tenant
+    if t.semantic_reviewer!='MODEL_REQUIRED':return ['HUMAN_SEMANTIC_REVIEW_REQUIRED']
+    provider=semantic_provider(p);card=provider.card;bound=upper_bound(card,1024)
+    if monthly_total(s,c.tenant_id,utc(a.scheduled_at))+bound>t.monthly_budget_micro:return ['MONTHLY_REVIEW_BUDGET_EXCEEDED']
+    worker_policy(s,c,p.id)
+    review=Task(id=uid(),tenant_id=c.tenant_id,agent_id='A21',title='Semantic review',brief='No external fact verification',
+        content_brief=task.content_brief,status='DRAFT',agent_run={'writer_task_id':task.id,'draft_sha256':hashed(draft),'policy_hash':p.terms_hash,'review_version':'a21-semantic-1'})
+    s.add(review);s.flush();s.add(AutomationAttempt(id=uid(),tenant_id=c.tenant_id,slot_id=a.id,task_id=review.id,kind='SEMANTIC',ordinal=ordinal))
+    task.agent_run={**(task.agent_run or {}),'semantic_task_id':review.id,'draft_sha256':hashed(draft),'policy_hash':p.terms_hash}
+    reserve_funds(s,c,review.id,ReserveRequest(estimate_usd=dollars(bound),idempotency_key=review.id,rate_version=rate_id(card)))
+    claim(s,c,review.id,commit=False);s.commit()
+    try:
+        prompt=review_prompt(draft,p.terms,p.terms_hash);provider.check_offline()
+        if provider.count_tokens(prompt)>card['max_input_tokens']:raise ProviderFailure('SEMANTIC_INPUT_CAP',unknown=False)
+        provider.generation_request_id=review.id;receipt=provider.generate(prompt,1024)
+        lock_tenant(s,c.tenant_id)
+        source='MOCK_SEMANTIC' if receipt.get('evidence_origin')=='MOCK_HTTP' else 'PROVIDER_REPORTED_UNVERIFIED'
+        settle_receipt(s,c,review.id,review.id,receipt,source,commit=False)
+        if not receipt.get('output_valid') or receipt.get('unpriced_features') or receipt.get('usage_exceeds_limits'):
+            review.status='RECONCILIATION_REQUIRED';review.receipt_status=ReceiptStatus.RECONCILIATION_REQUIRED
+            if receipt.get('unpriced_features') or receipt.get('usage_exceeds_limits'):lock_tenant(s,c.tenant_id).budget_paused=True
+    except Exception as exc:
+        s.rollback();lock_tenant(s,c.tenant_id)
+        failed=s.get(Task,review.id,populate_existing=True)
+        if failed and not failed.settle_key:
+            failed.status='RECONCILIATION_REQUIRED';failed.receipt_status=ReceiptStatus.RECONCILIATION_REQUIRED
+            failed.receipt_source='MOCK_SEMANTIC' if provider.synthetic_only else 'PROVIDER_REPORTED_UNVERIFIED'
+            failed.agent_run={**(failed.agent_run or {}),'outcome':'RECONCILIATION_REQUIRED',
+                'error_category':exc.category if isinstance(exc,ProviderFailure) else 'LOCAL_REVIEW_FAILURE',
+                'request_id':provider.last_request_id,'response_id':provider.last_response_id}
+            audit(s,c.tenant_id,'automation.semantic_unknown',review.id,c.id);s.commit()
+        raise
+
+    return semantic_issues(s,task,draft,p,t)
+
 
 
 def generate_slot(s: Session,c: Credential,p: AutomationPolicy,a: AutomationSlot,provider: LLMProvider) -> None:
@@ -221,31 +283,38 @@ def generate_slot(s: Session,c: Credential,p: AutomationPolicy,a: AutomationSlot
     t=Terms.model_validate(p.terms)
     if os.getenv('MOS_MODEL_CALLS_ENABLED','false')!='true':
         a.state='BLOCKED';a.error='MODEL_CALLS_DISABLED';s.commit();return
+    ordinal=s.scalar(select(func.count()).select_from(AutomationAttempt).where(AutomationAttempt.tenant_id==c.tenant_id,AutomationAttempt.slot_id==a.id,AutomationAttempt.kind=='WRITE')) or 0
+    if ordinal>t.max_rewrites:a.state='REVIEW_REQUIRED';a.error='REWRITE_LIMIT_REACHED';s.commit();return
     prior=s.scalars(select(AutomationSlot).where(AutomationSlot.tenant_id==c.tenant_id,AutomationSlot.scheduled_at>=now()-timedelta(days=30))).all()
     choices=[x for x in t.topics if hashed({'brand':t.brief.brand.name,'topic':x.casefold()}) not in {r.topic_hash for r in prior}]
-    if not choices:a.state='SKIPPED';a.error='NO_NEW_TOPIC';s.commit();return
-    topic=choices[0];a.topic_hash=hashed({'brand':t.brief.brand.name,'topic':topic.casefold()})
-    brief=t.brief.model_copy(update={'topic':topic,'supplementary':t.brief.supplementary+'\nOnly use these owner-approved copy blocks, one per line: '+json.dumps(t.approved_copy,ensure_ascii=False)})
+    previous=s.get(Task,a.task_id) if a.task_id else None
+    if not choices and not previous:a.state='SKIPPED';a.error='NO_NEW_TOPIC';s.commit();return
+    topic=previous.title if previous else choices[0];a.topic_hash=hashed({'brand':t.brief.brand.name,'topic':topic.casefold()})
+    guidance=('Write original non-factual questions and invitations plus ONLY the exact owner fact statements. Do not invent any factual premise. Owner knowledge: '+json.dumps([f.model_dump() for f in t.knowledge_facts],ensure_ascii=False)) if t.creative_mode=='BRAND_GUIDED' else 'Only use these owner-approved copy blocks, one per line: '+json.dumps(t.approved_copy,ensure_ascii=False)
+    brief=t.brief.model_copy(update={'topic':topic})
     # Keep the original brief validation and selected industry loader, not a second brand store.
     payload=brief.request(uid());payload=payload.model_copy(update={'brief':topic+' '+brief.supplementary[:900]})
     card=MODEL if t.model=='mock-a09-v1' else CARDS[t.model]
-    prompt=build_prompt(payload,c.tenant_id)
+    if previous:guidance+=' Rewrite ordinal '+str(ordinal)+'; correct previous issues: '+json.dumps((previous.agent_run or {}).get('quality_reasons',[]))
+    prompt=guidance+'\n'+build_prompt(payload,c.tenant_id)
     if isinstance(provider,MockLLMProvider):
         bound=usage_cost({'input_tokens':provider.count_tokens(prompt),'output_tokens':1024},card)
     elif isinstance(provider,OpenAIProvider):bound=upper_bound(card,1024)
     else:raise HTTPException(503,'PROVIDER_NOT_CONFIGURED')
-    if monthly_total(s,c.tenant_id,utc(a.scheduled_at))+bound>t.monthly_budget_micro:
+    extra=upper_bound(CARDS[t.semantic_model],1024) if t.creative_mode=='BRAND_GUIDED' and t.semantic_reviewer=='MODEL_REQUIRED' else 0
+    if monthly_total(s,c.tenant_id,utc(a.scheduled_at))+bound+extra>t.monthly_budget_micro:
         a.state='BLOCKED';a.error='MONTHLY_BUDGET_EXCEEDED';s.commit();return
-    task=Task(id=payload.task_id,tenant_id=c.tenant_id,agent_id='A09',title=topic,brief=topic,content_brief=brief.model_dump(),status='DRAFT')
-    s.add(task);s.flush();a.task_id=task.id;a.state='GENERATING';a.started_at=now()
-    reserve_funds(s,c,task.id,ReserveRequest(estimate_usd=dollars(bound),idempotency_key=a.id,rate_version=rate_id(card)))
+    task=Task(id=payload.task_id,tenant_id=c.tenant_id,agent_id='A09',title=topic,brief=topic,content_brief=brief.model_dump(),status='DRAFT',agent_run={'automation_policy_id':p.id,'policy_hash':p.terms_hash,'prompt_hash':hashed({'prompt':prompt}),'prompt_version':'a09-1','rewrite_ordinal':ordinal})
+    s.add(task);s.flush();s.add(AutomationAttempt(id=uid(),tenant_id=c.tenant_id,slot_id=a.id,task_id=task.id,kind='WRITE',ordinal=ordinal))
+    a.task_id=task.id;a.state='GENERATING';a.started_at=now()
+    reserve_funds(s,c,task.id,ReserveRequest(estimate_usd=dollars(bound),idempotency_key=task.id,rate_version=rate_id(card)))
     claim(s,c,task.id,commit=False);s.commit()
     try:
         worker_policy(s,c,p.id);s.commit()
         if isinstance(provider,OpenAIProvider):
             provider.check_offline()
             if provider.count_tokens(prompt)>card['max_input_tokens']:raise RuntimeError('Input limit')
-            provider.generation_request_id=a.id
+            provider.generation_request_id=task.id
         receipt=provider.generate(prompt,1024)
         lock_tenant(s,c.tenant_id);loaded=s.get(Task,a.task_id,populate_existing=True)
         if loaded is None:raise RuntimeError('Task missing')
@@ -253,15 +322,21 @@ def generate_slot(s: Session,c: Credential,p: AutomationPolicy,a: AutomationSlot
         draft,checked=qa(receipt['output'],context(task))
         receipt={**receipt,'request_context':payload.model_dump(),'draft':draft.model_dump() if draft else {},'prompt_version':'a09-1'}
         source='MOCK_HTTP' if isinstance(provider,OpenAIProvider) and receipt.get('evidence_origin')=='MOCK_HTTP' else 'PROVIDER_REPORTED_UNVERIFIED' if isinstance(provider,OpenAIProvider) else 'MOCK'
-        settle_receipt(s,c,task.id,a.id,receipt,source,commit=False)
+        settle_receipt(s,c,task.id,task.id,receipt,source,commit=False)
         record=ensure_original(s,task,c);a.revision_id=record.id;task.output=record.after_text
         issues=auto_qa(record.draft,t)
-        recent=s.scalars(select(Task).where(Task.tenant_id==c.tenant_id,Task.id!=task.id,Task.created_at>=now()-timedelta(days=30),Task.output.is_not(None))).all()
+        if checked.passed and not issues and t.creative_mode=='BRAND_GUIDED':issues+=review_draft(s,c,p,a,task,record.draft,t,ordinal)
+        same_slot=list(s.scalars(select(AutomationAttempt.task_id).where(AutomationAttempt.tenant_id==c.tenant_id,AutomationAttempt.slot_id==a.id)))
+        recent=s.scalars(select(Task).where(Task.tenant_id==c.tenant_id,Task.id.not_in(same_slot),Task.agent_id=='A09',Task.created_at>=now()-timedelta(days=30),Task.output.is_not(None))).all()
         if any(difflib.SequenceMatcher(None,task.output or '',other.output or '').ratio()>=.92 for other in recent):issues.append('DUPLICATE_CONTENT')
         if not checked.passed or issues or task.status=='RECONCILIATION_REQUIRED':
             a.state='REVIEW_REQUIRED';a.error=','.join(checked.reasons+issues)[:80] or 'BILLING_RECONCILIATION_REQUIRED'
         else:a.state='WAITING_APPROVAL' if t.mode in {'REVIEW','MANUAL'} else 'SCHEDULED'
+        task.agent_run={**(task.agent_run or {}),'quality_reasons':issues,'prompt_version':'a09-1','rewrite_ordinal':ordinal}
         audit(s,c.tenant_id,'automation.generated',a.id,c.id);s.commit()
+        retryable=(checked.reasons+issues) and not any('BUDGET' in x or 'HUMAN_' in x or 'RECONCILIATION' in x or x=='SEMANTIC_REVIEW_REQUIRED' for x in issues)
+        if a.state=='REVIEW_REQUIRED' and retryable and ordinal<t.max_rewrites:
+            worker_policy(s,c,p.id);a.state='CREATED';a.error=None;s.commit();generate_slot(s,c,p,a,provider)
     except Exception:
         s.rollback();lock_tenant(s,c.tenant_id);loaded_slot=s.get(AutomationSlot,a.id,populate_existing=True)
         if loaded_slot:
@@ -364,3 +439,17 @@ def tick(c: Credential=Depends(require('automation')),s: Session=Depends(db),cli
         if unknown:raise HTTPException(409,'ACCOUNT_UNKNOWN_RESULT_FREEZE')
         process_slot(s,c,p,a,client)
     return {'processed':1,'policy_id':p.id,'live_execution':False}
+
+@router.get('/slots/{sid}/attempts')
+def attempt_history(sid: str,c: Credential=Depends(require('read')),s: Session=Depends(db)) -> dict:
+    slot=s.scalar(select(AutomationSlot).where(AutomationSlot.tenant_id==c.tenant_id,AutomationSlot.id==sid))
+    if slot is None:raise HTTPException(404,'SLOT_NOT_FOUND')
+    records=s.scalars(select(AutomationAttempt).where(AutomationAttempt.tenant_id==c.tenant_id,AutomationAttempt.slot_id==sid).order_by(AutomationAttempt.created_at,AutomationAttempt.id)).all()
+    result=[]
+    for a in records:
+        task=s.get(Task,a.task_id)
+        result.append({'task_id':a.task_id,'kind':a.kind,'ordinal':a.ordinal,'created_at':utc(a.created_at),'policy_id':slot.policy_id,
+            'revision_id':task.latest_revision_id if task else None,'cost_micro':task.actual_micro if task else None,
+            'receipt_source':task.receipt_source if task else None,'receipt_status':task.receipt_status if task else None,'reserved_micro':task.reserved_micro if task else None,'task_status':task.status if task else None,
+            'review':task.receipt.get('semantic_review') if task and task.receipt else None,'provenance':task.agent_run if task else None})
+    return {'attempts':result,'external_fact_verification':False}

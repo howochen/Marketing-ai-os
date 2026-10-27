@@ -42,6 +42,7 @@ class Credential(Base):
     scopes: Mapped[list] = mapped_column(JSON)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     revoked: Mapped[bool] = mapped_column(Boolean, default=False)
+    logged_out_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class LoginChallenge(Base):
@@ -480,4 +481,32 @@ class AutomationSlot(Base):
     topic_hash: Mapped[str | None]=mapped_column(String(64))
     error: Mapped[str | None]=mapped_column(String(80))
     started_at: Mapped[datetime | None]=mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime]=mapped_column(DateTime(timezone=True),default=now)
+
+
+class AITestPermit(Base):
+    __tablename__='ai_test_permits'
+    id: Mapped[str]=mapped_column(String(36),primary_key=True)
+    tenant_id: Mapped[str]=mapped_column(ForeignKey('tenants.id'),index=True)
+    owner_id: Mapped[str]=mapped_column(String(36))
+    terms: Mapped[dict]=mapped_column(JSON)
+    terms_hash: Mapped[str]=mapped_column(String(64))
+    approval: Mapped[dict | None]=mapped_column(JSON)
+    state: Mapped[str]=mapped_column(String(40),default='REQUESTED')
+    task_id: Mapped[str | None]=mapped_column(String(36))
+    outcome: Mapped[dict | None]=mapped_column(JSON)
+    request_count: Mapped[int]=mapped_column(BigInteger,default=0)
+    created_at: Mapped[datetime]=mapped_column(DateTime(timezone=True),default=now)
+
+
+class AutomationAttempt(Base):
+    __tablename__='automation_attempts'
+    __table_args__=(UniqueConstraint('slot_id','kind','ordinal'),UniqueConstraint('tenant_id','task_id'),
+        ForeignKeyConstraint(['tenant_id','task_id'],['tasks.tenant_id','tasks.id']))
+    id: Mapped[str]=mapped_column(String(36),primary_key=True)
+    tenant_id: Mapped[str]=mapped_column(ForeignKey('tenants.id'),index=True)
+    slot_id: Mapped[str]=mapped_column(ForeignKey('automation_slots.id'))
+    task_id: Mapped[str]=mapped_column(String(36))
+    kind: Mapped[str]=mapped_column(String(20))
+    ordinal: Mapped[int]=mapped_column(BigInteger)
     created_at: Mapped[datetime]=mapped_column(DateTime(timezone=True),default=now)

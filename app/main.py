@@ -146,7 +146,7 @@ def health():
 def ready(s=Depends(db)):
     try:
         version = s.scalar(text('SELECT version_num FROM alembic_version'))
-        if version != '0014' or not s.get(RateVersion, rate_id(MODEL)):
+        if version != '0015' or not s.get(RateVersion, rate_id(MODEL)):
             raise ValueError('Schema or rate card not ready')
     except Exception:
         raise HTTPException(503, 'Database or schema unavailable') from None
@@ -227,7 +227,9 @@ def revoke(credential_id: str, c=Depends(require('credentials')), s=Depends(db))
     credential = s.scalar(select(Credential).where(Credential.id == credential_id, Credential.tenant_id == c.tenant_id))
     if not credential:
         raise HTTPException(404, 'Credential not found')
+    lock_tenant(s,c.tenant_id);s.refresh(credential)
     credential.revoked = True
+    credential.logged_out_at = None
     audit(s, c.tenant_id, 'credential.revoked', credential.id, c.id)
     s.commit()
     return {'revoked': True}
@@ -571,6 +573,9 @@ app.include_router(revision_router)
 
 
 def reject_batch_task(s,tid,task_id):
+    from .models import AITestPermit,AutomationAttempt
+    if s.scalar(select(AITestPermit.id).where(AITestPermit.tenant_id==tid,AITestPermit.task_id==task_id)) or s.scalar(select(AutomationAttempt.id).where(AutomationAttempt.tenant_id==tid,AutomationAttempt.task_id==task_id)):
+        raise HTTPException(409,'Controlled task requires its own coordinator')
     if s.scalar(select(BatchAttempt.id).where(BatchAttempt.tenant_id==tid,BatchAttempt.task_id==task_id)):
         raise HTTPException(409,'Batch task requires durable attempt coordinator')
 
@@ -605,3 +610,6 @@ app.add_exception_handler(StarletteHTTPException,ui_http_error)
 
 from .automation import router as automation_router
 app.include_router(automation_router)
+
+from .single_ai_test import router as single_ai_test_router
+app.include_router(single_ai_test_router)

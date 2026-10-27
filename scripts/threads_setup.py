@@ -168,7 +168,7 @@ def request(url,*,vault=None,path='',payload=None,admin=False):
 def wait_ready(vault):
     for _ in range(45):
         try:
-            if request(LOCAL,vault=vault,path='/ready').get('schema')=='0014':return
+            if request(LOCAL,vault=vault,path='/ready').get('schema')=='0015':return
         except (OSError,ValueError):pass
         time.sleep(1)
     raise SetupError('API_TLS_READINESS_FAILED')
@@ -350,7 +350,7 @@ def prepare_install(vault,progress=lambda message:None):
         vault['public_url']=public;vault.pop('meta_redirect_confirmed_for',None);save(vault)
         compose(vault,'up','-d','api');wait_ready(vault)
     checks=probe_public(public)
-    if not checks.get('ui_available') or not checks.get('callback_reachable') or checks.get('schema')!='0014':
+    if not checks.get('ui_available') or not checks.get('callback_reachable') or checks.get('schema')!='0015':
         raise SetupError('HTTPS_CALLBACK_NOT_READY')
     return {'vault':vault,'callback':public+'/threads/oauth/callback','changed':changed}
 
