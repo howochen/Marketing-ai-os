@@ -48,4 +48,3 @@ test('unknown industry and invalid brand names do not guess',()=>{
   assert.throws(()=>quick.suggest(name,industry));
  }
 });
-
