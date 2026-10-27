@@ -9,3 +9,9 @@ Runtime App ID, Secret, token encryption key and callback match existing Windows
 Bounded code/subcode, ASCII error type and fbtrace_id are retained in existing audit events linked to the OAuth state. Raw provider messages, URLs, codes, tokens and secrets are not recorded. No schema change or new dependency. Query logging remains disabled.
 
 Mock tests cover official query placement, encrypted storage, 452 and safe diagnostics, one-use state and replay rejection. Real completion requires the user to start a new official OAuth flow. Mock success does not establish real OAuth success. AI, publishing and worker activation remain prohibited.
+
+## Follow-up: PERMISSIONS
+
+The next real OAuth attempt passed the long exchange and profile request, then failed local debugger validation without a Meta error code. This is not evidence that permission grants were absent. The existing combined check could also reject missing/mismatched app ID, invalid token, mismatched user ID or malformed scopes. These reasons now produce separate fixed audit diagnostics, with no token or response body capture. App identity requirements remain fail-closed.
+
+The official [sample's `/debug` handler and `buildGraphAPIURL`](https://github.com/fbsamples/threads_api/blob/main/src/index.js) supply both `input_token` and `access_token` in query parameters. The debugger request now follows that exact transport contract. No global transport, refresh or publishing change. Real compatibility remains unverified until a fresh consent flow completes; an absent app-ID field must not be silently treated as a match.

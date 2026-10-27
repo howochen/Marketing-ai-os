@@ -84,3 +84,28 @@ def test_long_exchange_uses_official_query_token_and_keeps_encrypted_connection(
 def test_diagnostic_fields_reject_unbounded_or_unsafe_values():
     error={'error_subcode':True,'type':'secret\nheader','fbtrace_id':'x'*49}
     assert ThreadsFailure('CONTENT_REJECTED',provider_error=error).provider_details=={}
+
+
+@pytest.mark.parametrize('change,reason',[
+    ({'is_valid':False},'TOKEN_NOT_VALID'),
+    ({'app_id':None},'DEBUG_APP_ID_MISSING'),
+    ({'app_id':'other-app'},'APP_ID_MISMATCH'),
+    ({'user_id':'other-user'},'USER_ID_MISMATCH'),
+    ({'scopes':'threads_basic'},'SCOPES_SCHEMA_INVALID'),
+    ({'scopes':['threads_basic']},'REQUIRED_SCOPES_MISSING'),
+])
+def test_debug_validation_reason_is_exact_without_weakening_checks(client,mock_threads,change,reason):
+    original=app.dependency_overrides[routes.api]()
+    def respond(req):
+        response=original.transport.handle_request(req)
+        if req.url.path=='/debug_token':
+            assert req.url.params['access_token']==req.url.params['input_token']=='synthetic-long-token'
+            assert 'authorization' not in req.headers
+            body=response.json();body['data'].update(change)
+            if change.get('app_id',False) is None:body['data'].pop('app_id')
+            return httpx.Response(200,json=body)
+        return response
+    api=ThreadsAPI(httpx.MockTransport(respond))
+    with pytest.raises(ThreadsFailure) as failure:api.inspect('synthetic-long-token')
+    assert failure.value.category=='PERMISSION_DENIED'
+    assert failure.value.provider_details=={'type':reason}

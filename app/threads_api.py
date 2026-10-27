@@ -102,12 +102,16 @@ class ThreadsAPI:
     def inspect(self,token: str) -> tuple[dict,dict]:
         profile=self.request('GET','me',token,params={'fields':'id,username'})
         identifier(profile.get('id'))
-        debug=self.request('GET','debug_token',token,params={'input_token':token}).get('data',{})
-        if (not isinstance(debug,dict) or debug.get('is_valid') is not True
-                or debug.get('app_id')!=os.getenv('MOS_THREADS_APP_ID') or str(debug.get('user_id'))!=profile['id']
-                or not isinstance(debug.get('scopes'),list) or not all(isinstance(x,str) for x in debug['scopes'])
-                or not SCOPES<=set(debug.get('scopes',[]))):
-            raise ThreadsFailure('PERMISSION_DENIED')
+        debug=self.request('GET','debug_token',params={'input_token':token,'access_token':token}).get('data',{})
+        reason=None
+        if not isinstance(debug,dict):reason='DEBUG_SCHEMA_INVALID'
+        elif debug.get('is_valid') is not True:reason='TOKEN_NOT_VALID'
+        elif 'app_id' not in debug:reason='DEBUG_APP_ID_MISSING'
+        elif debug['app_id']!=os.getenv('MOS_THREADS_APP_ID'):reason='APP_ID_MISMATCH'
+        elif str(debug.get('user_id'))!=profile['id']:reason='USER_ID_MISMATCH'
+        elif not isinstance(debug.get('scopes'),list) or not all(isinstance(x,str) for x in debug['scopes']):reason='SCOPES_SCHEMA_INVALID'
+        elif not SCOPES<=set(debug['scopes']):reason='REQUIRED_SCOPES_MISSING'
+        if reason:raise ThreadsFailure('PERMISSION_DENIED',provider_error={'type':reason})
         if not isinstance(profile.get('username'),str) or not 1<=len(profile['username'])<=100:
             raise ThreadsFailure('INVALID_PROVIDER_RESPONSE',True)
         return profile,debug
