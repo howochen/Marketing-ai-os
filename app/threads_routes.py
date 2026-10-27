@@ -101,15 +101,19 @@ def oauth_callback(response: Response,request: Request,state: str='',code: str='
     item.used_at=now();audit(s,item.tenant_id,'threads.oauth_consumed',item.id,actor.id);s.commit()
     response.delete_cookie('mos_threads_browser',path='/threads/oauth/callback',secure=True,httponly=True,samesite='lax')
     if error or not code or len(code)>4096:raise HTTPException(400,'Authorization denied; start a new OAuth flow')
+    stage='TOKEN_EXCHANGE'
     try:
         short=client.request('POST','oauth/access_token',data={'client_id':app_id,'client_secret':secret,'code':code,
             'grant_type':'authorization_code','redirect_uri':redirect})
         short_token=short.get('access_token')
         if not isinstance(short_token,str) or not short_token:raise ThreadsFailure('AUTH_REQUIRED')
+        stage='LONG_TOKEN'
         long=client.request('GET','access_token',short_token,params={'grant_type':'th_exchange_token','client_secret':secret})
         token=long.get('access_token')
         if not isinstance(token,str) or not token:raise ThreadsFailure('AUTH_REQUIRED')
+        stage='IDENTITY'
         profile,debug,expires=verified_identity(client,token)
+        stage='ACCOUNT_BINDING'
         if str(short.get('user_id'))!=profile['id']:raise ThreadsFailure('ACCOUNT_MISMATCH')
         lock_tenant(s,item.tenant_id)
         actor=s.get(Credential,item.actor_id,populate_existing=True)
@@ -136,7 +140,13 @@ def oauth_callback(response: Response,request: Request,state: str='',code: str='
             return result
         return view(record)
     except ThreadsFailure as exc:
-        s.rollback();raise HTTPException(502,'OAuth '+exc.category+'; reauthorize, no automatic exchange retry') from None
+        s.rollback()
+        if stage=='IDENTITY':stage={'me':'PROFILE','debug_token':'PERMISSIONS'}.get(client.last_path or '','IDENTITY')
+        suffix='.'+str(exc.provider_code) if exc.provider_code is not None else ''
+        audit(s,item.tenant_id,'threads.oauth_failed.'+stage+'.'+exc.category+suffix,item.id,item.actor_id);s.commit()
+        headers={'X-MOS-OAuth-Reason':stage}
+        if exc.provider_code is not None:headers['X-MOS-Meta-Error']=str(exc.provider_code)
+        raise HTTPException(502,'OAuth '+exc.category+'; reauthorize, no automatic exchange retry',headers=headers) from None
 
 
 @router.get('/threads/connections')

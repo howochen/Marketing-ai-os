@@ -2,7 +2,7 @@
 import os
 import hmac
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit,urlencode
 from datetime import datetime
 from fastapi import APIRouter,Depends,Request,Response,HTTPException
 from fastapi.responses import FileResponse,JSONResponse,RedirectResponse
@@ -164,6 +164,19 @@ async def ui_http_error(request: Request,exc: Exception) -> Response:
     from fastapi.exception_handlers import http_exception_handler
     from starlette.exceptions import HTTPException as StarletteHTTPException
     if request.url.path=='/threads/oauth/callback' and request.cookies.get(USER_COOKIE):
-        return RedirectResponse('/app/threads?oauth_error=AUTHORIZATION_FAILED',303,headers={'Cache-Control':'no-store','Referrer-Policy':'no-referrer'})
+        allowed={'TOKEN_EXCHANGE','LONG_TOKEN','IDENTITY','PROFILE','PERMISSIONS','ACCOUNT_BINDING'}
+        headers=getattr(exc,'headers',None) or {}
+        reason=headers.get('X-MOS-OAuth-Reason')
+        if reason not in allowed:
+            detail=getattr(exc,'detail',None)
+            reason={'Invalid OAuth state/browser binding':'BROWSER_BINDING','Invalid OAuth state':'SESSION_INVALID',
+                'OAuth state expired, replayed or operator invalid':'SESSION_INVALID','OAuth callback configuration changed':'CALLBACK_CHANGED',
+                'Authorization denied; start a new OAuth flow':'CONSENT_DENIED'}.get(detail if isinstance(detail,str) else '','AUTHORIZATION_FAILED')
+        query={'oauth_error':reason}
+        code=headers.get('X-MOS-Meta-Error','')
+        if code.isascii() and code.isdecimal() and len(code)<=10:query['meta_error']=code
+        result=RedirectResponse('/app/threads?'+urlencode(query),303,headers={'Cache-Control':'no-store','Referrer-Policy':'no-referrer'})
+        result.delete_cookie('mos_threads_browser',path='/threads/oauth/callback',secure=True,httponly=True,samesite='lax')
+        return result
     if isinstance(exc,StarletteHTTPException):return await http_exception_handler(request,exc)
     return JSONResponse({'detail':'REQUEST_FAILED'},500)

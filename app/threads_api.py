@@ -21,8 +21,9 @@ def callback_urls(origin: str) -> dict:
 
 
 class ThreadsFailure(RuntimeError):
-    def __init__(self,category: str,unknown: bool=False) -> None:
+    def __init__(self,category: str,unknown: bool=False,*,provider_code: object=None) -> None:
         self.category=category;self.unknown=unknown
+        self.provider_code=provider_code if type(provider_code) is int and 0<=provider_code<=9999999999 else None
         super().__init__('Threads '+category+'; no automatic retry')
 
 
@@ -54,6 +55,7 @@ class ThreadsAPI:
         self.transport=transport
         self.source='MOCK' if type(transport) is httpx.MockTransport else 'OFFICIAL_API'
         self.request_id: str | None=None
+        self.last_path: str | None=None
 
     def guard(self) -> None:
         if self.transport is not None and type(self.transport) is not httpx.MockTransport:
@@ -69,6 +71,7 @@ class ThreadsAPI:
         # Official GET token/debug operations carry sensitive parameters: suppress URL-level client logging.
         logging.getLogger('httpx').setLevel(logging.WARNING);logging.getLogger('httpcore').setLevel(logging.WARNING)
         self.request_id=None
+        self.last_path=path
         try:
             with httpx.Client(transport=self.transport,timeout=httpx.Timeout(20,connect=5),trust_env=False,follow_redirects=False) as client:
                 response=client.request(method,HOST+'/'+path,params=params,data=data,
@@ -81,8 +84,8 @@ class ThreadsAPI:
                 error=body.get('error') or {};code=error.get('code') if isinstance(error,dict) else None
                 category='TOKEN_EXPIRED' if code==190 else 'PERMISSION_DENIED' if code in {10,200} or response.status_code==403 else 'RATE_LIMITED' if response.status_code==429 or code in {4,32,613} else 'CONTENT_REJECTED'
                 if response.status_code>=500 or code in {1,2} or (isinstance(error,dict) and error.get('is_transient') is True):
-                    raise ThreadsFailure('RESULT_UNKNOWN',method=='POST')
-                raise ThreadsFailure(category)
+                    raise ThreadsFailure('RESULT_UNKNOWN',method=='POST',provider_code=code)
+                raise ThreadsFailure(category,provider_code=code)
             return body
         except ThreadsFailure:raise
         except (httpx.HTTPError,ValueError,TypeError):
