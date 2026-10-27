@@ -34,6 +34,8 @@ jobs:
       - run: pip install -r requirements-dev.txt
       - run: python -m compileall -q app tests migrations scripts
       - run: node --check app/web/automation.js
+      - run: node --check app/web/brand-quick.js
+      - run: node --test tests/brand_quick.test.cjs
       - run: mypy
       - run: git diff --check
       - run: git show --format= --check HEAD

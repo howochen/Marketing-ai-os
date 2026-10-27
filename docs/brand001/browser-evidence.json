@@ -1,0 +1,53 @@
+[
+  {
+    "check": "preview does not overwrite form",
+    "result": "PASS"
+  },
+  {
+    "check": "cancel removes hidden required controls and preserves input",
+    "result": "PASS"
+  },
+  {
+    "check": "AJ suggestion applies edited fields and prompt guidance",
+    "result": "PASS"
+  },
+  {
+    "check": "stale preview cannot overwrite concurrent form edits",
+    "result": "PASS"
+  },
+  {
+    "check": "untrusted brand text remains escaped",
+    "result": "PASS"
+  },
+  {
+    "check": "AI unavailable transparently falls back without any HTTP request",
+    "result": "PASS"
+  },
+  {
+    "check": "workbench data and both forbidden lists take priority",
+    "result": "PASS"
+  },
+  {
+    "width": 1440,
+    "overflow": false,
+    "editableFields": 14
+  },
+  {
+    "width": 768,
+    "overflow": false,
+    "editableFields": 14
+  },
+  {
+    "width": 390,
+    "overflow": false,
+    "editableFields": 14
+  },
+  {
+    "mobilePolicySave": "PASS",
+    "existingPoliciesUnchanged": true,
+    "briefGuidancePersisted": true,
+    "paidCalls": 0,
+    "realThreadsCalls": 0,
+    "scope": "isolated HTTP/SQLite and desktop Chromium at phone widths; not physical iPhone Safari"
+  }
+]
