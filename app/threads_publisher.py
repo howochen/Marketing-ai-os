@@ -100,6 +100,10 @@ def preflight(s: Session,c: Credential,p: Publication,client: ThreadsAPI) -> tup
     if automated:
         from .automation import publication_authority
         publication_authority(s,c,p)
+        if client.source!='MOCK':
+            from .automation import policy_for
+            from .automation_live import require_live
+            require_live(s,policy_for(s,c.tenant_id,p.automation_policy_id or ''))
     else:approved(s,p)
     grant=s.get(Credential,p.authorized_by,populate_existing=True) if p.authorized_by else None
     if not automated and (not grant or grant.revoked or grant.role!='owner' or utc(grant.expires_at)<=now() or grant.environment!=os.getenv('MOS_ENV') or 'publish' not in grant.scopes):

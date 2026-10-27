@@ -151,6 +151,8 @@ Meta deauthorize/data-deletion callbacks: [繁體中文設定與安全範圍](do
 
 ## Threads 自動化中心（離線開發完成，Live 未啟用）
 
+MVP 整合與 Windows 操作、B／C／D 分開批准方式見 [MOS-MVP-001](docs/MVP001.md)。真實執行仍預設關閉，沒有套用原環境。
+
 MOS-AUTO-002 修正一般登出與政策撤權、加入品牌規範自主創作及一次 AI 驗證許可；目前 schema head **0015**。後續規格以 [核心變更](docs/AUTO002_IMPLEMENTATION.md)、[首次 AI 測試計畫](docs/AUTO002_LIVE_TEST_PLAN.md)、[驗收](docs/AUTO002_ACCEPTANCE.md) 為準，舊 AUTO001 的登出即撤權及僅能重組素材限制已被本版更新。仍未部署或啟用任何真實模型／發文。
 
 `/app/automation` 提供有期限的 Owner 政策、三種模式、背景排程與結果追蹤。沿用 Task／Revision／Ledger／Publisher，不建立假的 Owner 單篇批准。請讀 [操作說明](docs/AUTO001_GUIDE.md)、[驗收](docs/AUTO001_ACCEPTANCE.md)及[待批准部署計畫](docs/AUTO001_DEPLOYMENT.md)。模型、真實發文及一次性手機通道預設關閉，沒有更新現有公開部署。

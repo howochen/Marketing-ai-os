@@ -1,0 +1,1 @@
+PASS: Worker defaults closed; restart unless-stopped; API model hard switch preserved; config only, no service started
