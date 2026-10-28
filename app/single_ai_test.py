@@ -3,7 +3,7 @@ import os
 from datetime import timedelta
 import httpx
 from fastapi import APIRouter,Depends,HTTPException
-from pydantic import BaseModel,ConfigDict,Field,AwareDatetime
+from pydantic import BaseModel,ConfigDict,Field,AwareDatetime,SecretStr
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from .database import db
@@ -50,7 +50,7 @@ def permit_for(s: Session,tid: str,pid: str) -> AITestPermit:
 
 def view(p: AITestPermit) -> dict:
     return {'id':p.id,'terms':p.terms,'terms_hash':p.terms_hash,'state':p.state,'request_count':p.request_count,
-        'task_id':p.task_id,'outcome':p.outcome,'approval_source':'OWNER_AND_ADMIN_ATTESTATION' if p.approval else None,
+        'task_id':p.task_id,'outcome':p.outcome,'approval_source':p.approval.get('source','OWNER_AND_ADMIN_ATTESTATION') if p.approval else None,
         'invoice_verified':False,'threads_publication_authorized':False}
 
 
@@ -71,6 +71,7 @@ def create(body: TestTerms,c: Credential=Depends(require('budget')),s: Session=D
 def approve(pid: str,body: Approve,c: Credential=Depends(require('budget')),s: Session=Depends(db)) -> dict:
     from .main import lock_tenant
     owner(c);lock_tenant(s,c.tenant_id);p=permit_for(s,c.tenant_id,pid)
+    if p.terms.get('kind','').startswith('GEMINI_'):raise HTTPException(403,'GEMINI_REQUIRES_ITS_OWN_EXPLICIT_CONSENT')
     if p.owner_id!=c.id or p.terms_hash!=body.terms_hash or not body.confirm_one_generation_only or not body.count_endpoint_confirmed_free or utc(TestTerms.model_validate({k:p.terms[k] for k in TestTerms.model_fields}).deadline)<=now():
         raise HTTPException(403,'EXACT_SPEND_CONSENT_REQUIRED')
     proof=body.model_dump()
@@ -151,13 +152,22 @@ def provider_for(p: AITestPermit,s: Session) -> SingleTestProvider:
     return SingleTestProvider(p,s)
 
 
+class GeminiExecution(BaseModel):
+    model_config=ConfigDict(extra='forbid')
+    verification_access_token: SecretStr=Field(min_length=20,max_length=4096)
+
+
 @router.post('/ai-tests/{pid}/execute')
-def execute(pid: str,c: Credential=Depends(require('budget')),s: Session=Depends(db)) -> dict:
+def execute(pid: str,body: GeminiExecution | None=None,c: Credential=Depends(require('budget')),s: Session=Depends(db)) -> dict:
     from .main import lock_tenant,reserve_funds,ReserveRequest,dollars,claim,settle_receipt
     owner(c);lock_tenant(s,c.tenant_id);p=permit_for(s,c.tenant_id,pid)
     if p.state=='SETTLED':return view(p)
     if p.state!='APPROVED' or p.request_count or p.owner_id!=c.id:raise HTTPException(409,'AI_TEST_NOT_ADMISSIBLE_NO_RETRY')
-    provider=provider_for(p,s)
+    if p.terms.get('kind')=='GEMINI_SINGLE_TEST':
+        from .gemini_policy import SingleGeminiProvider
+        if not body:raise HTTPException(403,'GEMINI_FREE_TIER_NOT_VERIFIED')
+        provider: SingleTestProvider | SingleGeminiProvider=SingleGeminiProvider(p,s,body.verification_access_token.get_secret_value())
+    else:provider=provider_for(p,s)
     try:provider.check_offline();provider.authorization()
     except (ProviderFailure,KeyError):raise HTTPException(403,'SINGLE_AI_TEST_GATE_CLOSED') from None
     brief=Brief.model_validate(p.terms['brief']);payload=brief.request(uid());prompt=build_prompt(payload,c.tenant_id)
@@ -172,7 +182,7 @@ def execute(pid: str,c: Credential=Depends(require('budget')),s: Session=Depends
         s.commit()
         provider.generation_request_id=p.id
         receipt=provider.generate(prompt,p.terms['maximum_output_tokens'])
-        if receipt['provider_usage']['input_tokens']>p.terms['maximum_input_tokens']:receipt['usage_exceeds_limits']=True
+        if receipt['provider_usage'].get('input_tokens',receipt['provider_usage'].get('promptTokenCount',0))>p.terms['maximum_input_tokens']:receipt['usage_exceeds_limits']=True
         draft,checked=qa(receipt['output'],payload)
         mock=type(provider.transport) is httpx.MockTransport
         receipt={**receipt,'request_context':payload.model_dump(),'draft':draft.model_dump() if draft else {},'prompt_version':'a09-1',

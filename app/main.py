@@ -315,7 +315,8 @@ def reserve_funds(s,c,task_id,payload):
     if selected!=rate_id(MODEL):
         import os
         from .openai_provider import CARDS
-        if os.getenv('MOS_ENV')!='test' or selected not in {rate_id(c) for c in CARDS.values()}:
+        from .gemini_provider import CARD
+        if os.getenv('MOS_ENV')!='test' or selected not in {rate_id(c) for c in [*CARDS.values(),CARD]}:
             raise HTTPException(422,'Readiness rates are restricted to offline controlled tests')
     rate = s.get(RateVersion, selected)
     if not rate:
@@ -613,3 +614,18 @@ app.include_router(automation_router)
 
 from .single_ai_test import router as single_ai_test_router
 app.include_router(single_ai_test_router)
+
+from .gemini_policy import router as gemini_router
+app.include_router(gemini_router)
+
+# Validation responses never echo submitted secrets, including malformed provider keys.
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+@app.exception_handler(RequestValidationError)
+async def validation_error(request,exc):
+    return JSONResponse(status_code=422,content={'detail':[{k:e[k] for k in ('loc','msg','type')} for e in exc.errors()]})
+
+from .openai_provider import ProviderFailure
+@app.exception_handler(ProviderFailure)
+async def provider_failure(request,exc):
+    return JSONResponse(status_code=409,content={'detail':exc.category,'automatic_retry':False})

@@ -10,6 +10,8 @@ os.environ['MOS_ADMIN_KEY'] = 'test-admin-key-at-least-thirty-characters'
 os.environ['MOS_MODEL_CALLS_ENABLED'] = 'false'
 os.environ['MOS_ENV'] = 'test'
 command.upgrade(Config('alembic.ini'), 'head')
+from scripts.install_gemini_rate import install
+install()
 
 from fastapi.testclient import TestClient
 from app.main import app

@@ -18,6 +18,7 @@ RUN pip install --no-cache-dir -r requirements-dev.txt
 COPY tests ./tests
 COPY scripts/threads_setup.py ./scripts/threads_setup.py
 COPY scripts/runtime_recovery.py ./scripts/runtime_recovery.py
+COPY scripts/install_gemini_rate.py ./scripts/install_gemini_rate.py
 COPY scripts/phone_setup.py ./scripts/phone_setup.py
 COPY scripts/content_local.py ./scripts/content_local.py
 COPY Setup-Threads.cmd ./Setup-Threads.cmd

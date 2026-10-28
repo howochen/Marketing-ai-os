@@ -13,12 +13,14 @@ logger = logging.getLogger('mos.events')
 
 
 def redact(message: str) -> str:
-    for key in ('MOS_THREADS_TOKEN_KEY', 'MOS_THREADS_APP_SECRET', 'MOS_ADMIN_KEY', 'ANTHROPIC_API_KEY', 'OPENAI_API_KEY', 'MOS_WORKER_TOKEN', 'POSTGRES_PASSWORD', 'MOS_APP_PASSWORD', 'MOS_MIGRATION_PASSWORD'):
+    for key in ('MOS_THREADS_TOKEN_KEY', 'MOS_THREADS_APP_SECRET', 'MOS_ADMIN_KEY', 'ANTHROPIC_API_KEY', 'OPENAI_API_KEY', 'GEMINI_API_KEY', 'MOS_GOOGLE_READONLY_ACCESS_TOKEN', 'MOS_WORKER_TOKEN', 'POSTGRES_PASSWORD', 'MOS_APP_PASSWORD', 'MOS_MIGRATION_PASSWORD'):
         value = os.getenv(key, '')
         if len(value) >= 8:
             message = message.replace(value, '[REDACTED]')
     message = re.sub(r'(?i)Bearer\s+[^\s"\',}]+', 'Bearer [REDACTED]', message)
     message = re.sub(r'\b(?:mos_|sk-)[A-Za-z0-9_-]{20,}', '[REDACTED]', message)
+    message = re.sub(r'\b(?:AIza[A-Za-z0-9_-]{20,}|ya29\.[A-Za-z0-9._-]+)', '[REDACTED]', message)
+    message = re.sub(r'''(?i)((?:x-goog-api-key|api_key|verification_access_token)["']?\s*[:=]\s*["']?)[^"',\s}]+''', r'\1[REDACTED]', message)
     message = re.sub(r'(?i)([?&](?:code|state|access_token|input_token|client_secret)=)[^&\s\"\']+', r'\1[REDACTED]', message)
     return re.sub(r'(://[^\s/:]+:)[^@\s]+@', r'\1[REDACTED]@', message)
 

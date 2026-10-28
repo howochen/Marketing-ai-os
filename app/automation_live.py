@@ -10,15 +10,17 @@ from .durable_gate import utc
 
 def evidence(s: Session,p: AutomationPolicy) -> AITestPermit:
     t=p.terms
+    from .gemini_provider import CARD,MODEL_ID
+    card=CARD if t['model']==MODEL_ID else CARDS.get(t['model'])
     b=s.scalar(select(AITestPermit).where(AITestPermit.tenant_id==p.tenant_id,AITestPermit.id==t.get('live_ai_test_id')))
     c=s.scalar(select(Publication).where(Publication.tenant_id==p.tenant_id,Publication.id==t.get('live_publication_id')))
     conn=s.scalar(select(ThreadsConnection).where(ThreadsConnection.tenant_id==p.tenant_id,ThreadsConnection.id==t['connection_id']))
     result=b.outcome if b and b.outcome else {};receipt=result.get('receipt',{})
     task=s.get(Task,b.task_id) if b and b.task_id else None
-    if (t.get('execution_mode')!='LIVE' or t['model'] not in CARDS or not p.key_ciphertext
+    if (t.get('execution_mode')!='LIVE' or card is None or not p.key_ciphertext
             or not b or b.state!='SETTLED' or b.request_count!=1 or not result.get('provider_called') or result.get('generation_status')!='GENERATED_QA_PASS'
             or not b.approval or not b.approval.get('count_endpoint_confirmed_free')
-            or b.terms.get('model')!=t['model'] or b.terms.get('rate_snapshot')!=CARDS[t['model']]
+            or b.terms.get('model')!=t['model'] or b.terms.get('rate_snapshot')!=card
             or receipt.get('evidence_origin')!='PROVIDER_REPORTED_UNVERIFIED' or not receipt.get('request_id') or not receipt.get('receipt_id')
             or not task or not task.settle_key or task.receipt_source!='PROVIDER_REPORTED_UNVERIFIED'
             or not c or c.automation_policy_id or c.platform_account_id!=t['connection_id']

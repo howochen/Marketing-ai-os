@@ -1,0 +1,28 @@
+[
+  {
+    "ajBrandCopied": true,
+    "openaiPolicyAndKeyPreserved": true,
+    "geminiKeySaved": true,
+    "keyOnlyReadTest": true,
+    "freeProofLabelledMock": true
+  },
+  {
+    "width": 1440,
+    "noOverflow": true
+  },
+  {
+    "width": 768,
+    "noOverflow": true
+  },
+  {
+    "width": 390,
+    "noOverflow": true
+  },
+  {
+    "explicitConfirm": true,
+    "mockSingleGeneration": true,
+    "secretInputsCleared": true,
+    "realGenerations": 0,
+    "threadsPosts": 0
+  }
+]

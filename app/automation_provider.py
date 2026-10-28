@@ -14,6 +14,22 @@ from .threads_api import unseal
 from .models import AutomationPolicy
 
 
+def automation_context(policy: AutomationPolicy) -> dict:
+    from .automation_live import require_live
+    with SessionLocal() as s:
+        scope(s,policy.tenant_id)
+        p=s.get(AutomationPolicy,policy.id,populate_existing=True)
+        tenant=s.get(Tenant,policy.tenant_id)
+        actor=s.get(Credential,p.owner_id) if p else None
+        if (os.getenv('MOS_AUTOMATION_ENABLED','false')!='true' or not p or p.terms_hash!=policy.terms_hash or p.state!='ACTIVE' or not tenant or tenant.disabled or tenant.budget_paused
+                or tenant.spent_micro+tenant.reserved_micro>tenant.budget_micro or not actor or actor.role!='owner'
+                or (actor.revoked and actor.logged_out_at is None) or actor.environment!=os.getenv('MOS_ENV')
+                or not utc(datetime.fromisoformat(p.terms['starts_at']))<=now()<utc(datetime.fromisoformat(p.terms['expires_at']))):
+            raise ProviderFailure('AUTOMATION_POLICY_STOPPED',unknown=False)
+        b=require_live(s,p)
+        return b.terms
+
+
 class AutomationOpenAIProvider(OpenAIProvider):
     def __init__(self,policy: AutomationPolicy,transport: httpx.MockTransport | None=None) -> None:
         super().__init__(policy.terms['model'],transport,synthetic_only=type(transport) is httpx.MockTransport)
@@ -34,19 +50,7 @@ class AutomationOpenAIProvider(OpenAIProvider):
         self.live_context()
 
     def live_context(self) -> dict:
-        from .automation_live import require_live
-        with SessionLocal() as s:
-            scope(s,self.policy.tenant_id)
-            p=s.get(AutomationPolicy,self.policy.id,populate_existing=True)
-            tenant=s.get(Tenant,self.policy.tenant_id)
-            actor=s.get(Credential,p.owner_id) if p else None
-            if (os.getenv('MOS_AUTOMATION_ENABLED','false')!='true' or not p or p.terms_hash!=self.policy.terms_hash or p.state!='ACTIVE' or not tenant or tenant.disabled or tenant.budget_paused
-                    or tenant.spent_micro+tenant.reserved_micro>tenant.budget_micro or not actor or actor.role!='owner'
-                    or (actor.revoked and actor.logged_out_at is None) or actor.environment!=os.getenv('MOS_ENV')
-                    or not utc(datetime.fromisoformat(p.terms['starts_at']))<=now()<utc(datetime.fromisoformat(p.terms['expires_at']))):
-                raise ProviderFailure('AUTOMATION_POLICY_STOPPED',unknown=False)
-            b=require_live(s,p)
-            return b.terms
+        return automation_context(self.policy)
 
     def context_headers(self) -> dict[str,str]:
         if type(self.transport) is httpx.MockTransport:return {}

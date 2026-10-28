@@ -20,6 +20,7 @@ from .threads_routes import owner,connection,token_for,api,refresh_connection,co
 from .threads_api import ThreadsAPI,seal
 from .providers import MockLLMProvider,MODEL,usage_cost,rate_id,LLMProvider
 from .openai_provider import OpenAIProvider,CARDS,upper_bound,ProviderFailure
+from .gemini_provider import GeminiProvider,CARD as GEMINI_CARD,MODEL_ID as GEMINI_MODEL
 from .semantic_review import BrandFact,evidence_check,SemanticProvider,review_prompt
 
 router=APIRouter(prefix='/automation')
@@ -39,14 +40,14 @@ class Terms(BaseModel):
     creative_mode: str=Field(default='MATERIALS',pattern='^(MATERIALS|BRAND_GUIDED)$')
     knowledge_facts: list[BrandFact]=Field(default_factory=list,max_length=30)
     semantic_reviewer: str=Field(default='HUMAN_REQUIRED',pattern='^(HUMAN_REQUIRED|MODEL_REQUIRED)$')
-    semantic_model: str=Field(default='gpt-6-luna',pattern='^gpt-6-luna$')
+    semantic_model: str=Field(default='gpt-6-luna',pattern='^(gpt-6-luna|gemini-3.5-flash-lite)$')
     max_rewrites: int=Field(default=0,ge=0,le=1,strict=True)
     sensitive_terms: list[str]=Field(default_factory=list,max_length=30)
     weekdays: list[int]=Field(min_length=1,max_length=7)
     times: list[str]=Field(min_length=1,max_length=10)
     daily_max: int=Field(ge=1,le=10)
     monthly_budget_micro: int=Field(ge=1,le=100_000_000)
-    model: str=Field(pattern='^(mock-a09-v1|gpt-6-luna)$')
+    model: str=Field(pattern='^(mock-a09-v1|gpt-6-luna|gemini-3.5-flash-lite)$')
     starts_at: AwareDatetime
     expires_at: AwareDatetime
 
@@ -60,6 +61,8 @@ class Terms(BaseModel):
         # and configure the model key before supplying verified facts/materials.
         # These requirements are enforced on activation, never bypassed for Live.
         if len({f.id for f in self.knowledge_facts})!=len(self.knowledge_facts):raise ValueError('Unique owner facts required')
+        if self.model=='gemini-3.5-flash-lite' and self.brief.constraints.max_chars>480:raise ValueError('Gemini Threads maximum 480 characters')
+        if self.model=='gemini-3.5-flash-lite' and self.semantic_reviewer=='MODEL_REQUIRED' and self.semantic_model!=self.model:raise ValueError('Gemini forbids paid semantic fallback')
         return self
 
 
@@ -79,6 +82,7 @@ class Confirm(BaseModel):
 class KeyInput(BaseModel):
     model_config=ConfigDict(extra='forbid')
     api_key: SecretStr=Field(min_length=20,max_length=512)
+    model: str | None=None
 
 
 def policy_for(s: Session,tid: str,pid: str) -> AutomationPolicy:
@@ -162,6 +166,7 @@ def store_key(pid: str,body: KeyInput,request: Request,c: Credential=Depends(req
     from .main import lock_tenant
     transport_allowed(request);owner(c);lock_tenant(s,c.tenant_id);p=policy_for(s,c.tenant_id,pid)
     if p.owner_id!=c.id or p.state!='DRAFT':raise HTTPException(409,'KEY_CONFIGURATION_REQUIRES_DRAFT_POLICY')
+    if p.terms['model']=='gemini-3.5-flash-lite' and body.model!=p.terms['model']:raise HTTPException(409,'GEMINI_KEY_MODEL_REQUIRED')
     p.key_ciphertext=seal(body.api_key.get_secret_value(),c.tenant_id,'automation-key:'+p.id)
     audit(s,c.tenant_id,'automation.key_configured',p.id,c.id);s.commit();return {'key_present':True}
 
@@ -249,7 +254,12 @@ def monthly_total(s: Session,tid: str,when: datetime) -> int:
     return sum((actual or 0) if settled else reserved if state in {'RESERVED','RUNNING','RECONCILIATION_REQUIRED'} else 0 for actual,reserved,settled,state in records)
 
 
-def semantic_provider(p: AutomationPolicy) -> SemanticProvider:
+def semantic_provider(p: AutomationPolicy) -> SemanticProvider | GeminiProvider:
+    if p.terms['model']==GEMINI_MODEL:
+        from .gemini_policy import AutomationGeminiProvider
+        provider=AutomationGeminiProvider(p);provider.semantic=True
+        from .semantic_review import SemanticReview
+        provider.schema=SemanticReview.model_json_schema();return provider
     return SemanticProvider(p)
 
 
@@ -266,7 +276,7 @@ def semantic_issues(s: Session,task: Task,draft: dict,p: AutomationPolicy,t: Ter
 def review_draft(s: Session,c: Credential,p: AutomationPolicy,a: AutomationSlot,task: Task,draft: dict,t: Terms,ordinal: int) -> list[str]:
     from .main import reserve_funds,ReserveRequest,dollars,claim,settle_receipt,lock_tenant
     if t.semantic_reviewer!='MODEL_REQUIRED':return ['HUMAN_SEMANTIC_REVIEW_REQUIRED']
-    provider=semantic_provider(p);card=provider.card;bound=upper_bound(card,1024)
+    provider=semantic_provider(p);card=provider.card;bound=max(1,upper_bound(card,1024))
     if monthly_total(s,c.tenant_id,utc(a.scheduled_at))+bound>t.monthly_budget_micro:return ['MONTHLY_REVIEW_BUDGET_EXCEEDED']
     worker_policy(s,c,p.id)
     review=Task(id=uid(),tenant_id=c.tenant_id,agent_id='A21',title='Semantic review',brief='No external fact verification',
@@ -307,7 +317,7 @@ def generate_slot(s: Session,c: Credential,p: AutomationPolicy,a: AutomationSlot
     from .main import reserve_funds,ReserveRequest,dollars,claim,settle_receipt,lock_tenant
     from .revisions import ensure_original
     t=Terms.model_validate(p.terms)
-    if os.getenv('MOS_MODEL_CALLS_ENABLED','false')!='true':
+    if os.getenv('MOS_MODEL_CALLS_ENABLED','false')!='true' and not (t.model==GEMINI_MODEL and os.getenv('MOS_GEMINI_FREE_CALLS_ENABLED','false')=='true'):
         a.state='BLOCKED';a.error='MODEL_CALLS_DISABLED';s.commit();return
     ordinal=s.scalar(select(func.count()).select_from(AutomationAttempt).where(AutomationAttempt.tenant_id==c.tenant_id,AutomationAttempt.slot_id==a.id,AutomationAttempt.kind=='WRITE')) or 0
     if ordinal>t.max_rewrites:a.state='REVIEW_REQUIRED';a.error='REWRITE_LIMIT_REACHED';s.commit();return
@@ -325,14 +335,14 @@ def generate_slot(s: Session,c: Credential,p: AutomationPolicy,a: AutomationSlot
     brief=t.brief.model_copy(update={'topic':topic})
     # Keep the original brief validation and selected industry loader, not a second brand store.
     payload=brief.request(uid());payload=payload.model_copy(update={'brief':topic+' '+brief.supplementary[:900]})
-    card=MODEL if t.model=='mock-a09-v1' else CARDS[t.model]
+    card=MODEL if t.model=='mock-a09-v1' else GEMINI_CARD if t.model==GEMINI_MODEL else CARDS[t.model]
     if previous:guidance+=' Rewrite ordinal '+str(ordinal)+'; correct previous issues: '+json.dumps((previous.agent_run or {}).get('quality_reasons',[]))
     prompt=guidance+'\n'+build_prompt(payload,c.tenant_id)
     if isinstance(provider,MockLLMProvider):
         bound=usage_cost({'input_tokens':provider.count_tokens(prompt),'output_tokens':1024},card)
-    elif isinstance(provider,OpenAIProvider):bound=upper_bound(card,1024)
+    elif isinstance(provider,(OpenAIProvider,GeminiProvider)):bound=max(1,upper_bound(card,1024))
     else:raise HTTPException(503,'PROVIDER_NOT_CONFIGURED')
-    extra=upper_bound(CARDS[t.semantic_model],1024) if t.creative_mode=='BRAND_GUIDED' and t.semantic_reviewer=='MODEL_REQUIRED' else 0
+    extra=max(1,upper_bound(GEMINI_CARD if t.semantic_model==GEMINI_MODEL else CARDS[t.semantic_model],1024)) if t.creative_mode=='BRAND_GUIDED' and t.semantic_reviewer=='MODEL_REQUIRED' else 0
     if monthly_total(s,c.tenant_id,utc(a.scheduled_at))+bound+extra>t.monthly_budget_micro:
         a.state='BLOCKED';a.error='MONTHLY_BUDGET_EXCEEDED';s.commit();return
     task=Task(id=payload.task_id,tenant_id=c.tenant_id,agent_id='A09',title=topic,brief=topic,content_brief=brief.model_dump(),status='DRAFT',agent_run={'automation_policy_id':p.id,'policy_hash':p.terms_hash,'prompt_hash':hashed({'prompt':prompt}),'prompt_version':'a09-1','rewrite_ordinal':ordinal})
@@ -342,7 +352,7 @@ def generate_slot(s: Session,c: Credential,p: AutomationPolicy,a: AutomationSlot
     claim(s,c,task.id,commit=False);s.commit()
     try:
         worker_policy(s,c,p.id);s.commit()
-        if isinstance(provider,OpenAIProvider):
+        if isinstance(provider,(OpenAIProvider,GeminiProvider)):
             provider.generation_request_id=task.id
             provider.check_offline()
             if provider.count_tokens(prompt)>card['max_input_tokens']:raise RuntimeError('Input limit')
@@ -353,7 +363,7 @@ def generate_slot(s: Session,c: Credential,p: AutomationPolicy,a: AutomationSlot
         task=loaded
         draft,checked=qa(receipt['output'],context(task))
         receipt={**receipt,'request_context':payload.model_dump(),'draft':draft.model_dump() if draft else {},'prompt_version':'a09-1'}
-        source='MOCK_HTTP' if isinstance(provider,OpenAIProvider) and receipt.get('evidence_origin')=='MOCK_HTTP' else 'PROVIDER_REPORTED_UNVERIFIED' if isinstance(provider,OpenAIProvider) else 'MOCK'
+        source='MOCK_HTTP' if isinstance(provider,(OpenAIProvider,GeminiProvider)) and receipt.get('evidence_origin')=='MOCK_HTTP' else 'PROVIDER_REPORTED_UNVERIFIED' if isinstance(provider,(OpenAIProvider,GeminiProvider)) else 'MOCK'
         settle_receipt(s,c,task.id,task.id,receipt,source,commit=False)
         record=ensure_original(s,task,c);a.revision_id=record.id;task.output=record.after_text
         issues=auto_qa(record.draft,t)
@@ -386,6 +396,9 @@ def generation_provider(p: AutomationPolicy) -> LLMProvider:
     if p.terms['model']=='mock-a09-v1':
         if os.getenv('MOS_ENV') not in {'development','test'}:raise HTTPException(403,'MOCK_OFFLINE_ONLY')
         return MockLLMProvider()
+    if p.terms['model']==GEMINI_MODEL:
+        from .gemini_policy import AutomationGeminiProvider
+        gemini=AutomationGeminiProvider(p);gemini.check_offline();return gemini
     from .automation_provider import AutomationOpenAIProvider
     provider=AutomationOpenAIProvider(p);provider.check_offline();return provider
 

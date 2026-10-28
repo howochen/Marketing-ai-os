@@ -9,6 +9,7 @@ env:
   MOS_AUTOMATION_LIVE_ENABLED: "false"
   MOS_MODEL_CALLS_ENABLED: "false"
   MOS_SINGLE_AI_TEST_ENABLED: "false"
+  MOS_GEMINI_FREE_CALLS_ENABLED: "false"
 permissions:
   contents: read
 jobs:
@@ -35,6 +36,7 @@ jobs:
       - run: python -m compileall -q app tests migrations scripts
       - run: node --check app/web/automation.js
       - run: node --check app/web/automation-wizard.js
+      - run: node --check app/web/gemini.js
       - run: node --check app/web/brand-quick.js
       - run: node --test tests/brand_quick.test.cjs tests/policy_validation.test.cjs
       - run: mypy
