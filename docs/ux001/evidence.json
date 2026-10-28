@@ -1,0 +1,33 @@
+[
+  {
+    "savedKeys": 0,
+    "steps": 3,
+    "overview": true
+  },
+  {
+    "newDraft201": true,
+    "brandApplied": true,
+    "keyFailureRetained": true,
+    "keySuccessGreen": true,
+    "noRepeatedKeyInput": true,
+    "requests": 2
+  },
+  {
+    "width": 1440,
+    "noHorizontalOverflow": true
+  },
+  {
+    "width": 768,
+    "noHorizontalOverflow": true
+  },
+  {
+    "width": 390,
+    "noHorizontalOverflow": true
+  },
+  {
+    "keyShown": true,
+    "noPlaintext": true,
+    "paidCalls": 0,
+    "threadsPosts": 0
+  }
+]

@@ -62,7 +62,7 @@ const BrandQuick=(()=>{
      <div class="form-grid">${Object.entries(labels).map(([key,label])=>`<label>${esc(label)}${key==='maxchars'?`<input data-brand-field="${key}" type="number" min="20" max="500" step="1" value="${esc(proposal[key])}" required>`:`<textarea data-brand-field="${key}" rows="${key==='topics'?6:2}" maxlength="${({description:400,audience:160,goal:160,tone:80,supplementary:800})[key]||800}" ${key!=='supplementary'?'required':''}>${esc(proposal[key])}</textarea>`}</label>`).join('')}</div>
      <p class="footnote">確認後使用上方「套用至目前政策」；套用不是儲存、支出批准或發布授權。</p>`;
     panel.querySelector('h3').focus();
-    document.querySelector('#brand-cancel').onclick=()=>{panel.hidden=true;panel.replaceChildren();get('brand-quick').focus();};
+    document.querySelector('#brand-cancel').onclick=()=>{panel.hidden=true;panel.replaceChildren();document.dispatchEvent(new Event('mos-brand-applied'));get('brand-quick').focus();};
     document.querySelector('#brand-apply').onclick=()=>{
      try{
       if(snapshot()!==original)throw new Error('目前政策表單已變更，未套用建議。請重新開啟預覽，避免覆蓋剛才的編輯。');
@@ -80,7 +80,7 @@ const BrandQuick=(()=>{
       if(get('brand').value.trim()!==proposal.name&&(get('facts').value.trim()||get('copy').value.trim()))throw new Error('目前草稿已有品牌知識或核准素材。請先核對並移除不屬於新品牌的內容，再重新預覽；不會自動覆寫 Owner 資料。');
       const values={brand:proposal.name,industry:proposal.industry,description:proposal.description,audience:proposal.audience,goal:proposal.goal,tone:proposal.tone,topics:topics.join('\n'),forbidden:words.join(','),required:proposal.required,maxchars:proposal.maxchars,supplementary:extra};
       for(const [id,value] of Object.entries(values))get(id).value=value;
-      panel.hidden=true;panel.replaceChildren();get('brand-quick').focus();message('品牌建議已填入目前表單，尚未儲存或授權；已保存的政策不受影響。');
+      panel.hidden=true;panel.replaceChildren();document.dispatchEvent(new Event('mos-brand-applied'));get('brand-quick').focus();message('品牌建議已填入目前表單，尚未儲存或授權；已保存的政策不受影響。');
      }catch(e){message(e.message,true);}
     };
     return true;
