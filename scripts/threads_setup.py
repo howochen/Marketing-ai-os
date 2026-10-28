@@ -194,6 +194,7 @@ def tunnel(vault):
     config=PRIVATE/'ngrok-runtime.yml'
     config.write_text('version: "2"\nweb_addr: 127.0.0.1:4041\n'+('authtoken: '+json.dumps(vault['ngrok_token'])+'\n' if vault.get('ngrok_token') else ''),encoding='utf-8')
     args=['ngrok','http',LOCAL,'--inspect=false','--log=false','--upstream-tls-verify=true','--upstream-tls-verify-cas='+str(PRIVATE/'upstream.crt')]
+    if vault.get('public_url','').endswith('.ngrok-free.dev'):args+=['--url='+public_url(vault['public_url'])]
     original=Path(os.environ.get('LOCALAPPDATA',''))/'ngrok/ngrok.yml'
     if original.exists() and not vault.get('ngrok_token'):args+=['--config',str(original)]
     args+=['--config',str(config)]
