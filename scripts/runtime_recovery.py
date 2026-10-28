@@ -105,11 +105,6 @@ def configure():
         if json.loads((PRIVATE/'config.json').read_text(encoding='utf-8'))!=config:raise RuntimeError('CONFIG_CHANGED_REVIEW_REQUIRED')
         return
     (PRIVATE/'containers-before.dpapi').write_bytes(setup.dpapi(json.dumps(items).encode()))
-    settings=Path(os.environ['APPDATA'])/'Docker/settings-store.json'
-    if settings.exists():
-        raw=settings.read_bytes();(PRIVATE/'docker-settings-before.dpapi').write_bytes(setup.dpapi(raw))
-        value=json.loads(raw);value['AutoStart']=True
-        settings.write_text(json.dumps(value,indent=2),encoding='utf-8')
     write('config.json',config);write('status.json',{'attempts':{},'status':'CONFIGURED_NOT_YET_CHECKED'})
     for name in NAMES:run(['docker','update','--restart=on-failure:3',name])
 

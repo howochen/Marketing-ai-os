@@ -6,7 +6,7 @@
 
 ## 已安裝
 
-- Docker Desktop：啟用現有 AutoStart 及同使用者 HKCU Run；無需系統管理員永久憑證。
+- Docker Desktop：原生 AutoStart 會被應用程式回寫為 false，因此不依賴直接編輯其設定。由同使用者的 Windows 登入 Task 在引擎未就緒時啟動 Docker，另保留 HKCU Run 備援；無需系統管理員永久憑證。
 - API、原 PostgreSQL 容器：`on-failure:3`。Task 只啟動登錄的原容器，檢查 ID、映像與 Volume；不 build、不 migrate、不 compose up、不啟用 Worker。
 - Windows Task `MOS Runtime Recovery`：目前使用者登入及每2分鐘觸發、同時只執行一份、單次最多5分鐘。DPAPI 僅在使用者登入後以原身分解密。安裝的 helper 固定複製到 `.threads-local/runtime-recovery/installed`，不依賴目前 Git 分支是否保留該檔。
 - 每項恢復每小時最多3次，超限持久化暫停；單純重啟 Task 不會清空限制。修復並手動啟動服務後，成功健康檢查才解除暫停。失敗狀態顯示於 Task 結果及桌面「MOS 自動恢復狀態」捷徑。
