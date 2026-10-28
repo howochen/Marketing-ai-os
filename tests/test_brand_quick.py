@@ -12,7 +12,7 @@ from test_threads_publisher import mock_threads
 
 def test_brand_rules_in_node():
     if not shutil.which('node'):pytest.skip('Node required for actual frontend rule tests')
-    result=subprocess.run(['node','--test','tests/brand_quick.test.cjs'],capture_output=True,text=True,encoding='utf-8')
+    result=subprocess.run(['node','--test','tests/brand_quick.test.cjs','tests/policy_validation.test.cjs'],capture_output=True,text=True,encoding='utf-8')
     assert result.returncode==0,result.stdout+result.stderr
 
 
