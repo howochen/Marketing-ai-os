@@ -1,0 +1,33 @@
+[
+  {
+    "realHttp422": "duplicate",
+    "chineseFieldError": true,
+    "inputsRetained": true
+  },
+  {
+    "realHttp422": "description",
+    "chineseFieldError": true,
+    "inputsRetained": true
+  },
+  {
+    "ajDraft": {
+      "id": "67a89830-914a-49ae-919f-b8e3166d5a13",
+      "state": "DRAFT",
+      "model": "gpt-6-luna",
+      "facts": 0,
+      "keyField": true,
+      "status": 201
+    }
+  },
+  {
+    "activationBlocked": {
+      "status": 422,
+      "detail": "VERIFIED_BRAND_FACTS_REQUIRED_BEFORE_ACTIVATION",
+      "state": "DRAFT",
+      "worker": false
+    },
+    "realAIRequests": 0,
+    "threadsPosts": 0,
+    "source": "isolated actual HTTP and SQLite"
+  }
+]
