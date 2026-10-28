@@ -38,3 +38,32 @@ def test_brand_brief_saved_as_new_policy_preserves_old_policy(client,env):
     prompt=build_prompt(brief.request('brand-quick-synthetic'),tid)
     assert brief.tone in prompt and brief.supplementary in prompt
     assert saved['key_present'] is False
+
+
+def test_incomplete_brand_guided_draft_saves_but_cannot_activate(client,env):
+    import copy
+    _,owner,_,base,_=setup_policy(client)
+    terms=copy.deepcopy(base['terms'])
+    terms.update(mode='FULL',creative_mode='BRAND_GUIDED',knowledge_facts=[],approved_copy=[],model='gpt-6-luna')
+    response=client.post('/automation/policies',headers=owner,json={'terms':terms})
+    assert response.status_code==201,response.text
+    saved=response.json()
+    assert saved['state']=='DRAFT' and saved['key_present'] is False
+    activate=client.post('/automation/policies/'+saved['id']+'/activate',headers=owner,json={
+        'terms_hash':saved['terms_hash'],'confirm_delegated_publication':True})
+    assert activate.status_code==422
+    assert activate.json()['detail']=='VERIFIED_BRAND_FACTS_REQUIRED_BEFORE_ACTIVATION'
+
+
+def test_incomplete_full_materials_draft_saves_but_cannot_activate(client,env):
+    import copy
+    _,owner,_,base,_=setup_policy(client)
+    terms=copy.deepcopy(base['terms'])
+    terms.update(mode='FULL',creative_mode='MATERIALS',approved_copy=[])
+    response=client.post('/automation/policies',headers=owner,json={'terms':terms})
+    assert response.status_code==201,response.text
+    saved=response.json()
+    activate=client.post('/automation/policies/'+saved['id']+'/activate',headers=owner,json={
+        'terms_hash':saved['terms_hash'],'confirm_delegated_publication':True})
+    assert activate.status_code==422
+    assert activate.json()['detail']=='THREE_OWNER_APPROVED_COPY_BLOCKS_REQUIRED_BEFORE_ACTIVATION'

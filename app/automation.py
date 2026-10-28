@@ -56,8 +56,10 @@ class Terms(BaseModel):
         if len(set(self.times))!=len(self.times) or any(not re.fullmatch(r'(?:[01][0-9]|2[0-3]):[0-5][0-9]',x) for x in self.times):raise ValueError('Unique HH:MM times required')
         if any(type(x) is not int or not 0<=x<=6 for x in self.weekdays) or len(set(self.weekdays))!=len(self.weekdays):raise ValueError('Weekdays are Monday=0..Sunday=6')
         if any(not 1<=len(x.strip())<=500 for x in self.topics+self.approved_copy+self.sensitive_terms):raise ValueError('Invalid policy text')
-        if self.creative_mode=='BRAND_GUIDED' and (not self.knowledge_facts or len({f.id for f in self.knowledge_facts})!=len(self.knowledge_facts)):raise ValueError('Unique owner facts required')
-        if self.mode=='FULL' and self.creative_mode=='MATERIALS' and len(self.approved_copy)<3:raise ValueError('Full mode requires owner-approved copy blocks, including Hook and CTA')
+        # Incomplete content is allowed in a DRAFT so the Owner can save the brand
+        # and configure the model key before supplying verified facts/materials.
+        # These requirements are enforced on activation, never bypassed for Live.
+        if len({f.id for f in self.knowledge_facts})!=len(self.knowledge_facts):raise ValueError('Unique owner facts required')
         return self
 
 
@@ -121,6 +123,10 @@ def activate(pid: str,body: Confirm,c: Credential=Depends(require('credentials')
     owner(c);lock_tenant(s,c.tenant_id);p=policy_for(s,c.tenant_id,pid)
     if p.state=='REVOKED' or p.owner_id!=c.id or not body.confirm_delegated_publication or body.terms_hash!=p.terms_hash:raise HTTPException(403,'EXACT_OWNER_POLICY_CONSENT_REQUIRED')
     t=Terms.model_validate(p.terms)
+    if t.creative_mode=='BRAND_GUIDED' and not t.knowledge_facts:
+        raise HTTPException(422,'VERIFIED_BRAND_FACTS_REQUIRED_BEFORE_ACTIVATION')
+    if t.mode=='FULL' and t.creative_mode=='MATERIALS' and len(t.approved_copy)<3:
+        raise HTTPException(422,'THREE_OWNER_APPROVED_COPY_BLOCKS_REQUIRED_BEFORE_ACTIVATION')
     if t.expires_at<=now():raise HTTPException(409,'POLICY_EXPIRED')
     if t.execution_mode=='LIVE':
         from .automation_live import evidence
