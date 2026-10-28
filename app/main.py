@@ -618,6 +618,9 @@ app.include_router(single_ai_test_router)
 from .gemini_policy import router as gemini_router
 app.include_router(gemini_router)
 
+from .google_oauth import router as google_oauth_router
+app.include_router(google_oauth_router)
+
 # Validation responses never echo submitted secrets, including malformed provider keys.
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse

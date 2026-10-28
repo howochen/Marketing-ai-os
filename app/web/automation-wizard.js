@@ -24,6 +24,7 @@ const AutomationWizard=(()=>{
   const policies=data.policies.filter(p=>p.state!=='REVOKED');
   const choose=document.createElement('select');choose.id='setup-ai-policy';choose.setAttribute('aria-label','選擇要連接 AI 的已儲存設定');
   choose.innerHTML='<option value="">新的設定（尚未儲存）</option>'+policies.map(p=>`<option value="${esc(p.id)}">${esc(p.terms.brief.brand.name)} · ${esc(p.terms.model)}${p.key_present?' · Key 已保存':''}</option>`).join('');
+  const returned=new URLSearchParams(location.search).get('policy');if(!selectedId&&policies.some(p=>p.id===returned))selectedId=returned;
   choose.value=selectedId||policies.find(p=>p.key_present)?.id||'';connect.append(choose);
   const info=document.createElement('div');info.setAttribute('aria-live','polite');connect.append(info);
   const summary=document.createElement('section');summary.className='panel setup-overview';summary.setAttribute('aria-label','設定狀態總覽');create.before(summary);

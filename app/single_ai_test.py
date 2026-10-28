@@ -49,6 +49,9 @@ def permit_for(s: Session,tid: str,pid: str) -> AITestPermit:
 
 
 def view(p: AITestPermit) -> dict:
+    if p.terms.get('kind') in {'GEMINI_GOOGLE_AUTH','GEMINI_GOOGLE_CLIENT','GEMINI_GOOGLE_GRANT'}:
+        return {'id':p.id,'state':p.state,'terms':{k:v for k,v in p.terms.items() if k in {'kind','policy_id'}},
+            'outcome':{k:v for k,v in (p.outcome or {}).items() if k in {'phase','error','source'}},'invoice_verified':False,'threads_publication_authorized':False}
     return {'id':p.id,'terms':p.terms,'terms_hash':p.terms_hash,'state':p.state,'request_count':p.request_count,
         'task_id':p.task_id,'outcome':p.outcome,'approval_source':p.approval.get('source','OWNER_AND_ADMIN_ATTESTATION') if p.approval else None,
         'invoice_verified':False,'threads_publication_authorized':False}
@@ -154,7 +157,7 @@ def provider_for(p: AITestPermit,s: Session) -> SingleTestProvider:
 
 class GeminiExecution(BaseModel):
     model_config=ConfigDict(extra='forbid')
-    verification_access_token: SecretStr=Field(min_length=20,max_length=4096)
+    verification_access_token: SecretStr | None=Field(default=None,min_length=20,max_length=4096)
 
 
 @router.post('/ai-tests/{pid}/execute')
@@ -165,8 +168,12 @@ def execute(pid: str,body: GeminiExecution | None=None,c: Credential=Depends(req
     if p.state!='APPROVED' or p.request_count or p.owner_id!=c.id:raise HTTPException(409,'AI_TEST_NOT_ADMISSIBLE_NO_RETRY')
     if p.terms.get('kind')=='GEMINI_SINGLE_TEST':
         from .gemini_policy import SingleGeminiProvider
-        if not body:raise HTTPException(403,'GEMINI_FREE_TIER_NOT_VERIFIED')
-        provider: SingleTestProvider | SingleGeminiProvider=SingleGeminiProvider(p,s,body.verification_access_token.get_secret_value())
+        if body and body.verification_access_token:token=body.verification_access_token.get_secret_value()
+        else:
+            from .google_oauth import access_token
+            from .automation import policy_for
+            token=access_token(s,policy_for(s,c.tenant_id,p.terms['policy_id']))
+        provider: SingleTestProvider | SingleGeminiProvider=SingleGeminiProvider(p,s,token)
     else:provider=provider_for(p,s)
     try:provider.check_offline();provider.authorization()
     except (ProviderFailure,KeyError):raise HTTPException(403,'SINGLE_AI_TEST_GATE_CLOSED') from None

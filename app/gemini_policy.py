@@ -64,6 +64,8 @@ def latest(s: Session,p: AutomationPolicy,kind: str) -> AITestPermit | None:
 
 
 def connection_valid(record: AITestPermit | None,p: AutomationPolicy,s: Session) -> bool:
+    from .google_oauth import grant_valid
+    if not grant_valid(s,p):return False
     config=latest(s,p,'GEMINI_CONFIGURATION')
     return bool(record and record.state=='REQUESTED' and (record.outcome or {}).get('connection_verified') is True and record.terms.get('policy_hash')==p.terms_hash and config and record.terms.get('configuration_id')==config.id
         and record.terms.get('key_fingerprint')==fingerprint(p) and utc(record.created_at)+timedelta(minutes=10)>now())
@@ -104,6 +106,8 @@ def status(pid: str,c: Credential=Depends(require('read')),s: Session=Depends(db
     verified=bool(p.key_ciphertext and connection_valid(proof,p,s))
     current=bool(proof and config and p.key_ciphertext and proof.terms.get('configuration_id')==config.id and proof.terms.get('policy_hash')==p.terms_hash
         and proof.terms.get('key_fingerprint')==fingerprint(p) and utc(proof.created_at)+timedelta(minutes=10)>now())
+    from .google_oauth import grant_valid
+    current=current and grant_valid(s,p)
     eligibility='CONFIRMED' if verified else 'NOT_ELIGIBLE' if current and proof and (proof.outcome or {}).get('category')=='GEMINI_PAID_PROJECT_BLOCKED' else 'PENDING'
     return {'provider':'Google Gemini','model':MODEL_ID,'key_present':bool(p.key_ciphertext),'project_id':config.terms['project_id'] if config else '',
         'key_resource':config.terms['key_resource'] if config else '','free_tier_verified':verified,'verification_source':(proof.outcome or {}).get('source') if verified and proof else None,
@@ -225,6 +229,14 @@ class AutomationGeminiProvider(GeminiProvider):
         base=provider_for(p,os.getenv('MOS_GOOGLE_READONLY_ACCESS_TOKEN',''))
         super().__init__(base.key,base.project_id,base.key_resource,base.verification_token,transport)
         self.policy=p
+
+    def verify_free(self) -> dict:
+        if not self.synthetic_only:
+            from .database import SessionLocal,scope
+            from .google_oauth import access_token
+            with SessionLocal() as s:
+                scope(s,self.policy.tenant_id);self.verification_token=access_token(s,self.policy)
+        return super().verify_free()
 
     def check_offline(self) -> None:
         super().check_offline()

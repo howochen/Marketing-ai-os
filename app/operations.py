@@ -21,6 +21,8 @@ def redact(message: str) -> str:
     message = re.sub(r'\b(?:mos_|sk-)[A-Za-z0-9_-]{20,}', '[REDACTED]', message)
     message = re.sub(r'\b(?:AIza[A-Za-z0-9_-]{20,}|ya29\.[A-Za-z0-9._-]+)', '[REDACTED]', message)
     message = re.sub(r'''(?i)((?:x-goog-api-key|api_key|verification_access_token)["']?\s*[:=]\s*["']?)[^"',\s}]+''', r'\1[REDACTED]', message)
+    message = re.sub(r'GOCSPX-[A-Za-z0-9_-]+', '[REDACTED]', message)
+    message = re.sub(r'''(?i)((?:client_secret|access_token|refresh_token|code_verifier|id_token)["']?\s*[:=]\s*["']?)[^"',\s}]+''', r'\1[REDACTED]', message)
     message = re.sub(r'(?i)([?&](?:code|state|access_token|input_token|client_secret)=)[^&\s\"\']+', r'\1[REDACTED]', message)
     return re.sub(r'(://[^\s/:]+:)[^@\s]+@', r'\1[REDACTED]@', message)
 

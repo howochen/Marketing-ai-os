@@ -37,6 +37,7 @@ jobs:
       - run: node --check app/web/automation.js
       - run: node --check app/web/automation-wizard.js
       - run: node --check app/web/gemini.js
+      - run: node --check app/web/google-oauth.js
       - run: node --check app/web/brand-quick.js
       - run: node --test tests/brand_quick.test.cjs tests/policy_validation.test.cjs
       - run: mypy

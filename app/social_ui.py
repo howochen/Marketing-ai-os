@@ -163,6 +163,12 @@ def publish(pid: str,payload: publisher.Consent,c: Credential=Depends(require('p
 async def ui_http_error(request: Request,exc: Exception) -> Response:
     from fastapi.exception_handlers import http_exception_handler
     from starlette.exceptions import HTTPException as StarletteHTTPException
+    if request.url.path=='/google/oauth/callback':
+        reason=getattr(exc,'detail','')
+        if reason not in {'GOOGLE_STATE_INVALID','GOOGLE_REDIRECT_CHANGED'}:reason='GOOGLE_OPERATOR_REVOKED'
+        result=RedirectResponse('/app/automation?'+urlencode({'google_oauth':reason}),303,headers={'Cache-Control':'no-store','Referrer-Policy':'no-referrer'})
+        result.delete_cookie('mos_google_browser',path='/google/oauth/callback',secure=True,httponly=True,samesite='lax')
+        return result
     if request.url.path=='/threads/oauth/callback' and request.cookies.get(USER_COOKIE):
         allowed={'TOKEN_EXCHANGE','LONG_TOKEN','IDENTITY','PROFILE','PERMISSIONS','ACCOUNT_BINDING'}
         headers=getattr(exc,'headers',None) or {}
