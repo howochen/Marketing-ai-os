@@ -21,13 +21,15 @@ PROJECT={'project_id':'synthetic-free-project','key_resource':'projects/12345678
 
 @pytest.fixture
 def google(monkeypatch):
-    state={'calls':[],'paid':False,'key':KEY,'status':200,'finish':'STOP','draft':copy.deepcopy(DRAFT),'usage':{'promptTokenCount':100,'candidatesTokenCount':200,'thoughtsTokenCount':10,'totalTokenCount':310}}
+    state={'calls':[],'generations':0,'paid':False,'key':KEY,'status':200,'finish':'STOP','draft':copy.deepcopy(DRAFT),'usage':{'promptTokenCount':100,'candidatesTokenCount':200,'thoughtsTokenCount':10,'totalTokenCount':310}}
     def send(r):
         assert KEY not in str(r.url) and TOKEN not in str(r.url)
         state['calls'].append((r.method,r.url.host,r.url.path))
+        if r.url.path.endswith('/projects:search'):return httpx.Response(200,json={'projects':[{'projectId':PROJECT['project_id'],'displayName':'合成免費專案','name':'projects/123456789','state':'ACTIVE'}]})
         if r.url.host=='cloudresourcemanager.googleapis.com':return httpx.Response(200,json={'projectId':PROJECT['project_id'],'name':'projects/123456789','state':'ACTIVE'})
+        if r.url.host=='apikeys.googleapis.com' and r.url.path.endswith('/keys'):return httpx.Response(200,json={'keys':[{'name':PROJECT['key_resource']}]})
         if r.url.host=='apikeys.googleapis.com':return httpx.Response(200,json={'keyString':state['key']})
-        if r.url.host=='cloudbilling.googleapis.com':return httpx.Response(200,json={'projectId':PROJECT['project_id'],'billingEnabled':state['paid'],'billingAccountName':'billingAccounts/paid' if state['paid'] else ''})
+        if r.url.host=='cloudbilling.googleapis.com':return httpx.Response(200,json={'projectId':PROJECT['project_id'],'billingEnabled':state.get('billing_enabled',state['paid']),'billingAccountName':'billingAccounts/paid' if state['paid'] else ''})
         if r.method=='GET':return httpx.Response(200,json={'name':'models/'+MODEL_ID,'inputTokenLimit':1048576,'outputTokenLimit':65536,'supportedGenerationMethods':['generateContent']})
         body=json.loads(r.content)
         if r.url.path.endswith(':countTokens'):
@@ -37,7 +39,8 @@ def google(monkeypatch):
         assert not body.get('tools') and body['generationConfig']['candidateCount']==1 and body['generationConfig']['maxOutputTokens']==1024
         if state['status']=='timeout':raise httpx.ReadTimeout('synthetic '+KEY,request=r)
         if state['status']!=200:return httpx.Response(state['status'],json={'error':{'message':KEY}})
-        return httpx.Response(200,headers={'x-request-id':'synthetic-request'},json={'modelVersion':MODEL_ID,'responseId':'synthetic-response',
+        state['generations']+=1
+        return httpx.Response(200,headers={'x-request-id':'synthetic-request'},json={'modelVersion':MODEL_ID,'responseId':'synthetic-response-'+str(state['generations']),
             'usageMetadata':state['usage'],'candidates':[{'finishReason':state['finish'],'content':{'role':'model','parts':[{'text':json.dumps(state['draft'],ensure_ascii=False)}]}}]})
     transport=httpx.MockTransport(send)
     original_provider=gp.provider_for
@@ -86,7 +89,7 @@ def test_connection_is_read_only_and_rotation_invalidates_proof(client,env,googl
     assert not client.get('/automation/policies/'+p['id']+'/gemini-status',headers=owner).json()['free_tier_verified']
 
 
-@pytest.mark.parametrize('mutation,category',[('paid','GEMINI_PAID_OR_UNKNOWN_PROJECT_BLOCKED'),('key','GEMINI_PROJECT_KEY_MISMATCH')])
+@pytest.mark.parametrize('mutation,category',[('paid','GEMINI_PAID_PROJECT_BLOCKED'),('key','GEMINI_PROJECT_KEY_MISMATCH')])
 def test_wrong_project_or_billing_never_generates(client,env,google,mutation,category):
     _,owner,p,_=configured(client,env,google);google[0][mutation]=True if mutation=='paid' else 'wrong-key'
     r=client.post('/automation/policies/'+p['id']+'/gemini-check',headers=owner,json={'verification_access_token':TOKEN})
@@ -184,7 +187,7 @@ def test_changed_billing_is_rechecked_before_any_inference(client,env,google,mon
     _,owner,p,_=configured(client,env,google);checked(client,owner,p);test=permit(client,owner,p)
     google[0]['paid']=True;monkeypatch.setenv('MOS_SINGLE_AI_TEST_ENABLED','true');monkeypatch.setenv('MOS_THREADS_PUBLISH_ENABLED','false')
     r=client.post('/ai-tests/'+test['id']+'/execute',headers=owner,json={'verification_access_token':TOKEN})
-    assert r.json()['state']=='RECONCILIATION_REQUIRED' and r.json()['outcome']['category']=='GEMINI_PAID_OR_UNKNOWN_PROJECT_BLOCKED'
+    assert r.json()['state']=='RECONCILIATION_REQUIRED' and r.json()['outcome']['category']=='GEMINI_PAID_PROJECT_BLOCKED'
     assert all(m=='GET' for m,_,_ in google[0]['calls'])
 
 
@@ -211,3 +214,28 @@ def test_two_concurrent_executions_only_dispatch_once(client,env,google,monkeypa
     with ThreadPoolExecutor(2) as pool:results=list(pool.map(lambda _:execute(),range(2)))
     assert all(r.status_code in {200,409} for r in results) and any(r.status_code==200 for r in results)
     assert len([x for x in google[0]['calls'] if x[2].endswith(':generateContent')])==1
+
+
+def test_project_picker_discovers_matching_key_without_exposing_secrets(client,env,google):
+    _,owner,p,_=configured(client,env,google);base='/automation/policies/'+p['id']
+    projects=client.post(base+'/gemini-projects',headers=owner,json={'verification_access_token':TOKEN})
+    assert projects.status_code==200 and projects.json()['projects'][0]['project_id']==PROJECT['project_id']
+    result=client.post(base+'/gemini-discover',headers=owner,json={'verification_access_token':TOKEN,'project_id':PROJECT['project_id']})
+    assert result.status_code==200 and result.json()['free_tier_status']=='CONFIRMED'
+    assert result.json()['key_resource']==PROJECT['key_resource'] and KEY not in result.text and TOKEN not in result.text
+    assert all(method=='GET' for method,_,_ in google[0]['calls'])
+
+
+@pytest.mark.parametrize('billing,status',[(True,'NOT_ELIGIBLE'),(None,'PENDING')])
+def test_unknown_is_not_mislabeled_paid_and_cannot_generate(client,env,google,billing,status):
+    _,owner,p,_=configured(client,env,google);google[0]['billing_enabled']=billing
+    r=client.post('/automation/policies/'+p['id']+'/gemini-discover',headers=owner,json={'verification_access_token':TOKEN,'project_id':PROJECT['project_id']})
+    assert r.status_code==200 and r.json()['free_tier_status']==status and not r.json()['free_tier_verified']
+    assert client.post('/automation/policies/'+p['id']+'/gemini-test',headers=owner,json={'confirm_one_generation_only':True,'idempotency_key':'no-free-approval'}).status_code==409
+
+
+def test_discovery_routes_are_owner_tenant_scoped(client,env,google):
+    _,owner,p,_=configured(client,env,google);_,other,worker,_=tenant(client,name='Other discovery tenant')
+    for actor,code in [(other,404),(worker,403)]:
+        assert client.post('/automation/policies/'+p['id']+'/gemini-projects',headers=actor,json={'verification_access_token':TOKEN}).status_code==code
+    assert not google[0]['calls']

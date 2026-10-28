@@ -57,10 +57,46 @@ class GeminiProvider:
             raise ProviderFailure('GEMINI_PROJECT_KEY_MISMATCH',unknown=False)
         billing=self.http('GET','https://cloudbilling.googleapis.com/v1/projects/'+self.project_id+'/billingInfo',headers=headers)
         # An inactive linked account is not accepted as a permanent no-billing guarantee.
-        if billing.get('projectId')!=self.project_id or billing.get('billingEnabled') is not False or billing.get('billingAccountName') not in {None,''}:
-            raise ProviderFailure('GEMINI_PAID_OR_UNKNOWN_PROJECT_BLOCKED',unknown=False)
+        if billing.get('projectId')!=self.project_id:raise ProviderFailure('GEMINI_PROJECT_KEY_MISMATCH',unknown=False)
+        account=billing.get('billingAccountName')
+        if billing.get('billingEnabled') is True or (isinstance(account,str) and account):
+            raise ProviderFailure('GEMINI_PAID_PROJECT_BLOCKED',unknown=False)
+        if billing.get('billingEnabled') is not False or (account is not None and not isinstance(account,str)):
+            raise ProviderFailure('GEMINI_FREE_TIER_NOT_VERIFIED',unknown=False)
         return {'project_id':self.project_id,'project_number':number,'billing_enabled':False,'billing_account_linked':False,
                 'source':'MOCK' if self.synthetic_only else 'GOOGLE_CLOUD_READ_ONLY','model':self.model}
+
+    def projects(self) -> dict:
+        if not self.verification_token:raise ProviderFailure('GEMINI_FREE_TIER_NOT_VERIFIED',unknown=False)
+        data=self.http('GET','https://cloudresourcemanager.googleapis.com/v3/projects:search?pageSize=100',headers={'Authorization':'Bearer '+self.verification_token})
+        rows=data.get('projects',[])
+        if not isinstance(rows,list):raise ProviderFailure('GEMINI_INVALID_RESPONSE',unknown=False)
+        return {'projects':[{'project_id':p['projectId'],'label':str(p.get('displayName',p['projectId']))[:120]}
+            for p in rows[:100] if isinstance(p,dict) and p.get('state')=='ACTIVE' and isinstance(p.get('projectId'),str)
+            and re.fullmatch(r'[a-z][a-z0-9-]{4,28}[a-z0-9]',p['projectId'])], 'truncated':bool(data.get('nextPageToken'))}
+
+    def discover(self,project_id: str) -> dict:
+        if not re.fullmatch(r'[a-z][a-z0-9-]{4,28}[a-z0-9]',project_id):raise ProviderFailure('GEMINI_PROJECT_CONFIGURATION_REQUIRED',unknown=False)
+        headers={'Authorization':'Bearer '+self.verification_token}
+        p=self.http('GET','https://cloudresourcemanager.googleapis.com/v3/projects/'+project_id,headers=headers)
+        number=p.get('name','')
+        if p.get('state')!='ACTIVE' or p.get('projectId')!=project_id or not isinstance(number,str) or not re.fullmatch(r'projects/[0-9]{1,30}',number):
+            raise ProviderFailure('GEMINI_PROJECT_KEY_MISMATCH',unknown=False)
+        data=self.http('GET','https://apikeys.googleapis.com/v2/'+number+'/locations/global/keys?pageSize=20',headers=headers)
+        keys=data.get('keys',[])
+        if not isinstance(keys,list):raise ProviderFailure('GEMINI_INVALID_RESPONSE',unknown=False)
+        denied=False
+        for row in keys[:20]:
+            name=row.get('name') if isinstance(row,dict) else None
+            if not isinstance(name,str) or not re.fullmatch(re.escape(number)+r'/locations/global/keys/[A-Za-z0-9_-]{1,100}',name):continue
+            try:value=self.http('GET','https://apikeys.googleapis.com/v2/'+name+'/keyString',headers=headers)
+            except ProviderFailure as e:
+                if e.category!='GEMINI_KEY_OR_VERIFICATION_PERMISSION_DENIED':raise
+                denied=True;continue
+            if isinstance(value.get('keyString'),str) and hmac.compare_digest(value['keyString'],self.key):
+                return {'project_id':project_id,'key_resource':name}
+        category='GEMINI_DISCOVERY_LIMIT_REACHED' if data.get('nextPageToken') else 'GEMINI_DISCOVERY_PERMISSION_REQUIRED' if denied else 'GEMINI_KEY_NOT_IN_SELECTED_PROJECT'
+        raise ProviderFailure(category,unknown=False)
 
     def connection(self) -> dict:
         proof=self.verify_free()

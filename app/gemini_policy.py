@@ -102,14 +102,38 @@ def status(pid: str,c: Credential=Depends(require('read')),s: Session=Depends(db
     config=latest(s,p,'GEMINI_CONFIGURATION')
     proof=latest(s,p,'GEMINI_CONNECTION');test=latest(s,p,'GEMINI_SINGLE_TEST');key_test=latest(s,p,'GEMINI_KEY_CHECK')
     verified=bool(p.key_ciphertext and connection_valid(proof,p,s))
+    current=bool(proof and config and p.key_ciphertext and proof.terms.get('configuration_id')==config.id and proof.terms.get('policy_hash')==p.terms_hash
+        and proof.terms.get('key_fingerprint')==fingerprint(p) and utc(proof.created_at)+timedelta(minutes=10)>now())
+    eligibility='CONFIRMED' if verified else 'NOT_ELIGIBLE' if current and proof and (proof.outcome or {}).get('category')=='GEMINI_PAID_PROJECT_BLOCKED' else 'PENDING'
     return {'provider':'Google Gemini','model':MODEL_ID,'key_present':bool(p.key_ciphertext),'project_id':config.terms['project_id'] if config else '',
         'key_resource':config.terms['key_resource'] if config else '','free_tier_verified':verified,'verification_source':(proof.outcome or {}).get('source') if verified and proof else None,
-        'connection_status':'FREE_PROJECT_AND_MODEL_VERIFIED' if verified else 'FREE_TIER_NOT_VERIFIED',
+        'verification_expires_at':(utc(proof.created_at)+timedelta(minutes=10)).isoformat() if verified and proof else None,
+        'connection_status':'FREE_PROJECT_AND_MODEL_VERIFIED' if verified else 'FREE_TIER_NOT_VERIFIED','free_tier_status':eligibility,
         'key_connection':key_test.outcome if key_test and p.key_ciphertext and key_test.terms.get('key_fingerprint')==fingerprint(p) else None,
-        'last_error':(proof.outcome or {}).get('category') if proof else None,'test_id':test.id if test else None,
+        'last_error':(proof.outcome or {}).get('category') if current and proof else None,'test_id':test.id if test else None,
         'test_state':test.state if test else 'NOT_RUN','test_result':test.outcome if test else None,
         'generation_enabled':os.getenv('MOS_GEMINI_FREE_CALLS_ENABLED','false')=='true',
         'threads_publication_authorized':False}
+
+
+@router.post('/{pid}/gemini-projects')
+def projects(pid: str,body: Verification,request: Request,c: Credential=Depends(require('credentials')),s: Session=Depends(db)) -> dict:
+    transport_allowed(request);p=owned(s,c,pid)
+    return provider_for(p,body.verification_access_token.get_secret_value()).projects()
+
+
+class Discovery(Verification):
+    project_id: str=Field(pattern=r'^[a-z][a-z0-9-]{4,28}[a-z0-9]$')
+
+
+@router.post('/{pid}/gemini-discover')
+def discover(pid: str,body: Discovery,request: Request,c: Credential=Depends(require('credentials')),s: Session=Depends(db)) -> dict:
+    from .limits import consume
+    transport_allowed(request);p=owned(s,c,pid)
+    if not consume(s,'gemini-discovery:'+p.tenant_id+':'+c.id,5,300):raise HTTPException(429,'Rate limit exceeded')
+    found=provider_for(p,body.verification_access_token.get_secret_value()).discover(body.project_id)
+    project(pid,Project.model_validate(found),request,c,s)
+    return check(pid,Verification(verification_access_token=body.verification_access_token),request,c,s)
 
 
 @router.post('/{pid}/gemini-key-check')
